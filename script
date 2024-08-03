@@ -1418,7 +1418,7 @@ local function SetupTeleportMarkers()
 	Markers = Instance.new("Folder", Player:WaitForChild("PlayerGui"))
 	Markers.Name = "Markers"
 	print("Created Markers")
-	for _,user in pairs(game.Players:GetPlayers()) do
+	for _,user in pairs(Players:GetPlayers()) do
 		if user == Player then continue end
 		local Marker = CreateMarker()
 		Marker.Name = user.Name
