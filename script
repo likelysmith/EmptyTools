@@ -1,4 +1,5 @@
 local TweenService = game:GetService("TweenService")
+local AvatarService = game:GetService("AvatarEditorService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
@@ -665,7 +666,7 @@ local function CreateGUI()
 	end
 	coroutine.wrap(OLQVYZV_fake_script)()
 
-	
+
 	return EmptyTools
 end
 
@@ -1163,22 +1164,12 @@ end
 local function PlayEmote(ID)
 	local Char = Player.Character
 	local Hum = Char.Humanoid
-	Char.Animate.Disabled = false
-	local Tracks = Hum:GetPlayingAnimationTracks()
-	for i,v in pairs(Tracks) do
-		v:Stop()
+	local ID = AvatarService:GetItemDetails(ID, Enum.AvatarItemType.Asset)
+	if ID then
+		local Name = ID.Name
+		if not Name then return end
+		Hum:PlayEmote(Name)
 	end
-	Char.Animate.Disabled = true
-	local Anim = Instance.new("Animation")
-	Anim.AnimationId = "rbxassetid://" .. ID
-	local LoadedAnim = Hum:LoadAnimation(Anim)
-	LoadedAnim:Play()
-	LoadedAnim.Stopped:Connect(function()
-		Char.Animate.Disabled = false
-		for i, track in pairs (Tracks) do
-			track:Stop()
-		end
-	end)
 end
 
 local function RefreshPlayerSpawn()
