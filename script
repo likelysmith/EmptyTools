@@ -1080,7 +1080,7 @@ local function Setup()
 	GUI.Parent = Player:WaitForChild("PlayerGui")
 	UIFrame = GUI:WaitForChild("Frame"):WaitForChild("ToolsFrame")
 
-	for i,v in pairs(game.Players:GetChildren()) do
+	for i,v in pairs(Players:GetPlayers()) do
 		if v ~= Player then
 			SetUpPlayerDetection(v)
 		end
