@@ -33,52 +33,53 @@ local FlySpeed = 30
 
 local function CreateGUI()
 	-- Gui to Lua
-	-- Gui to Lua
 	-- Version: 3.2
 
 	-- Instances:
 
 	local EmptyTools = Instance.new("ScreenGui")
 	local Frame = Instance.new("Frame")
-	local Title = Instance.new("TextLabel")
-	local Close = Instance.new("TextButton")
 	local ToolsFrame = Instance.new("ScrollingFrame")
 	local Staircase = Instance.new("Frame")
 	local Run = Instance.new("TextButton")
 	local Iterations = Instance.new("TextBox")
-	local Title_2 = Instance.new("TextLabel")
+	local Title = Instance.new("TextLabel")
 	local Clear = Instance.new("TextButton")
 	local UIListLayout = Instance.new("UIListLayout")
 	local Click2Phase = Instance.new("Frame")
 	local Run_2 = Instance.new("TextButton")
-	local Title_3 = Instance.new("TextLabel")
+	local Title_2 = Instance.new("TextLabel")
 	local Stop = Instance.new("TextButton")
 	local Click2Teleport = Instance.new("Frame")
 	local Run_3 = Instance.new("TextButton")
-	local Title_4 = Instance.new("TextLabel")
+	local Title_3 = Instance.new("TextLabel")
 	local Stop_2 = Instance.new("TextButton")
-	local Freecam = Instance.new("Frame")
-	local Run_4 = Instance.new("TextButton")
-	local Title_5 = Instance.new("TextLabel")
-	local Stop_3 = Instance.new("TextButton")
 	local Platform = Instance.new("Frame")
-	local Run_5 = Instance.new("TextButton")
-	local Title_6 = Instance.new("TextLabel")
-	local Stop_4 = Instance.new("TextButton")
+	local Run_4 = Instance.new("TextButton")
+	local Title_4 = Instance.new("TextLabel")
+	local Stop_3 = Instance.new("TextButton")
 	local Emote = Instance.new("Frame")
-	local Run_6 = Instance.new("TextButton")
-	local Title_7 = Instance.new("TextLabel")
-	local Stop_5 = Instance.new("TextButton")
+	local Run_5 = Instance.new("TextButton")
+	local Title_5 = Instance.new("TextLabel")
+	local Stop_4 = Instance.new("TextButton")
 	local ID = Instance.new("TextBox")
 	local Fly = Instance.new("Frame")
-	local Run_7 = Instance.new("TextButton")
-	local Title_8 = Instance.new("TextLabel")
-	local Stop_6 = Instance.new("TextButton")
+	local Run_6 = Instance.new("TextButton")
+	local Title_6 = Instance.new("TextLabel")
+	local Stop_5 = Instance.new("TextButton")
 	local Speed = Instance.new("TextBox")
 	local Markers = Instance.new("Frame")
+	local Run_7 = Instance.new("TextButton")
+	local Title_7 = Instance.new("TextLabel")
+	local Stop_6 = Instance.new("TextButton")
+	local Freecam = Instance.new("Frame")
 	local Run_8 = Instance.new("TextButton")
-	local Title_9 = Instance.new("TextLabel")
+	local Title_8 = Instance.new("TextLabel")
 	local Stop_7 = Instance.new("TextButton")
+	local Bar = Instance.new("Frame")
+	local Title_9 = Instance.new("TextLabel")
+	local Close = Instance.new("TextButton")
+	local Toggle = Instance.new("TextButton")
 
 	--Properties:
 
@@ -93,35 +94,6 @@ local function CreateGUI()
 	Frame.Position = UDim2.new(0.708783805, 0, 0.561290324, 0)
 	Frame.Size = UDim2.new(0.272297293, 0, 0.405161291, 0)
 
-	Title.Name = "Title"
-	Title.Parent = Frame
-	Title.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title.BackgroundTransparency = 1.000
-	Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title.BorderSizePixel = 0
-	Title.Position = UDim2.new(0.0272952858, 0, 0.022292994, 0)
-	Title.Size = UDim2.new(0.942928016, 0, 0.162420377, 0)
-	Title.Font = Enum.Font.Arcade
-	Title.Text = "EMPTY TOOLS"
-	Title.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title.TextScaled = true
-	Title.TextSize = 14.000
-	Title.TextWrapped = true
-
-	Close.Name = "Close"
-	Close.Parent = Frame
-	Close.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Close.BorderColor3 = Color3.fromRGB(77, 39, 202)
-	Close.BorderSizePixel = 3
-	Close.Position = UDim2.new(0.73697269, 0, -0.12101911, 0)
-	Close.Size = UDim2.new(0.263027281, 0, 0.082802549, 0)
-	Close.Font = Enum.Font.Arcade
-	Close.Text = "CLOSE"
-	Close.TextColor3 = Color3.fromRGB(202, 32, 32)
-	Close.TextScaled = true
-	Close.TextSize = 14.000
-	Close.TextWrapped = true
-
 	ToolsFrame.Name = "ToolsFrame"
 	ToolsFrame.Parent = Frame
 	ToolsFrame.Active = true
@@ -129,8 +101,8 @@ local function CreateGUI()
 	ToolsFrame.BackgroundTransparency = 1.000
 	ToolsFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	ToolsFrame.BorderSizePixel = 0
-	ToolsFrame.Position = UDim2.new(0.0223325063, 0, 0.210191473, 0)
-	ToolsFrame.Size = UDim2.new(0.955334961, 0, 0.745222628, 0)
+	ToolsFrame.Position = UDim2.new(0.0223325882, 0, 0.0288967807, 0)
+	ToolsFrame.Size = UDim2.new(0.955334961, 0, 0.926517308, 0)
 	ToolsFrame.ScrollBarThickness = 6
 
 	Staircase.Name = "Staircase"
@@ -170,20 +142,20 @@ local function CreateGUI()
 	Iterations.TextSize = 14.000
 	Iterations.TextWrapped = true
 
-	Title_2.Name = "Title"
-	Title_2.Parent = Staircase
-	Title_2.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_2.BackgroundTransparency = 1.000
-	Title_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_2.BorderSizePixel = 0
-	Title_2.Position = UDim2.new(0.0153452689, 0, 0.0769248381, 0)
-	Title_2.Size = UDim2.new(0.336397767, 0, 0.882163942, 0)
-	Title_2.Font = Enum.Font.SourceSansBold
-	Title_2.Text = "STAIRCASE"
-	Title_2.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_2.TextScaled = true
-	Title_2.TextSize = 14.000
-	Title_2.TextWrapped = true
+	Title.Name = "Title"
+	Title.Parent = Staircase
+	Title.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title.BackgroundTransparency = 1.000
+	Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title.BorderSizePixel = 0
+	Title.Position = UDim2.new(0.0153452689, 0, 0.0769248381, 0)
+	Title.Size = UDim2.new(0.336397767, 0, 0.882163942, 0)
+	Title.Font = Enum.Font.SourceSansBold
+	Title.Text = "STAIRCASE"
+	Title.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title.TextScaled = true
+	Title.TextSize = 14.000
+	Title.TextWrapped = true
 
 	Clear.Name = "Clear"
 	Clear.Parent = Staircase
@@ -224,20 +196,20 @@ local function CreateGUI()
 	Run_2.TextSize = 14.000
 	Run_2.TextWrapped = true
 
-	Title_3.Name = "Title"
-	Title_3.Parent = Click2Phase
-	Title_3.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_3.BackgroundTransparency = 1.000
-	Title_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_3.BorderSizePixel = 0
-	Title_3.Position = UDim2.new(0.0153452689, 0, 0.0769248381, 0)
-	Title_3.Size = UDim2.new(0.336397767, 0, 0.882163942, 0)
-	Title_3.Font = Enum.Font.SourceSansBold
-	Title_3.Text = "CLICK2PHASE"
-	Title_3.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_3.TextScaled = true
-	Title_3.TextSize = 14.000
-	Title_3.TextWrapped = true
+	Title_2.Name = "Title"
+	Title_2.Parent = Click2Phase
+	Title_2.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_2.BackgroundTransparency = 1.000
+	Title_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_2.BorderSizePixel = 0
+	Title_2.Position = UDim2.new(0.0153452689, 0, 0.0769248381, 0)
+	Title_2.Size = UDim2.new(0.336397767, 0, 0.882163942, 0)
+	Title_2.Font = Enum.Font.SourceSansBold
+	Title_2.Text = "CLICK2PHASE"
+	Title_2.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_2.TextScaled = true
+	Title_2.TextSize = 14.000
+	Title_2.TextWrapped = true
 
 	Stop.Name = "Stop"
 	Stop.Parent = Click2Phase
@@ -275,20 +247,20 @@ local function CreateGUI()
 	Run_3.TextSize = 14.000
 	Run_3.TextWrapped = true
 
-	Title_4.Name = "Title"
-	Title_4.Parent = Click2Teleport
-	Title_4.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_4.BackgroundTransparency = 1.000
-	Title_4.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_4.BorderSizePixel = 0
-	Title_4.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
-	Title_4.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
-	Title_4.Font = Enum.Font.SourceSansBold
-	Title_4.Text = "CLICK2TELEPORT"
-	Title_4.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_4.TextScaled = true
-	Title_4.TextSize = 14.000
-	Title_4.TextWrapped = true
+	Title_3.Name = "Title"
+	Title_3.Parent = Click2Teleport
+	Title_3.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_3.BackgroundTransparency = 1.000
+	Title_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_3.BorderSizePixel = 0
+	Title_3.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
+	Title_3.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
+	Title_3.Font = Enum.Font.SourceSansBold
+	Title_3.Text = "CLICK2TELEPORT"
+	Title_3.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_3.TextScaled = true
+	Title_3.TextSize = 14.000
+	Title_3.TextWrapped = true
 
 	Stop_2.Name = "Stop"
 	Stop_2.Parent = Click2Teleport
@@ -304,16 +276,16 @@ local function CreateGUI()
 	Stop_2.TextSize = 14.000
 	Stop_2.TextWrapped = true
 
-	Freecam.Name = "Freecam"
-	Freecam.Parent = ToolsFrame
-	Freecam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Freecam.BackgroundTransparency = 0.960
-	Freecam.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Freecam.BorderSizePixel = 0
-	Freecam.Size = UDim2.new(0.992207766, 0, 0.0872234479, 0)
+	Platform.Name = "Platform"
+	Platform.Parent = ToolsFrame
+	Platform.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Platform.BackgroundTransparency = 0.960
+	Platform.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Platform.BorderSizePixel = 0
+	Platform.Size = UDim2.new(0.992207766, 0, 0.0872234479, 0)
 
 	Run_4.Name = "Run"
-	Run_4.Parent = Freecam
+	Run_4.Parent = Platform
 	Run_4.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
 	Run_4.BorderColor3 = Color3.fromRGB(77, 39, 202)
 	Run_4.BorderSizePixel = 3
@@ -326,23 +298,23 @@ local function CreateGUI()
 	Run_4.TextSize = 14.000
 	Run_4.TextWrapped = true
 
-	Title_5.Name = "Title"
-	Title_5.Parent = Freecam
-	Title_5.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_5.BackgroundTransparency = 1.000
-	Title_5.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_5.BorderSizePixel = 0
-	Title_5.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
-	Title_5.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
-	Title_5.Font = Enum.Font.SourceSansBold
-	Title_5.Text = "FREECAM"
-	Title_5.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_5.TextScaled = true
-	Title_5.TextSize = 14.000
-	Title_5.TextWrapped = true
+	Title_4.Name = "Title"
+	Title_4.Parent = Platform
+	Title_4.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_4.BackgroundTransparency = 1.000
+	Title_4.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_4.BorderSizePixel = 0
+	Title_4.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
+	Title_4.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
+	Title_4.Font = Enum.Font.SourceSansBold
+	Title_4.Text = "PLATFORM"
+	Title_4.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_4.TextScaled = true
+	Title_4.TextSize = 14.000
+	Title_4.TextWrapped = true
 
 	Stop_3.Name = "Stop"
-	Stop_3.Parent = Freecam
+	Stop_3.Parent = Platform
 	Stop_3.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
 	Stop_3.BorderColor3 = Color3.fromRGB(202, 0, 0)
 	Stop_3.BorderSizePixel = 3
@@ -355,57 +327,6 @@ local function CreateGUI()
 	Stop_3.TextSize = 14.000
 	Stop_3.TextWrapped = true
 
-	Platform.Name = "Platform"
-	Platform.Parent = ToolsFrame
-	Platform.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Platform.BackgroundTransparency = 0.960
-	Platform.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Platform.BorderSizePixel = 0
-	Platform.Size = UDim2.new(0.992207766, 0, 0.0872234479, 0)
-
-	Run_5.Name = "Run"
-	Run_5.Parent = Platform
-	Run_5.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Run_5.BorderColor3 = Color3.fromRGB(77, 39, 202)
-	Run_5.BorderSizePixel = 3
-	Run_5.Position = UDim2.new(0.621483982, 0, 0.324867845, 0)
-	Run_5.Size = UDim2.new(0.135549247, 0, 0.424745411, 0)
-	Run_5.Font = Enum.Font.Arcade
-	Run_5.Text = "RUN"
-	Run_5.TextColor3 = Color3.fromRGB(43, 0, 255)
-	Run_5.TextScaled = true
-	Run_5.TextSize = 14.000
-	Run_5.TextWrapped = true
-
-	Title_6.Name = "Title"
-	Title_6.Parent = Platform
-	Title_6.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_6.BackgroundTransparency = 1.000
-	Title_6.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_6.BorderSizePixel = 0
-	Title_6.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
-	Title_6.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
-	Title_6.Font = Enum.Font.SourceSansBold
-	Title_6.Text = "PLATFORM"
-	Title_6.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_6.TextScaled = true
-	Title_6.TextSize = 14.000
-	Title_6.TextWrapped = true
-
-	Stop_4.Name = "Stop"
-	Stop_4.Parent = Platform
-	Stop_4.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Stop_4.BorderColor3 = Color3.fromRGB(202, 0, 0)
-	Stop_4.BorderSizePixel = 3
-	Stop_4.Position = UDim2.new(0.782609344, 0, 0.324867845, 0)
-	Stop_4.Size = UDim2.new(0.185666472, 0, 0.424745411, 0)
-	Stop_4.Font = Enum.Font.Arcade
-	Stop_4.Text = "STOP"
-	Stop_4.TextColor3 = Color3.fromRGB(255, 0, 0)
-	Stop_4.TextScaled = true
-	Stop_4.TextSize = 14.000
-	Stop_4.TextWrapped = true
-
 	Emote.Name = "Emote"
 	Emote.Parent = ToolsFrame
 	Emote.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -414,48 +335,48 @@ local function CreateGUI()
 	Emote.BorderSizePixel = 0
 	Emote.Size = UDim2.new(0.992207766, 0, 0.0872234479, 0)
 
-	Run_6.Name = "Run"
-	Run_6.Parent = Emote
-	Run_6.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Run_6.BorderColor3 = Color3.fromRGB(77, 39, 202)
-	Run_6.BorderSizePixel = 3
-	Run_6.Position = UDim2.new(0.63199079, 0, 0.324867427, 0)
-	Run_6.Size = UDim2.new(0.150618628, 0, 0.424745381, 0)
-	Run_6.Font = Enum.Font.Arcade
-	Run_6.Text = "RUN"
-	Run_6.TextColor3 = Color3.fromRGB(43, 0, 255)
-	Run_6.TextScaled = true
-	Run_6.TextSize = 14.000
-	Run_6.TextWrapped = true
+	Run_5.Name = "Run"
+	Run_5.Parent = Emote
+	Run_5.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Run_5.BorderColor3 = Color3.fromRGB(77, 39, 202)
+	Run_5.BorderSizePixel = 3
+	Run_5.Position = UDim2.new(0.63199079, 0, 0.324867427, 0)
+	Run_5.Size = UDim2.new(0.150618628, 0, 0.424745381, 0)
+	Run_5.Font = Enum.Font.Arcade
+	Run_5.Text = "RUN"
+	Run_5.TextColor3 = Color3.fromRGB(43, 0, 255)
+	Run_5.TextScaled = true
+	Run_5.TextSize = 14.000
+	Run_5.TextWrapped = true
 
-	Title_7.Name = "Title"
-	Title_7.Parent = Emote
-	Title_7.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_7.BackgroundTransparency = 1.000
-	Title_7.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_7.BorderSizePixel = 0
-	Title_7.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
-	Title_7.Size = UDim2.new(0.35219121, 0, 0.882164001, 0)
-	Title_7.Font = Enum.Font.SourceSansBold
-	Title_7.Text = "EMOTE"
-	Title_7.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_7.TextScaled = true
-	Title_7.TextSize = 14.000
-	Title_7.TextWrapped = true
+	Title_5.Name = "Title"
+	Title_5.Parent = Emote
+	Title_5.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_5.BackgroundTransparency = 1.000
+	Title_5.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_5.BorderSizePixel = 0
+	Title_5.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
+	Title_5.Size = UDim2.new(0.35219121, 0, 0.882164001, 0)
+	Title_5.Font = Enum.Font.SourceSansBold
+	Title_5.Text = "EMOTE"
+	Title_5.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_5.TextScaled = true
+	Title_5.TextSize = 14.000
+	Title_5.TextWrapped = true
 
-	Stop_5.Name = "Stop"
-	Stop_5.Parent = Emote
-	Stop_5.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Stop_5.BorderColor3 = Color3.fromRGB(202, 0, 0)
-	Stop_5.BorderSizePixel = 3
-	Stop_5.Position = UDim2.new(0.808876097, 0, 0.324867427, 0)
-	Stop_5.Size = UDim2.new(0.159399718, 0, 0.424745411, 0)
-	Stop_5.Font = Enum.Font.Arcade
-	Stop_5.Text = "STOP"
-	Stop_5.TextColor3 = Color3.fromRGB(255, 0, 0)
-	Stop_5.TextScaled = true
-	Stop_5.TextSize = 14.000
-	Stop_5.TextWrapped = true
+	Stop_4.Name = "Stop"
+	Stop_4.Parent = Emote
+	Stop_4.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Stop_4.BorderColor3 = Color3.fromRGB(202, 0, 0)
+	Stop_4.BorderSizePixel = 3
+	Stop_4.Position = UDim2.new(0.808876097, 0, 0.324867427, 0)
+	Stop_4.Size = UDim2.new(0.159399718, 0, 0.424745411, 0)
+	Stop_4.Font = Enum.Font.Arcade
+	Stop_4.Text = "STOP"
+	Stop_4.TextColor3 = Color3.fromRGB(255, 0, 0)
+	Stop_4.TextScaled = true
+	Stop_4.TextSize = 14.000
+	Stop_4.TextWrapped = true
 
 	ID.Name = "ID"
 	ID.Parent = Emote
@@ -480,48 +401,48 @@ local function CreateGUI()
 	Fly.BorderSizePixel = 0
 	Fly.Size = UDim2.new(0.992207766, 0, 0.0872234479, 0)
 
-	Run_7.Name = "Run"
-	Run_7.Parent = Fly
-	Run_7.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Run_7.BorderColor3 = Color3.fromRGB(77, 39, 202)
-	Run_7.BorderSizePixel = 3
-	Run_7.Position = UDim2.new(0.621483982, 0, 0.324867845, 0)
-	Run_7.Size = UDim2.new(0.135549247, 0, 0.424745411, 0)
-	Run_7.Font = Enum.Font.Arcade
-	Run_7.Text = "RUN"
-	Run_7.TextColor3 = Color3.fromRGB(43, 0, 255)
-	Run_7.TextScaled = true
-	Run_7.TextSize = 14.000
-	Run_7.TextWrapped = true
+	Run_6.Name = "Run"
+	Run_6.Parent = Fly
+	Run_6.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Run_6.BorderColor3 = Color3.fromRGB(77, 39, 202)
+	Run_6.BorderSizePixel = 3
+	Run_6.Position = UDim2.new(0.621483982, 0, 0.324867845, 0)
+	Run_6.Size = UDim2.new(0.135549247, 0, 0.424745411, 0)
+	Run_6.Font = Enum.Font.Arcade
+	Run_6.Text = "RUN"
+	Run_6.TextColor3 = Color3.fromRGB(43, 0, 255)
+	Run_6.TextScaled = true
+	Run_6.TextSize = 14.000
+	Run_6.TextWrapped = true
 
-	Title_8.Name = "Title"
-	Title_8.Parent = Fly
-	Title_8.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_8.BackgroundTransparency = 1.000
-	Title_8.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_8.BorderSizePixel = 0
-	Title_8.Position = UDim2.new(0.0153445378, 0, 0.0769254491, 0)
-	Title_8.Size = UDim2.new(0.304975688, 0, 0.882164001, 0)
-	Title_8.Font = Enum.Font.SourceSansBold
-	Title_8.Text = "FLY"
-	Title_8.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_8.TextScaled = true
-	Title_8.TextSize = 14.000
-	Title_8.TextWrapped = true
+	Title_6.Name = "Title"
+	Title_6.Parent = Fly
+	Title_6.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_6.BackgroundTransparency = 1.000
+	Title_6.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_6.BorderSizePixel = 0
+	Title_6.Position = UDim2.new(0.0153445378, 0, 0.0769254491, 0)
+	Title_6.Size = UDim2.new(0.304975688, 0, 0.882164001, 0)
+	Title_6.Font = Enum.Font.SourceSansBold
+	Title_6.Text = "FLY"
+	Title_6.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_6.TextScaled = true
+	Title_6.TextSize = 14.000
+	Title_6.TextWrapped = true
 
-	Stop_6.Name = "Stop"
-	Stop_6.Parent = Fly
-	Stop_6.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Stop_6.BorderColor3 = Color3.fromRGB(202, 0, 0)
-	Stop_6.BorderSizePixel = 3
-	Stop_6.Position = UDim2.new(0.782609344, 0, 0.324867845, 0)
-	Stop_6.Size = UDim2.new(0.185666472, 0, 0.424745411, 0)
-	Stop_6.Font = Enum.Font.Arcade
-	Stop_6.Text = "STOP"
-	Stop_6.TextColor3 = Color3.fromRGB(255, 0, 0)
-	Stop_6.TextScaled = true
-	Stop_6.TextSize = 14.000
-	Stop_6.TextWrapped = true
+	Stop_5.Name = "Stop"
+	Stop_5.Parent = Fly
+	Stop_5.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Stop_5.BorderColor3 = Color3.fromRGB(202, 0, 0)
+	Stop_5.BorderSizePixel = 3
+	Stop_5.Position = UDim2.new(0.782609344, 0, 0.324867845, 0)
+	Stop_5.Size = UDim2.new(0.185666472, 0, 0.424745411, 0)
+	Stop_5.Font = Enum.Font.Arcade
+	Stop_5.Text = "STOP"
+	Stop_5.TextColor3 = Color3.fromRGB(255, 0, 0)
+	Stop_5.TextScaled = true
+	Stop_5.TextSize = 14.000
+	Stop_5.TextWrapped = true
 
 	Speed.Name = "Speed"
 	Speed.Parent = Fly
@@ -546,8 +467,59 @@ local function CreateGUI()
 	Markers.BorderSizePixel = 0
 	Markers.Size = UDim2.new(0.992207766, 0, 0.0872234479, 0)
 
+	Run_7.Name = "Run"
+	Run_7.Parent = Markers
+	Run_7.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Run_7.BorderColor3 = Color3.fromRGB(77, 39, 202)
+	Run_7.BorderSizePixel = 3
+	Run_7.Position = UDim2.new(0.621483982, 0, 0.324867845, 0)
+	Run_7.Size = UDim2.new(0.135549247, 0, 0.424745411, 0)
+	Run_7.Font = Enum.Font.Arcade
+	Run_7.Text = "RUN"
+	Run_7.TextColor3 = Color3.fromRGB(43, 0, 255)
+	Run_7.TextScaled = true
+	Run_7.TextSize = 14.000
+	Run_7.TextWrapped = true
+
+	Title_7.Name = "Title"
+	Title_7.Parent = Markers
+	Title_7.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_7.BackgroundTransparency = 1.000
+	Title_7.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_7.BorderSizePixel = 0
+	Title_7.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
+	Title_7.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
+	Title_7.Font = Enum.Font.SourceSansBold
+	Title_7.Text = "MARKERS"
+	Title_7.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_7.TextScaled = true
+	Title_7.TextSize = 14.000
+	Title_7.TextWrapped = true
+
+	Stop_6.Name = "Stop"
+	Stop_6.Parent = Markers
+	Stop_6.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Stop_6.BorderColor3 = Color3.fromRGB(202, 0, 0)
+	Stop_6.BorderSizePixel = 3
+	Stop_6.Position = UDim2.new(0.782609344, 0, 0.324867845, 0)
+	Stop_6.Size = UDim2.new(0.185666472, 0, 0.424745411, 0)
+	Stop_6.Font = Enum.Font.Arcade
+	Stop_6.Text = "CLEAR"
+	Stop_6.TextColor3 = Color3.fromRGB(255, 0, 0)
+	Stop_6.TextScaled = true
+	Stop_6.TextSize = 14.000
+	Stop_6.TextWrapped = true
+
+	Freecam.Name = "Freecam"
+	Freecam.Parent = ToolsFrame
+	Freecam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Freecam.BackgroundTransparency = 0.960
+	Freecam.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Freecam.BorderSizePixel = 0
+	Freecam.Size = UDim2.new(0.992207766, 0, 0.0872234479, 0)
+
 	Run_8.Name = "Run"
-	Run_8.Parent = Markers
+	Run_8.Parent = Freecam
 	Run_8.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
 	Run_8.BorderColor3 = Color3.fromRGB(77, 39, 202)
 	Run_8.BorderSizePixel = 3
@@ -560,38 +532,89 @@ local function CreateGUI()
 	Run_8.TextSize = 14.000
 	Run_8.TextWrapped = true
 
-	Title_9.Name = "Title"
-	Title_9.Parent = Markers
-	Title_9.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_9.BackgroundTransparency = 1.000
-	Title_9.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_9.BorderSizePixel = 0
-	Title_9.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
-	Title_9.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
-	Title_9.Font = Enum.Font.SourceSansBold
-	Title_9.Text = "MARKERS"
-	Title_9.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_9.TextScaled = true
-	Title_9.TextSize = 14.000
-	Title_9.TextWrapped = true
+	Title_8.Name = "Title"
+	Title_8.Parent = Freecam
+	Title_8.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_8.BackgroundTransparency = 1.000
+	Title_8.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_8.BorderSizePixel = 0
+	Title_8.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
+	Title_8.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
+	Title_8.Font = Enum.Font.SourceSansBold
+	Title_8.Text = "FREECAM"
+	Title_8.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_8.TextScaled = true
+	Title_8.TextSize = 14.000
+	Title_8.TextWrapped = true
 
 	Stop_7.Name = "Stop"
-	Stop_7.Parent = Markers
+	Stop_7.Parent = Freecam
 	Stop_7.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
 	Stop_7.BorderColor3 = Color3.fromRGB(202, 0, 0)
 	Stop_7.BorderSizePixel = 3
 	Stop_7.Position = UDim2.new(0.782609344, 0, 0.324867845, 0)
 	Stop_7.Size = UDim2.new(0.185666472, 0, 0.424745411, 0)
 	Stop_7.Font = Enum.Font.Arcade
-	Stop_7.Text = "CLEAR"
+	Stop_7.Text = "STOP"
 	Stop_7.TextColor3 = Color3.fromRGB(255, 0, 0)
 	Stop_7.TextScaled = true
 	Stop_7.TextSize = 14.000
 	Stop_7.TextWrapped = true
 
+	Bar.Name = "Bar"
+	Bar.Parent = Frame
+	Bar.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Bar.BorderColor3 = Color3.fromRGB(77, 39, 202)
+	Bar.BorderSizePixel = 3
+	Bar.Position = UDim2.new(-0.00185879634, 0, -0.207231149, 0)
+	Bar.Size = UDim2.new(1.00185883, 0, 0.173227221, 0)
+
+	Title_9.Name = "Title"
+	Title_9.Parent = Bar
+	Title_9.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_9.BackgroundTransparency = 1.000
+	Title_9.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_9.BorderSizePixel = 0
+	Title_9.Position = UDim2.new(0.027295135, 0, 0.02229275, 0)
+	Title_9.Size = UDim2.new(0.518182218, 0, 0.953389168, 0)
+	Title_9.Font = Enum.Font.Arcade
+	Title_9.Text = "EMPTY TOOLS"
+	Title_9.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_9.TextScaled = true
+	Title_9.TextSize = 14.000
+	Title_9.TextWrapped = true
+
+	Close.Name = "Close"
+	Close.Parent = Bar
+	Close.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Close.BorderColor3 = Color3.fromRGB(77, 39, 202)
+	Close.BorderSizePixel = 3
+	Close.Position = UDim2.new(0.689435661, 0, 0.172754377, 0)
+	Close.Size = UDim2.new(0.280842811, 0, 0.65199244, 0)
+	Close.Font = Enum.Font.Arcade
+	Close.Text = "CLOSE"
+	Close.TextColor3 = Color3.fromRGB(202, 32, 32)
+	Close.TextScaled = true
+	Close.TextSize = 14.000
+	Close.TextWrapped = true
+
+	Toggle.Name = "Toggle"
+	Toggle.Parent = Bar
+	Toggle.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Toggle.BorderColor3 = Color3.fromRGB(77, 39, 202)
+	Toggle.BorderSizePixel = 3
+	Toggle.Position = UDim2.new(0.577762842, 0, 0.172754377, 0)
+	Toggle.Size = UDim2.new(0.0818705484, 0, 0.65199244, 0)
+	Toggle.Font = Enum.Font.Arcade
+	Toggle.Text = "<"
+	Toggle.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Toggle.TextScaled = true
+	Toggle.TextSize = 14.000
+	Toggle.TextWrapped = true
+
 	-- Scripts:
 
-	local function SIHGNQT_fake_script() -- Frame.Dragify 
+	local function OLQVYZV_fake_script() -- Frame.Dragify 
 		local script = Instance.new('LocalScript', Frame)
 
 		local userInputService : UserInputService = game:GetService("UserInputService") -- UserInputService
@@ -634,15 +657,15 @@ local function CreateGUI()
 			end
 		end
 
-		dragObject.InputBegan:Connect(dragInputBegan) -- Drag Object's Input Begins and calls this function
-		dragObject.InputChanged:Connect(dragInputChanged) -- Drag Object's Input Changes and calls this function
+		script.Parent.Bar.InputBegan:Connect(dragInputBegan) -- Drag Object's Input Begins and calls this function
+		script.Parent.Bar.InputChanged:Connect(dragInputChanged) -- Drag Object's Input Changes and calls this function
 		userInputService.InputChanged:Connect(userInputChanged) -- Users Input Changes and calls this function
 
 
 	end
-	coroutine.wrap(SIHGNQT_fake_script)()
+	coroutine.wrap(OLQVYZV_fake_script)()
 
-
+	
 	return EmptyTools
 end
 
@@ -1034,7 +1057,7 @@ end
 function SetUpPlayerDetection(PlayerAdded)
 	PlayerAdded.Chatted:Connect(function(Message)
 		if not Player:GetAttribute("CMDS") then
-		    return
+			return
 		end
 		if string.sub(Message, 1, 7) == ":bring " then
 			local User = string.lower(string.sub(Message, 8, #Message))
@@ -1441,9 +1464,21 @@ end
 
 --GUI Connections
 
-GUI.Frame.Close.MouseButton1Click:Connect(function()
+GUI.Frame.Bar.Close.MouseButton1Click:Connect(function()
 	GUI:Destroy()
 	script:Destroy()
+end)
+
+GUI.Frame.Bar.Toggle.MouseButton1Click:Connect(function()
+	if UIFrame.Visible == true then
+		UIFrame.Visible = false
+		GUI.Frame.BackgroundTransparency = 1
+		GUI.Frame.Bar.Toggle.Rotation = 180
+	else
+		UIFrame.Visible = true
+		GUI.Frame.BackgroundTransparency = 0
+		GUI.Frame.Bar.Toggle.Rotation = 0
+	end
 end)
 
 UIFrame.Staircase.Run.MouseButton1Click:Connect(function()
@@ -1563,9 +1598,9 @@ Mouse.Button1Up:Connect(function()
 			return
 		end
 		if Platform then
-		    if Platform == Target then 
-			return
-		    end
+			if Platform == Target then 
+				return
+			end
 		end
 		if Phase.Value then
 			if Target.Name == "Baseplate" then
