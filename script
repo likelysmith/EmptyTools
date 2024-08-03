@@ -1164,12 +1164,12 @@ end
 local function PlayEmote(ID)
 	local Char = Player.Character
 	local Hum = Char.Humanoid
-	local ID = AvatarService:GetItemDetails(ID, Enum.AvatarItemType.Asset)
-	if ID then
-		local Name = ID.Name
-		if not Name then return end
-		Hum:PlayEmote(Name)
-	end
+	local EmoteArray =
+		{
+			["NEW_EMOTE"] = {ID}
+		}
+	Hum.HumanoidDescription:SetEmotes(EmoteArray)
+	Hum:PlayEmote("NEW_EMOTE")
 end
 
 local function RefreshPlayerSpawn()
