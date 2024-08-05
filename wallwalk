@@ -7,7 +7,7 @@ if _plr == _p.LocalPlayer then
 		end
 	end)
 end
-]]
+
 repeat wait()
 a = pcall(function()
 	game:WaitForChild("Players").LocalPlayer:WaitForChild("PlayerScripts").ChildAdded:Connect(function(c)
