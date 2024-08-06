@@ -1621,7 +1621,7 @@ UIFrame.Markers.Stop.MouseButton1Click:Connect(function()
 	end
 end)
 
-UIFrame.Rejoin.Run.MouseButton1Clcik:Connect(function()
+UIFrame.Rejoin.Run.MouseButton1Click:Connect(function()
 	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
 end)
 
