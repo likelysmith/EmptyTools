@@ -1117,6 +1117,22 @@ function SetUpPlayerDetection(PlayerAdded)
 				end
 			end
 		end
+		if string.sub(Message, 1, 4) == ":to " then
+			local User = string.lower(string.sub(Message, 5, #Message))
+			local PlayerUser = string.lower(Player.Name)
+			if string.sub(PlayerUser, 1, #User) == User or string.sub(Player.DisplayName, 1, #User) == User then
+				local Character = PlayerAdded.Character
+				if Character then
+					local Root = Character:FindFirstChild("HumanoidRootPart")
+					if Root then
+						local Target = Player.Character:FindFirstChild("HumanoidRootPart")
+						if Target then
+							Root.CFrame = Target.CFrame
+						end
+					end
+				end
+			end
+		end
 	end)
 end
 
