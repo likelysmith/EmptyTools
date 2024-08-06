@@ -33,6 +33,7 @@ local function onInputBegan(input, gameProcessedEvent)
 end
 
 local function onInputEnded(input, gameProcessedEvent)
+      if gameProcessedEvent then return end
     if input.KeyCode == Enum.KeyCode.Z then
         isHoldingZ = false
         local holdDuration = tick() - holdStartTime
