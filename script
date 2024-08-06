@@ -1,5 +1,6 @@
-local TweenService = game:GetService("TweenService")
 local AvatarService = game:GetService("AvatarEditorService")
+local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
@@ -77,8 +78,11 @@ local function CreateGUI()
 	local Run_8 = Instance.new("TextButton")
 	local Title_8 = Instance.new("TextLabel")
 	local Stop_7 = Instance.new("TextButton")
-	local Bar = Instance.new("Frame")
+	local Rejoin = Instance.new("Frame")
+	local Run_9 = Instance.new("TextButton")
 	local Title_9 = Instance.new("TextLabel")
+	local Bar = Instance.new("Frame")
+	local Title_10 = Instance.new("TextLabel")
 	local Close = Instance.new("TextButton")
 	local Toggle = Instance.new("TextButton")
 
@@ -562,6 +566,43 @@ local function CreateGUI()
 	Stop_7.TextSize = 14.000
 	Stop_7.TextWrapped = true
 
+	Rejoin.Name = "Rejoin"
+	Rejoin.Parent = ToolsFrame
+	Rejoin.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Rejoin.BackgroundTransparency = 0.960
+	Rejoin.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Rejoin.BorderSizePixel = 0
+	Rejoin.Size = UDim2.new(0.992207766, 0, 0.0872234479, 0)
+
+	Run_9.Name = "Run"
+	Run_9.Parent = Rejoin
+	Run_9.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Run_9.BorderColor3 = Color3.fromRGB(77, 39, 202)
+	Run_9.BorderSizePixel = 3
+	Run_9.Position = UDim2.new(0.631983697, 0, 0.289408118, 0)
+	Run_9.Size = UDim2.new(0.308792233, 0, 0.424745381, 0)
+	Run_9.Font = Enum.Font.Arcade
+	Run_9.Text = "RUN"
+	Run_9.TextColor3 = Color3.fromRGB(43, 0, 255)
+	Run_9.TextScaled = true
+	Run_9.TextSize = 14.000
+	Run_9.TextWrapped = true
+
+	Title_9.Name = "Title"
+	Title_9.Parent = Rejoin
+	Title_9.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_9.BackgroundTransparency = 1.000
+	Title_9.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_9.BorderSizePixel = 0
+	Title_9.Position = UDim2.new(0.0153451432, 0, 0.0769252777, 0)
+	Title_9.Size = UDim2.new(0.425704777, 0, 0.882164001, 0)
+	Title_9.Font = Enum.Font.SourceSansBold
+	Title_9.Text = "REJOIN"
+	Title_9.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_9.TextScaled = true
+	Title_9.TextSize = 14.000
+	Title_9.TextWrapped = true
+
 	Bar.Name = "Bar"
 	Bar.Parent = Frame
 	Bar.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
@@ -570,20 +611,20 @@ local function CreateGUI()
 	Bar.Position = UDim2.new(-0.00185879634, 0, -0.207231149, 0)
 	Bar.Size = UDim2.new(1.00185883, 0, 0.173227221, 0)
 
-	Title_9.Name = "Title"
-	Title_9.Parent = Bar
-	Title_9.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
-	Title_9.BackgroundTransparency = 1.000
-	Title_9.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_9.BorderSizePixel = 0
-	Title_9.Position = UDim2.new(0.027295135, 0, 0.02229275, 0)
-	Title_9.Size = UDim2.new(0.518182218, 0, 0.953389168, 0)
-	Title_9.Font = Enum.Font.Arcade
-	Title_9.Text = "EMPTY TOOLS"
-	Title_9.TextColor3 = Color3.fromRGB(72, 0, 255)
-	Title_9.TextScaled = true
-	Title_9.TextSize = 14.000
-	Title_9.TextWrapped = true
+	Title_10.Name = "Title"
+	Title_10.Parent = Bar
+	Title_10.BackgroundColor3 = Color3.fromRGB(132, 128, 255)
+	Title_10.BackgroundTransparency = 1.000
+	Title_10.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_10.BorderSizePixel = 0
+	Title_10.Position = UDim2.new(0.027295135, 0, 0.02229275, 0)
+	Title_10.Size = UDim2.new(0.518182218, 0, 0.953389168, 0)
+	Title_10.Font = Enum.Font.Arcade
+	Title_10.Text = "EMPTY TOOLS"
+	Title_10.TextColor3 = Color3.fromRGB(72, 0, 255)
+	Title_10.TextScaled = true
+	Title_10.TextSize = 14.000
+	Title_10.TextWrapped = true
 
 	Close.Name = "Close"
 	Close.Parent = Bar
@@ -615,8 +656,8 @@ local function CreateGUI()
 
 	-- Scripts:
 
-	local function OLQVYZV_fake_script() -- Frame.Dragify 
-		local script = Instance.new('BoolValue', Frame) --Using a bool value as a "fake script"
+	local function AHKINIS_fake_script() -- Frame.Dragify 
+		local script = Instance.new('BoolValue', Frame)
 
 		local userInputService : UserInputService = game:GetService("UserInputService") -- UserInputService
 		local tweenService : TweenService = game:GetService("TweenService") -- Tweenservice
@@ -664,10 +705,10 @@ local function CreateGUI()
 
 
 	end
-	coroutine.wrap(OLQVYZV_fake_script)()
-
+	coroutine.wrap(AHKINIS_fake_script)()
 
 	return EmptyTools
+
 end
 
 local function CreateMarker()
@@ -1578,6 +1619,10 @@ UIFrame.Markers.Stop.MouseButton1Click:Connect(function()
 	if Markers then
 		Markers:ClearAllChildren()
 	end
+end)
+
+UIFrame.Rejoin.Run.MouseButton1Clcik:Connect(function()
+	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
 end)
 
 --Mouse
