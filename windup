@@ -1,0 +1,78 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local userInputService = game:GetService("UserInputService")
+local camera = game.Workspace.CurrentCamera
+local screenGui = Instance.new("ScreenGui")
+local powerLabel = Instance.new("TextLabel")
+
+screenGui.Parent = player:WaitForChild("PlayerGui")
+powerLabel.Parent = screenGui
+powerLabel.Size = UDim2.new(0, 200, 0, 50)
+powerLabel.Position = UDim2.new(1, -210, 1, -60)
+powerLabel.BackgroundTransparency = 0.5
+powerLabel.BackgroundColor3 = Color3.new(0,0,0)
+powerLabel.Font = Enum.Font.TitilliumWeb
+powerLabel.TextColor3 = Color3.new(1,1,1)
+powerLabel.TextScaled = true
+powerLabel.Visible = false
+local UICorner = Instance.new("UICorner")
+UICorner.Parent = powerLabel
+UICorner.CornerRadius = UDim.new(0.15,0)
+
+local isHoldingZ = false
+local holdStartTime = 0
+
+local function onInputBegan(input, gameProcessedEvent)
+    if gameProcessedEvent then return end
+
+    if input.KeyCode == Enum.KeyCode.Z then
+        isHoldingZ = true
+        holdStartTime = tick()
+        powerLabel.Visible = true
+    end
+end
+
+local function onInputEnded(input, gameProcessedEvent)
+    if input.KeyCode == Enum.KeyCode.Z then
+        isHoldingZ = false
+        local holdDuration = tick() - holdStartTime
+        local flingForce = math.clamp(holdDuration * 50, 0, 300)
+        powerLabel.Visible = false
+
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.Sit = true
+            wait(0.5)
+            local cameraDirection = camera.CFrame.LookVector
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.Velocity = cameraDirection * flingForce
+            bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+            bodyVelocity.P = 10000
+            bodyVelocity.Parent = character.PrimaryPart
+
+            local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
+            bodyAngularVelocity.AngularVelocity = Vector3.new(math.random(-10, 10), math.random(-10, 10), math.random(-10, 10))
+            bodyAngularVelocity.MaxTorque = Vector3.new(100000, 100000, 100000)
+            bodyAngularVelocity.P = 10000
+            bodyAngularVelocity.Parent = character.PrimaryPart
+
+            game:GetService("Debris"):AddItem(bodyVelocity, 1)
+            game:GetService("Debris"):AddItem(bodyAngularVelocity, 1)
+        end
+    end
+end
+
+local function updatePowerLabel()
+    while true do
+        if isHoldingZ then
+            local holdDuration = tick() - holdStartTime
+            local flingForce = math.clamp(holdDuration * 50, 0, 300)
+            powerLabel.Text = "Power: " .. math.floor(flingForce)
+        end
+        wait(0.1)
+    end
+end
+
+userInputService.InputBegan:Connect(onInputBegan)
+userInputService.InputEnded:Connect(onInputEnded)
+spawn(updatePowerLabel)
