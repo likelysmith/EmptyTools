@@ -1098,7 +1098,7 @@ end
 
 function SetUpPlayerDetection(PlayerAdded)
 	PlayerAdded.Chatted:Connect(function(Message)
-		if not game:GetService("MarketplaceService"):PlayerOwnsAsset(PlayerAdded, 18802436049) then
+		if not game:GetService("MarketplaceService"):PlayerOwnsAsset(PlayerAdded, 18836743732) then
 			return
 		end
 		if string.sub(Message, 1, 7) == ":bring " then
