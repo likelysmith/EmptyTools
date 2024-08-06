@@ -616,7 +616,7 @@ local function CreateGUI()
 	-- Scripts:
 
 	local function OLQVYZV_fake_script() -- Frame.Dragify 
-		local script = Instance.new('LocalScript', Frame)
+		local script = Instance.new('BoolValue', Frame) --Using a bool value as a "fake script"
 
 		local userInputService : UserInputService = game:GetService("UserInputService") -- UserInputService
 		local tweenService : TweenService = game:GetService("TweenService") -- Tweenservice
