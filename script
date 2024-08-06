@@ -85,6 +85,7 @@ local function CreateGUI()
 	local Title_10 = Instance.new("TextLabel")
 	local Close = Instance.new("TextButton")
 	local Toggle = Instance.new("TextButton")
+	local Search = Instance.new("TextBox")
 
 	--Properties:
 
@@ -106,8 +107,8 @@ local function CreateGUI()
 	ToolsFrame.BackgroundTransparency = 1.000
 	ToolsFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	ToolsFrame.BorderSizePixel = 0
-	ToolsFrame.Position = UDim2.new(0.0223325882, 0, 0.0288967807, 0)
-	ToolsFrame.Size = UDim2.new(0.955334961, 0, 0.926517308, 0)
+	ToolsFrame.Position = UDim2.new(0.0223325882, 0, 0.143334836, 0)
+	ToolsFrame.Size = UDim2.new(0.955334961, 0, 0.812079132, 0)
 	ToolsFrame.ScrollBarThickness = 6
 
 	Staircase.Name = "Staircase"
@@ -654,9 +655,24 @@ local function CreateGUI()
 	Toggle.TextSize = 14.000
 	Toggle.TextWrapped = true
 
+	Search.Name = "Search"
+	Search.Parent = Frame
+	Search.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Search.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Search.BorderSizePixel = 0
+	Search.Position = UDim2.new(0.0240832586, 0, 0.0176247917, 0)
+	Search.Size = UDim2.new(0.946139574, 0, 0.104059555, 0)
+	Search.Font = Enum.Font.SourceSans
+	Search.PlaceholderText = "Search..."
+	Search.Text = ""
+	Search.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Search.TextScaled = true
+	Search.TextSize = 14.000
+	Search.TextWrapped = true
+
 	-- Scripts:
 
-	local function AHKINIS_fake_script() -- Frame.Dragify 
+	local function EYJERIZ_fake_script() -- Frame.Dragify 
 		local script = Instance.new('BoolValue', Frame)
 
 		local userInputService : UserInputService = game:GetService("UserInputService") -- UserInputService
@@ -705,10 +721,9 @@ local function CreateGUI()
 
 
 	end
-	coroutine.wrap(AHKINIS_fake_script)()
+	coroutine.wrap(EYJERIZ_fake_script)()
 
 	return EmptyTools
-
 end
 
 local function CreateMarker()
@@ -1648,6 +1663,24 @@ end)
 
 UIFrame.Rejoin.Run.MouseButton1Click:Connect(function()
 	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
+end)
+
+--Search Bar
+
+GUI.Frame.Search:GetPropertyChangedSignal("Text"):Connect(function()
+	local Text = GUI.Frame.Search.Text
+	for _,Bar in pairs(UIFrame:GetChildren()) do
+		if not Bar:IsA("Frame") then continue end
+		if #Text < 1 or Text == "" then
+			Bar.Visible = true
+			continue
+		end
+		if string.find(string.lower(Bar.Name), string.lower(Text)) then
+			Bar.Visible = true
+		else
+			Bar.Visible = false
+		end
+	end
 end)
 
 --Mouse
