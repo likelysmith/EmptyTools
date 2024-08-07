@@ -1544,10 +1544,12 @@ end)
 GUI.Frame.Bar.Toggle.MouseButton1Click:Connect(function()
 	if UIFrame.Visible == true then
 		UIFrame.Visible = false
+		GUI.Frame.Search.Visible = false
 		GUI.Frame.BackgroundTransparency = 1
 		GUI.Frame.Bar.Toggle.Rotation = 180
 	else
 		UIFrame.Visible = true
+		GUI.Frame.Search.Visible = true
 		GUI.Frame.BackgroundTransparency = 0
 		GUI.Frame.Bar.Toggle.Rotation = 0
 	end
