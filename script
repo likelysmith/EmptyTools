@@ -1237,7 +1237,7 @@ local function CreatePlatform()
 	NewPlatform.Color = Color3.fromRGB(152, 67, 255)
 	NewPlatform.CastShadow = false
 
-	NewPlatform.Position = Player.Character.HumanoidRootPart.Position - Vector3.new(0,6,0)
+	NewPlatform.Position = Player.Character.HumanoidRootPart.Position - Vector3.new(0,4.65,0)
 	NewPlatform.Parent = workspace
 	Platform = NewPlatform
 end
