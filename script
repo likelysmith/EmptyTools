@@ -107,8 +107,8 @@ local function CreateGUI()
 	ToolsFrame.BackgroundTransparency = 1.000
 	ToolsFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	ToolsFrame.BorderSizePixel = 0
-	ToolsFrame.Position = UDim2.new(0.0223325882, 0, 0.143334836, 0)
-	ToolsFrame.Size = UDim2.new(0.955334961, 0, 0.812079132, 0)
+	ToolsFrame.Position = UDim2.new(0.0223326851, 0, 0.168078303, 0)
+	ToolsFrame.Size = UDim2.new(0.955334961, 0, 0.787335694, 0)
 	ToolsFrame.ScrollBarThickness = 6
 
 	Staircase.Name = "Staircase"
@@ -660,8 +660,8 @@ local function CreateGUI()
 	Search.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	Search.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Search.BorderSizePixel = 0
-	Search.Position = UDim2.new(0.0240832586, 0, 0.0176247917, 0)
-	Search.Size = UDim2.new(0.946139574, 0, 0.104059555, 0)
+	Search.Position = UDim2.new(0.0306380838, 0, 0.0204158612, 0)
+	Search.Size = UDim2.new(0.934893131, 0, 0.125004962, 0)
 	Search.Font = Enum.Font.SourceSans
 	Search.PlaceholderText = "Search..."
 	Search.Text = ""
@@ -672,7 +672,7 @@ local function CreateGUI()
 
 	-- Scripts:
 
-	local function EYJERIZ_fake_script() -- Frame.Dragify 
+	local function PWIIMH_fake_script() -- Frame.Dragify 
 		local script = Instance.new('BoolValue', Frame)
 
 		local userInputService : UserInputService = game:GetService("UserInputService") -- UserInputService
@@ -721,9 +721,29 @@ local function CreateGUI()
 
 
 	end
-	coroutine.wrap(EYJERIZ_fake_script)()
+	coroutine.wrap(PWIIMH_fake_script)()
 
 	return EmptyTools
+end
+
+local function CloseUI()
+	if Staircases then
+		Staircases:ClearAllChildren()
+	end
+	if Platform then
+		Platform:Destroy()
+	end
+	Teleport.Value = false
+	Phase.Value = false
+	for _,Object in pairs(PhaseObjects) do
+		Object.CanCollide = true
+		local PhaseObject = Object:FindFirstChild("PhaseObj")
+		if PhaseObject then
+			PhaseObject:Destroy()
+		end
+	end
+	PhaseObjects = {}
+	Markers = nil
 end
 
 local function CreateMarker()
@@ -1534,9 +1554,11 @@ local function SetupTeleportMarkers()
 end
 
 
+
 --GUI Connections
 
 GUI.Frame.Bar.Close.MouseButton1Click:Connect(function()
+	CloseUI()
 	GUI:Destroy()
 	script:Destroy()
 end)
@@ -1667,6 +1689,7 @@ UIFrame.Rejoin.Run.MouseButton1Click:Connect(function()
 	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
 end)
 
+
 --Search Bar
 
 GUI.Frame.Search:GetPropertyChangedSignal("Text"):Connect(function()
@@ -1728,43 +1751,11 @@ Mouse.Button1Up:Connect(function()
 end)
 
 Player.Character:WaitForChild("Humanoid").Died:Connect(function()
-	if Staircases then
-		Staircases:ClearAllChildren()
-	end
-	if Platform then
-		Platform:Destroy()
-	end
-	Teleport.Value = false
-	Phase.Value = false
-	for _,Object in pairs(PhaseObjects) do
-		Object.CanCollide = true
-		local PhaseObject = Object:FindFirstChild("PhaseObj")
-		if PhaseObject then
-			PhaseObject:Destroy()
-		end
-	end
-	PhaseObjects = {}
-	Markers = nil
+	CloseUI()
 end)
 
 Player.CharacterAdded:Connect(function(Character)
 	Character:WaitForChild("Humanoid").Died:Connect(function()
-		if Staircases then
-			Staircases:ClearAllChildren()
-		end
-		if Platform then
-			Platform:Destroy()
-		end
-		Teleport.Value = false
-		Phase.Value = false
-		for _,Object in pairs(PhaseObjects) do
-			Object.CanCollide = true
-			local PhaseObject = Object:FindFirstChild("PhaseObj")
-			if PhaseObject then
-				PhaseObject:Destroy()
-			end
-		end
-		PhaseObjects = {}
-		Markers = nil
+		CloseUI()
 	end)
 end)
