@@ -1252,7 +1252,7 @@ local function CreatePlatform()
 	NewPlatform.Size = Vector3.new(2048,3,2048)
 	NewPlatform.Anchored = true
 	NewPlatform.CanCollide = true
-	NewPlatform.Transparency = 0.6
+	NewPlatform.Transparency = 0
 	NewPlatform.Material = Enum.Material.ForceField
 	NewPlatform.Color = Color3.fromRGB(152, 67, 255)
 	NewPlatform.CastShadow = false
