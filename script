@@ -1178,6 +1178,9 @@ local function SetupMarkers()
 end
 
 local function AttachToPlayer(TargetUsername, AttachPart)
+	if #TargetUsername < 1 then
+		return
+	end
 	TargetUsername = string.lower(TargetUsername)
 	local Target = nil
 	for _,User in pairs(Players:GetPlayers()) do
@@ -1200,7 +1203,16 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 		AttachmentOffset = CFrame.new(0,0,1.25) * CFrame.Angles(0, -3, 0)
 	elseif AttachPart == "Head" then
 		Part = "Head"
-		AttachmentOffset = CFrame.new(0,1.45,0)
+		AttachmentOffset = CFrame.new(0,1.25,0)
+	elseif AttachPart == "Front" then
+		Part = "HumanoidRootPart"
+		AttachmentOffset = CFrame.new(0,0,-1.25)
+	elseif AttachPart == "Left" then
+		Part = "LeftHand"
+		AttachmentOffset = CFrame.new(0,0,0)
+	elseif AttachPart == "Right" then
+		Part = "LeftHand"
+		AttachmentOffset = CFrame.new(0,0,0)
 	end
 	
 	repeat
@@ -1475,7 +1487,7 @@ local function SetupCommands()
 			MarkerUI:ClearAllChildren()
 		end
 	)
-	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", {"Back","Head"}, "Fun",
+	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", {"Back","Head","Front","Left","Right"}, "Fun",
 		function(Username, PartEnum)
 			print(PartEnum)
 			AttachToPlayer(Username, PartEnum)
