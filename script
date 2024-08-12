@@ -3,6 +3,7 @@
 local TeleportService = game:GetService("TeleportService")
 local PhysicsService = game:GetService("PhysicsService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
@@ -61,6 +62,7 @@ end
 
 
 function CreateUI()
+
 	local EmptyTools = Instance.new("ScreenGui")
 	local OuterFrame = Instance.new("Frame")
 	local UICorner = Instance.new("UICorner")
@@ -99,15 +101,14 @@ function CreateUI()
 	EmptyTools.Name = "EmptyTools"
 	EmptyTools.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	EmptyTools.ResetOnSpawn = false
-	EmptyTools.IgnoreGuiInset = true
 
 	OuterFrame.Name = "OuterFrame"
 	OuterFrame.Parent = EmptyTools
 	OuterFrame.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
 	OuterFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	OuterFrame.BorderSizePixel = 0
-	OuterFrame.Position = UDim2.new(0.64025557, 0, 0.416040093, 0)
-	OuterFrame.Size = UDim2.new(0.347603828, 0, 0.547619045, 0)
+	OuterFrame.Position = UDim2.new(0.65821141, 0, 0.429824561, 0)
+	OuterFrame.Size = UDim2.new(0.329648048, 0, 0.492894381, 0)
 
 	UICorner.CornerRadius = UDim.new(0.0500000007, 0)
 	UICorner.Parent = OuterFrame
@@ -151,7 +152,7 @@ function CreateUI()
 	Commands.Position = UDim2.new(0.064338237, 0, 0.295194507, 0)
 	Commands.Size = UDim2.new(0.880514681, 0, 0.645308912, 0)
 	Commands.CanvasSize = UDim2.new(0, 0, 3.5, 0)
-	Commands.ScrollBarThickness = 13
+	Commands.ScrollBarThickness = 11
 
 	UIListLayout.Parent = Commands
 	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -186,18 +187,18 @@ function CreateUI()
 	Category.BorderSizePixel = 0
 	Category.Position = UDim2.new(0.372498095, 0, 0.192686543, 0)
 	Category.Size = UDim2.new(0.274057955, 0, 0.0800000057, 0)
-	Category.Font = Enum.Font.SourceSans
+	Category.Font = Enum.Font.Gotham
 	Category.Text = "Filter: None"
 	Category.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Category.TextScaled = true
-	Category.TextSize = 25.000
+	Category.TextSize = 20.000
 	Category.TextWrapped = true
 
 	UICorner_4.CornerRadius = UDim.new(0.550000012, 0)
 	UICorner_4.Parent = Category
 
 	UITextSizeConstraint_2.Parent = Category
-	UITextSizeConstraint_2.MaxTextSize = 25
+	UITextSizeConstraint_2.MaxTextSize = 22
 
 	Info.Name = "Info"
 	Info.Parent = Contents
@@ -251,22 +252,22 @@ function CreateUI()
 	Tips.BorderSizePixel = 0
 	Tips.Position = UDim2.new(0.670165777, 0, 0.192686543, 0)
 	Tips.Size = UDim2.new(0.194556624, 0, 0.0800000057, 0)
-	Tips.Font = Enum.Font.SourceSans
+	Tips.Font = Enum.Font.Gotham
 	Tips.Text = "Tips: On"
 	Tips.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Tips.TextScaled = true
-	Tips.TextSize = 25.000
+	Tips.TextSize = 20.000
 	Tips.TextWrapped = true
 
 	UICorner_6.CornerRadius = UDim.new(0.550000012, 0)
 	UICorner_6.Parent = Tips
 
 	UITextSizeConstraint_3.Parent = Tips
-	UITextSizeConstraint_3.MaxTextSize = 25
+	UITextSizeConstraint_3.MaxTextSize = 22
 
 	Toggle.Name = "Toggle"
 	Toggle.Parent = OuterFrame
-	Toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	Toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Toggle.BorderSizePixel = 0
 	Toggle.Position = UDim2.new(0.8006953, 0, 0.0343249068, 0)
@@ -390,7 +391,7 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 	Command.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Command.BorderSizePixel = 0
 	Command.Position = UDim2.new(0, 0, 1.09406805e-07, 0)
-	Command.Size = UDim2.new(0.936999977, 0, 0.0219999999, 0)
+	Command.Size = UDim2.new(1, 0, 0.0219999999, 0)
 
 	Title.Name = "Title"
 	Title.Parent = Command
@@ -973,6 +974,18 @@ local function GetRoot(Target)
 	end
 end
 
+local function GetPlayerFromNameSnippet(Snippet)
+	for _,User in pairs(Players:GetPlayers()) do
+		if User == Player then continue end
+		local LoweredName = string.lower(User.Name)
+		local LoweredDisplay = string.lower(User.DisplayName)
+		if string.sub(LoweredName, 1, #Snippet) == Snippet 
+			or string.sub(LoweredDisplay, 1, #Snippet) == Snippet then
+			return User
+		end
+	end
+end
+
 local function CreateTeleportIndicator()
 	local Indicator = Instance.new("Part")
 	Indicator.Shape = Enum.PartType.Cylinder
@@ -1168,22 +1181,36 @@ local function SetupMarkers()
 	end
 end
 
+local function SetCameraTarget(Type, Target)
+	if Player:FindFirstChild("RemoveViewPlayer") then
+		return
+	end
+	if Type == "None" then
+		local Value = Instance.new("BoolValue", Player)
+		Value.Name = "RemoveViewPlayer"
+		Camera.CameraType = Enum.CameraType.Custom
+		Camera.CameraSubject = GetCharacter(Player).Humanoid
+	elseif Type == "View" then
+		repeat
+			pcall(function()
+				local TargetCharacter = GetCharacter(Target)
+				Camera.CameraSubject = TargetCharacter.Humanoid
+			end)
+			task.wait(0.15)
+		until Player:FindFirstChild("RemoveViewPlayer")
+		Player:FindFirstChild("RemoveViewPlayer"):Destroy()
+		Camera.CameraType = Enum.CameraType.Custom
+		Camera.CameraSubject = GetCharacter(Player).Humanoid
+	end
+end
+
 local function AttachToPlayer(TargetUsername, AttachPart)
 	if #TargetUsername < 1 then
 		return
 	end
 	TargetUsername = string.lower(TargetUsername)
-	local Target = nil
-	for _,User in pairs(Players:GetPlayers()) do
-		if User == Player then continue end
-		local LoweredName = string.lower(User.Name)
-		local LoweredDisplay = string.lower(User.DisplayName)
-		if string.sub(LoweredName, 1, #TargetUsername) == TargetUsername 
-			or string.sub(LoweredDisplay, 1, #TargetUsername) == TargetUsername then
-			Target = User
-			break
-		end
-	end
+	local Target = GetPlayerFromNameSnippet(TargetUsername)
+	
 	if not Target then return end
 	
 	local Part
@@ -1380,7 +1407,7 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Fly", "Flight using WASD for movement and Ctrl/Space for height with a max speed of 100. Not enabled for mobile.", "Speed..", nil, "Travel",
+	CreateCommand("Fly", "Flight using WASD for movement and Ctrl/Space for height with a max speed of 100. Not enabled for mobile.", "Speed..", nil, "Movement",
 		function(Speed)
 			if selected then
 				ToggleFlight(false, Speed)
@@ -1392,7 +1419,7 @@ local function SetupCommands()
 			ToggleFlight(false, FlySpeed)
 		end
 	)
-	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Travel",
+	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Movement",
 		function()
 			TeleportEnabled = true
 			PhaseEnabled = false
@@ -1415,9 +1442,29 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Rejoin", "Quickly rejoin the same server.", nil, nil, "Utility",
-		function()
-			TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
+	CreateCommand("Rejoin", "Return to the same server, or hop to a new one.", nil, {"Rejoin", "Hop"}, "Utility",
+		function(Type)
+			if Type == "Rejoin" then
+				TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
+			elseif Type == "Hop" then
+				local ServerList = {}
+				local Request = game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=10")
+				local RequestBody = HttpService:JSONDecode(Request)
+				if RequestBody and RequestBody.data then
+					for _,Server in next, RequestBody.data do
+						if type(Server) == "table" 
+							and tonumber(Server.playing) 
+							and tonumber(Server.maxPlayers) 
+							and Server.playing < Server.maxPlayers 
+							and Server.id ~= game.JobId then
+							table.insert(ServerList, 1, Server.id)
+						end
+					end
+				end
+				if #ServerList > 0 then
+					TeleportService:TeleportToPlaceInstance(game.PlaceId, ServerList[math.random(1,#ServerList)], Player)
+				end
+			end
 		end,
 		nil
 	)
@@ -1429,7 +1476,7 @@ local function SetupCommands()
 			StopFreecam()
 		end
 	)
-	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "Travel",
+	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "Movement",
 		function()
 			PhaseEnabled = true
 			TeleportEnabled = false
@@ -1444,16 +1491,32 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Respawn", "Attempts to find a loaded spawn locaton and teleport you to it.", nil, nil, "Utility",
-		function()
-			local SpawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
-			if not SpawnLocation then
+	CreateCommand("Respawn", "Attempts to find a loaded spawn locaton and teleport you to it.", nil, {"Fastest", "Closest", "Random"}, "Utility",
+		function(Type)
+			local SpawnLocation
+			if Type == "Fastest" then
+				SpawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
+			end
+			if Type == "Closest" then
+				local Distance = math.huge
 				for _,Object in pairs(workspace:GetDescendants()) do
 					if Object:IsA("SpawnLocation") then
-						SpawnLocation = Object
-						break
+						local Sep = (Object.Position - GetRoot(Player).Position).Magnitude
+						if Sep < Distance then
+							Distance = Sep
+							SpawnLocation = Object
+						end
 					end
 				end
+			end
+			if Type == "Random" or SpawnLocation == nil then
+				local Locations = {}
+				for _,Object in pairs(workspace:GetDescendants()) do
+					if Object:IsA("SpawnLocation") then
+						table.insert(Locations, Object)
+					end
+				end
+				SpawnLocation = Locations[math.random(1,#Locations)]
 			end
 			if SpawnLocation then
 				local Root = GetRoot(Player)
@@ -1463,13 +1526,24 @@ local function SetupCommands()
 		end,
 		nil
 	)
+	CreateCommand("View", "View the perspective of another player by typing their username or display name.", "Name..", nil,"Utility",
+		function(Username)
+			local TargetPlayer = GetPlayerFromNameSnippet(Username)
+			if TargetPlayer then
+				SetCameraTarget("View", TargetPlayer)
+			end
+		end,
+		function()
+			SetCameraTarget("None", nil)
+		end
+	)
 	CreateCommand("Fling", "Flings your character in the direction of your camera with adjustable power, capped at 300.", "Power..", nil,"Fun",
 		function(Power)
 			FlingSelf(Power)
 		end,
 		nil
 	)
-	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, nil, "Travel",
+	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, nil, "Movement",
 		function()
 			SetupMarkers()
 		end,
@@ -1491,6 +1565,14 @@ local function SetupCommands()
 			StopAttach.Name = "StopAttach"
 			StopAttach.Parent = Player
 		end
+	)
+	CreateCommand("Time", "Sets the in-game clock time, changing the skybox. May not work in games with daylight cycles.", "Time..", nil, "Fun",
+		function(Time)
+			if tonumber(Time) then
+				game:GetService("Lighting").ClockTime = tonumber(Time)
+			end
+		end,
+		nil
 	)
 end
 
