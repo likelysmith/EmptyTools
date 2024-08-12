@@ -1205,6 +1205,10 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 		Part = "LeftHand"
 		AttachmentOffset = CFrame.new(0,0,0)
 	end
+	local StopAttach = Player:FindFirstChild("StopAttach")
+	if StopAttach then
+		StopAttach:Destroy()
+	end
 	
 	repeat
 		pcall(function()
@@ -1221,10 +1225,6 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 		end)
 		task.wait()
 	until Player:FindFirstChild("StopAttach")
-	local StopAttach = Player:FindFirstChild("StopAttach")
-	if StopAttach then
-		StopAttach:Destroy()
-	end
 end
 
 local function FlingSelf(Power)
