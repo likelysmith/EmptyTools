@@ -461,15 +461,6 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 
 	UIAspectRatioConstraint.Parent = Run
 
-	Stop.Name = "Stop"
-	Stop.Parent = Command
-	Stop.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Stop.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Stop.BorderSizePixel = 0
-	Stop.Position = UDim2.new(0.829146743, 0, 0.0597800016, 0)
-	Stop.Size = UDim2.new(0.0637670681, 0, 0.880439401, 0)
-	Stop.Image = "http://www.roblox.com/asset/?id=18912262996"
-	Stop.ImageColor3 = Color3.fromRGB(180, 92, 92)
 	if CallbackStop ~= nil then
 		Stop.Name = "Stop"
 		Stop.Parent = Command
