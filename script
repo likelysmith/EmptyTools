@@ -1360,6 +1360,24 @@ local function SetupCommands()
 			end
 		end
 	)
+	CreateCommand("Respawn", "Attempts to find a loaded spawn locaton and teleport you to it.", nil, "Utility",
+		function()
+			local SpawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
+			if not SpawnLocation then
+				for _,Object in pairs(workspace:GetDescendants()) do
+					if Object:IsA("SpawnLocation") then
+						SpawnLocation = Object
+						break
+					end
+				end
+			end
+			if SpawnLocation then
+				local Root = GetRoot(Player)
+				Root.CFrame = SpawnLocation.CFrame + Vector3.new(0,4.5,0)
+			end
+		end,
+		nil
+	)
 	CreateCommand("Fling", "Flings your character in the direction of your camera with adjustable power, capped at 300.", "Power..", "Fun",
 		function(Power)
 			FlingSelf(Power)
