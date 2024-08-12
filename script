@@ -1144,6 +1144,7 @@ local function SetupMarkers()
 	end
 	MarkerUI = Instance.new("ScreenGui")
 	MarkerUI.Name = "Markers"
+	MarkerUI.ResetOnSpawn = false
 	MarkerUI.Parent = Player.PlayerGui
 	MarkersActive = true
 	wait(0.1)
