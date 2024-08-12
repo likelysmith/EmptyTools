@@ -1219,7 +1219,7 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 			Root.Velocity = Vector3.zero
 			if Character.Humanoid.Sit == false then
 				Character.Humanoid.Sit = false
-				wait(0.35)
+				wait(0.05)
 				Character.Humanoid.Sit = true
 			end
 		end)
@@ -1260,7 +1260,7 @@ local function FlingSelf(Power)
 end
 
 local function SetObjectToPhase(Object)
-	if Object.Name == "Baseplate" then return end
+	if Object.Name == "Baseplate" or Object.Parent.Name == "PlatformFolder_" .. Player.UserId then return end
 	if Object.CanCollide == false then
 		local PhaseHighlight = Object:FindFirstChild("PhaseHighlight")
 		if not PhaseHighlight then return end
