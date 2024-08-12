@@ -29,7 +29,7 @@ local CurrentCategory = "None"
 local FadeTweenInfo = TweenInfo.new(
 	0.25, 
 	Enum.EasingStyle.Quint
-	)
+)
 
 local UIOpen = true
 local TipsEnabled = true
@@ -372,7 +372,7 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 	local UIAspectRatioConstraint_2 = Instance.new("UIAspectRatioConstraint")
 
 	--Properties:
-	
+
 	if not table.find(CommandCategories, FilterTag) then
 		table.insert(CommandCategories, FilterTag)
 	end
@@ -401,7 +401,7 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 	Title.TextSize = 14.000
 	Title.TextWrapped = true
 	Title.TextXAlignment = Enum.TextXAlignment.Left
-	
+
 	TipView(Title, TitleText, Info)
 
 	if InputText ~= nil then
@@ -468,7 +468,7 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 	UICorner_3.Parent = Stop
 
 	UIAspectRatioConstraint_2.Parent = Stop
-	
+
 	table.insert(CommandFrames, Command)
 	Command.Parent = Contents:WaitForChild("Commands")
 end
@@ -540,12 +540,12 @@ local function CreateMarker(TargetPlayer)
 	Button.Size = UDim2.new(1, 0, 1, 0)
 	Button.ZIndex = 3
 	Button.Image = "http://www.roblox.com/asset/?id=1415236683"
-	
+
 	Stroke.Name = "Select"
 	Stroke.Color = Color3.fromRGB(255,255,255)
 	Stroke.Thickness = 0
 	Stroke.Parent = Frame
-	
+
 	Button.MouseEnter:Connect(function()
 		Stroke.Thickness = 0
 		TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 2}):Play()
@@ -999,7 +999,7 @@ local function ToggleFlight(Value, FlySpeedValue)
 	local Character = GetCharacter(Player)
 	local Humanoid = Character:WaitForChild("Humanoid")
 	local HumanoidRootPart = GetRoot(Player)
-	
+
 	if tonumber(FlySpeedValue) then
 		FlySpeed = tonumber(FlySpeedValue)
 		if FlySpeed > 100 then
@@ -1013,7 +1013,7 @@ local function ToggleFlight(Value, FlySpeedValue)
 		Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 		wait(0.1)
 		Humanoid.PlatformStand = true
-		
+
 		flyForce = Instance.new("BodyPosition")
 		flyForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
 		flyForce.Position = HumanoidRootPart.Position + Vector3.new(0,4,0)
@@ -1132,7 +1132,7 @@ local function AttachToPlayer(TargetUsername)
 		end
 	end
 	if not Target then return end
-	
+
 	local Character = GetCharacter(Player)
 	local Root = GetRoot(Player)
 	local AttachmentOffset =  CFrame.new(0,0,1.25) * CFrame.Angles(0, -3, 0)
@@ -1210,15 +1210,15 @@ local function Setup()
 	Contents = OuterFrame:WaitForChild("Contents")
 	ContentShrunken = OuterFrame:WaitForChild("ContentShrunken")
 	InfoFrame = Contents:WaitForChild("Info")
-	
+
 	MarkerUI = Instance.new("ScreenGui")
 	MarkerUI.ResetOnSpawn = false
 	MarkerUI.Name = "MarkerContainer"
 	MarkerUI.Parent = Player.PlayerGui
-	
-	
+
+
 	--Drag Handler
-	
+
 	coroutine.resume(coroutine.create(function()
 		local userInputService : UserInputService = game:GetService("UserInputService") -- UserInputService
 		local tweenService : TweenService = game:GetService("TweenService") -- Tweenservice
@@ -1259,7 +1259,7 @@ local function Setup()
 				updateInput(input) -- Calls The Update Input Function With The Provided Input Object
 			end
 		end
-		
+
 		OuterFrame.InputBegan:Connect(dragInputBegan) 
 		OuterFrame.InputChanged:Connect(dragInputChanged)
 		userInputService.InputChanged:Connect(userInputChanged)
@@ -1281,7 +1281,7 @@ local function SetupCommands()
 			Platform.Material = Enum.Material.ForceField
 			Platform.Color = Color3.fromRGB(152, 67, 255)
 			Platform.CastShadow = false
-			
+
 			local Root = GetRoot(Player)
 			Platform.Position = Root.Position - Vector3.new(0,4.6,0)
 			PltInstance = Instance.new("Folder", workspace)
@@ -1317,7 +1317,7 @@ local function SetupCommands()
 		function()
 			TeleportEnabled = true
 			PhaseEnabled = false
-			
+
 			TeleportIndicator = CreateTeleportIndicator()
 			Mouse.TargetFilter = TeleportIndicator
 		end,
@@ -1373,6 +1373,7 @@ local function SetupCommands()
 			end
 			if SpawnLocation then
 				local Root = GetRoot(Player)
+				Root.Velocity = Vector3.zero
 				Root.CFrame = SpawnLocation.CFrame + Vector3.new(0,4.5,0)
 			end
 		end,
@@ -1520,7 +1521,7 @@ RunService.RenderStepped:Connect(function()
 					Part.CanCollide = true
 				end
 			end
-			
+
 		end
 	elseif TeleportIndicator ~= nil then
 		TeleportIndicator:Destroy()
