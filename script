@@ -1200,7 +1200,7 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 		AttachmentOffset = CFrame.new(0,0,1.25) * CFrame.Angles(0, -3, 0)
 	elseif AttachPart == "Head" then
 		Part = "Head"
-		AttachmentOffset = CFrame.new(0,1.25,0)
+		AttachmentOffset = CFrame.new(0,1.45,0)
 	end
 	
 	repeat
