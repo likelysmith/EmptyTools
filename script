@@ -1134,13 +1134,19 @@ local function AttachToPlayer(TargetUsername)
 	end
 	if not Target then return end
 
-	local Character = GetCharacter(Player)
-	local Root = GetRoot(Player)
 	local AttachmentOffset =  CFrame.new(0,0,1.25) * CFrame.Angles(0, -3, 0)
 	repeat
-		Character.Humanoid.Sit = true
-		Root.CFrame = GetRoot(Target).CFrame * AttachmentOffset
-		Root.Velocity = Vector3.zero
+		pcall(function()
+			local Character = GetCharacter(Player)
+			local Root = GetRoot(Player)
+			Root.CFrame = GetRoot(Target).CFrame * AttachmentOffset
+			Root.Velocity = Vector3.zero
+			if Character.Humanoid.Sit == false then
+				Character.Humanoid.Sit = false
+				wait(0.35)
+				Character.Humanoid.Sit = true
+			end
+		end)
 		task.wait()
 	until Player:FindFirstChild("StopAttach")
 	local StopAttach = Player:FindFirstChild("StopAttach")
