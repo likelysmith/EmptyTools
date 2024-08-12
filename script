@@ -359,7 +359,8 @@ local function TipView(LabelObject, Title, Text)
 	LabelObject.MouseLeave:Connect(FadeOut)
 end
 
-function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, CallbackStop)
+function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, CallbackRun, CallbackStop)
+	
 	local Command = Instance.new("Frame")
 	local Title = Instance.new("TextLabel")
 	local Input = Instance.new("TextBox")
@@ -370,14 +371,20 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 	local Stop = Instance.new("ImageButton")
 	local UICorner_3 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_2 = Instance.new("UIAspectRatioConstraint")
-
-	--Properties:
-
+	local EnumButton = Instance.new("TextButton")
+	local UITextSizeConstraint = Instance.new("UITextSizeConstraint")
+	local UICorner_4 = Instance.new("UICorner")
+	
 	if not table.find(CommandCategories, FilterTag) then
 		table.insert(CommandCategories, FilterTag)
 	end
 	Command:SetAttribute("Category", FilterTag)
-
+	
+	local SelectedEnum
+	if EnumTable ~= nil then
+		SelectedEnum = EnumTable[1]
+	end
+	
 	Command.Name = TitleText
 	Command.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
 	Command.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -385,15 +392,14 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 	Command.Position = UDim2.new(0, 0, 1.09406805e-07, 0)
 	Command.Size = UDim2.new(0.936999977, 0, 0.0219999999, 0)
 
-
 	Title.Name = "Title"
 	Title.Parent = Command
 	Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	Title.BackgroundTransparency = 1.000
 	Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Title.BorderSizePixel = 0
-	Title.Position = UDim2.new(0.0238095243, 0, 0.0882352963, 0)
-	Title.Size = UDim2.new(0.401345283, 0, 0.823529422, 0)
+	Title.Position = UDim2.new(0.0238096155, 0, 0.0882355049, 0)
+	Title.Size = UDim2.new(0.323765904, 0, 0.823529363, 0)
 	Title.Font = Enum.Font.Gotham
 	Title.Text = TitleText
 	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -401,7 +407,7 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 	Title.TextSize = 14.000
 	Title.TextWrapped = true
 	Title.TextXAlignment = Enum.TextXAlignment.Left
-
+	
 	TipView(Title, TitleText, Info)
 
 	if InputText ~= nil then
@@ -410,8 +416,9 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 		Input.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 		Input.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Input.BorderSizePixel = 0
-		Input.Position = UDim2.new(0.483132869, 0, 0.0744807646, 0)
-		Input.Size = UDim2.new(0.323614806, 0, 0.805496335, 0)
+		Input.Position = UDim2.new(0.549000025, 0, 0.074000001, 0)
+		Input.Size = UDim2.new(0.263412803, 0, 0.805496335, 0)
+		Input.ClearTextOnFocus = false
 		Input.Font = Enum.Font.Gotham
 		Input.PlaceholderColor3 = Color3.fromRGB(126, 126, 126)
 		Input.PlaceholderText = InputText
@@ -420,10 +427,10 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 		Input.TextScaled = true
 		Input.TextSize = 25.000
 		Input.TextWrapped = true
-
-		UICorner.CornerRadius = UDim.new(0.25, 0)
-		UICorner.Parent = Input
 	end
+
+	UICorner.CornerRadius = UDim.new(0.25, 0)
+	UICorner.Parent = Input
 
 	Run.Name = "Run"
 	Run.Parent = Command
@@ -437,7 +444,13 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 	Run.MouseButton1Click:Connect(function()
 		--PlaySoundFromID(ClickSoundID, {Volume = 0.4})
 		if InputText ~= nil then
-			CallbackRun(Input.Text)
+			if SelectedEnum then
+				CallbackRun(Input.Text, SelectedEnum)
+			else
+				CallbackRun(Input.Text)
+			end
+		elseif SelectedEnum then
+			CallbackRun(SelectedEnum)
 		else
 			CallbackRun()
 		end
@@ -448,6 +461,15 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 
 	UIAspectRatioConstraint.Parent = Run
 
+	Stop.Name = "Stop"
+	Stop.Parent = Command
+	Stop.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Stop.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Stop.BorderSizePixel = 0
+	Stop.Position = UDim2.new(0.829146743, 0, 0.0597800016, 0)
+	Stop.Size = UDim2.new(0.0637670681, 0, 0.880439401, 0)
+	Stop.Image = "http://www.roblox.com/asset/?id=18912262996"
+	Stop.ImageColor3 = Color3.fromRGB(180, 92, 92)
 	if CallbackStop ~= nil then
 		Stop.Name = "Stop"
 		Stop.Parent = Command
@@ -469,6 +491,40 @@ function CreateCommand(TitleText, Info, InputText, FilterTag, CallbackRun, Callb
 
 	UIAspectRatioConstraint_2.Parent = Stop
 
+	if EnumTable ~= nil then
+		EnumButton.Name = "Enum"
+		EnumButton.Parent = Command
+		EnumButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		EnumButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		EnumButton.BorderSizePixel = 0
+		EnumButton.Position = UDim2.new(0.271358907, 0, 0.0963262469, 0)
+		EnumButton.Size = UDim2.new(0.263000011, 0, 0.805000007, 0)
+		EnumButton.Font = Enum.Font.Gotham
+		EnumButton.Text = EnumTable[1]
+		EnumButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+		EnumButton.TextScaled = true
+		EnumButton.TextSize = 25.000
+		EnumButton.TextWrapped = true
+	
+		
+		EnumButton.MouseButton1Click:Connect(function()
+			local CurrentIndex = table.find(EnumTable, SelectedEnum)
+			if CurrentIndex == #EnumTable then
+				SelectedEnum = EnumTable[1]
+			else
+				SelectedEnum = EnumTable[CurrentIndex + 1]
+			end
+			EnumButton.Text = SelectedEnum
+		end)
+	end
+	
+
+	UITextSizeConstraint.Parent = EnumButton
+	UITextSizeConstraint.MaxTextSize = 25
+
+	UICorner_4.CornerRadius = UDim.new(0.189999998, 0)
+	UICorner_4.Parent = EnumButton
+	
 	table.insert(CommandFrames, Command)
 	Command.Parent = Contents:WaitForChild("Commands")
 end
@@ -1120,10 +1176,11 @@ local function SetupMarkers()
 	end
 end
 
-local function AttachToPlayer(TargetUsername)
+local function AttachToPlayer(TargetUsername, AttachPart)
 	TargetUsername = string.lower(TargetUsername)
 	local Target = nil
 	for _,User in pairs(Players:GetPlayers()) do
+		if User == Player then continue end
 		local LoweredName = string.lower(User.Name)
 		local LoweredDisplay = string.lower(User.DisplayName)
 		if string.sub(LoweredName, 1, #TargetUsername) == TargetUsername 
@@ -1133,13 +1190,24 @@ local function AttachToPlayer(TargetUsername)
 		end
 	end
 	if not Target then return end
-
-	local AttachmentOffset =  CFrame.new(0,0,1.25) * CFrame.Angles(0, -3, 0)
+	
+	local Part
+	local AttachmentOffset
+	
+	if AttachPart == "Back" then
+		Part = "HumanoidRootPart"
+		AttachmentOffset = CFrame.new(0,0,1.25) * CFrame.Angles(0, -3, 0)
+	elseif AttachPart == "Head" then
+		Part = "Head"
+		AttachmentOffset = CFrame.new(0,1,0)
+	end
+	
 	repeat
 		pcall(function()
 			local Character = GetCharacter(Player)
+			local TargetCharacter = GetCharacter(Target)
 			local Root = GetRoot(Player)
-			Root.CFrame = GetRoot(Target).CFrame * AttachmentOffset
+			Root.CFrame = TargetCharacter:FindFirstChild(Part).CFrame * AttachmentOffset
 			Root.Velocity = Vector3.zero
 			if Character.Humanoid.Sit == false then
 				Character.Humanoid.Sit = false
@@ -1274,7 +1342,7 @@ local function Setup()
 end
 
 local function SetupCommands()
-	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", nil, "Utility",
+	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", nil, nil, "Utility",
 		function()
 			local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
 			if PltInstance then
@@ -1302,13 +1370,13 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Emote", "Play any emote from the marketplace by pasting the ID found in the URL.", "Emote ID..", "Fun", 
+	CreateCommand("Emote", "Play any emote from the marketplace by pasting the ID found in the URL.", "Emote ID..", nil, "Fun", 
 		function(ID)
 			PlayEmote(ID)
 		end,
 		nil
 	)
-	CreateCommand("Fly", "Flight using WASD for movement and Ctrl/Space for height with a max speed of 100. Not enabled for mobile.", "Speed..", "Travel",
+	CreateCommand("Fly", "Flight using WASD for movement and Ctrl/Space for height with a max speed of 100. Not enabled for mobile.", "Speed..", nil, "Travel",
 		function(Speed)
 			if selected then
 				ToggleFlight(false, Speed)
@@ -1320,11 +1388,16 @@ local function SetupCommands()
 			ToggleFlight(false, FlySpeed)
 		end
 	)
-	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, "Travel",
+	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Travel",
 		function()
 			TeleportEnabled = true
 			PhaseEnabled = false
-
+			for _,PhaseObj in pairs(PhaseObjects) do
+				if PhaseObj:FindFirstChild("PhaseHighlight") then
+					PhaseObj.PhaseHighlight:Destroy()
+					PhaseObj.CanCollide = true
+				end
+			end
 			TeleportIndicator = CreateTeleportIndicator()
 			Mouse.TargetFilter = TeleportIndicator
 		end,
@@ -1332,19 +1405,19 @@ local function SetupCommands()
 			TeleportEnabled = false
 		end
 	)
-	CreateCommand("Reset", "Kills your character in order to reset it. Useful for games with reset disabled.", nil, "Utility",
+	CreateCommand("Reset", "Kills your character in order to reset it. Useful for games with reset disabled.", nil, nil, "Utility",
 		function()
 			GetCharacter(Player):FindFirstChildOfClass("Humanoid").Health = 0
 		end,
 		nil
 	)
-	CreateCommand("Rejoin", "Quickly rejoin the same server.", nil, "Utility",
+	CreateCommand("Rejoin", "Quickly rejoin the same server.", nil, nil, "Utility",
 		function()
 			TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
 		end,
 		nil
 	)
-	CreateCommand("Freecam", "Detaches the camera from the player to move around freely and locks player movement controls.", nil, "Utility",
+	CreateCommand("Freecam", "Detaches the camera from the player to move around freely and locks player movement controls.", nil, nil, "Utility",
 		function()
 			StartFreecam()
 		end,
@@ -1352,7 +1425,7 @@ local function SetupCommands()
 			StopFreecam()
 		end
 	)
-	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, "Travel",
+	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "Travel",
 		function()
 			PhaseEnabled = true
 			TeleportEnabled = false
@@ -1367,7 +1440,7 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Respawn", "Attempts to find a loaded spawn locaton and teleport you to it.", nil, "Utility",
+	CreateCommand("Respawn", "Attempts to find a loaded spawn locaton and teleport you to it.", nil, nil, "Utility",
 		function()
 			local SpawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
 			if not SpawnLocation then
@@ -1386,13 +1459,13 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Fling", "Flings your character in the direction of your camera with adjustable power, capped at 300.", "Power..", "Fun",
+	CreateCommand("Fling", "Flings your character in the direction of your camera with adjustable power, capped at 300.", "Power..", nil,"Fun",
 		function(Power)
 			FlingSelf(Power)
 		end,
 		nil
 	)
-	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, "Travel",
+	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, nil, "Travel",
 		function()
 			SetupMarkers()
 		end,
@@ -1401,9 +1474,10 @@ local function SetupCommands()
 			MarkerUI:ClearAllChildren()
 		end
 	)
-	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", "Fun",
-		function(Username)
-			AttachToPlayer(Username)
+	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", {"Back","Head"}, "Fun",
+		function(Username, PartEnum)
+			print(PartEnum)
+			AttachToPlayer(Username, PartEnum)
 		end,
 		function()
 			if Player:FindFirstChild("StopAttach") then
