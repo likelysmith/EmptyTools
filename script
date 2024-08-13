@@ -1469,12 +1469,18 @@ local function SetGameShaders(Type)
 		Skybox.Parent = Lighting
 		
 		local Atmosphere = Instance.new("Atmosphere")
-		Atmosphere.Color = Color3.fromRGB(199, 169, 187)
 		Atmosphere.Parent = Lighting
 		
+		local Bloom = Instance.new("BloomEffect")
+		Bloom.Enabled = true
+		Bloom.Intensity = 1.2
+		Bloom.Size = 25
+		Bloom.Threshold = 1.1
+		Bloom.Parent = Lighting
+		
 		local Correction = Instance.new("ColorCorrectionEffect")
-		Correction.Contrast = 0.25
-		Correction.TintColor = Color3.fromRGB(254, 211, 255)
+		Correction.Contrast = -0.1
+		Correction.TintColor = Color3.fromRGB(245, 225, 255)
 		Correction.Enabled = true
 		Correction.Saturation = 0.2
 		Correction.Parent = Lighting
@@ -1879,6 +1885,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 			PhaseObj.CanCollide = true
 		end
 	end
+	SetGameShaders("None")
 	TeleportEnabled = false
 	PhaseEnabled = false
 	MarkersActive = false
