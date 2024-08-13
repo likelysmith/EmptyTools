@@ -5,6 +5,7 @@ local PhysicsService = game:GetService("PhysicsService")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 
 -- Variables
@@ -23,6 +24,7 @@ local ContentShrunken
 local InfoFrame
 
 local CommandFrames = {}
+local DefaultLighting = {}
 
 local CommandCategories = {"None"}
 local CurrentCategory = "None"
@@ -1010,6 +1012,14 @@ local function TeleportToPlayer(PlayerTarget)
 	Root.CFrame = TargetRoot.CFrame
 end
 
+local function StopPlayerAnimation()
+	local animator = GetCharacter(Player).Humanoid:FindFirstChildOfClass("Animator")
+	if animator then
+		for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+			track:Stop()
+		end
+	end
+end
 
 local function PlayEmote(ID)
 	ID = tonumber(ID)
@@ -1317,6 +1327,7 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 	until Player:FindFirstChild("StopAttach")
 end
 
+
 local function FlingSelf(Power)
 	if not tonumber(Power) then
 		return
@@ -1331,7 +1342,7 @@ local function FlingSelf(Power)
 	if humanoid then
 		humanoid.Sit = true
 		wait(0.5)
-		local cameraDirection = Camera.CFrame.LookVector
+		local cameraDirection = Camera.CFrame.LookVector 
 		local bodyVelocity = Instance.new("BodyVelocity")
 		bodyVelocity.Velocity = cameraDirection * Power
 		bodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
@@ -1370,6 +1381,100 @@ local function SetObjectToPhase(Object)
 end
 
 
+-- Shader Method(s)
+
+local function CreateSkybox(ID1,ID2,ID3,ID4,ID5,ID6)
+	local Skybox = Instance.new("Sky")
+	Skybox.SkyboxBk = ID1
+	Skybox.SkyboxDn = ID2
+	Skybox.SkyboxFt = ID3
+	Skybox.SkyboxLf = ID4
+	Skybox.SkyboxRt = ID5
+	Skybox.SkyboxUp = ID6
+	return Skybox
+end
+
+local function SetGameShaders(Type)
+	Lighting:ClearAllChildren()
+	if Type == "None" then
+		for _,Shader in pairs(DefaultLighting) do
+			Shader:Clone().Parent = Lighting
+		end
+	elseif Type == "Normal" then
+		local Skybox = CreateSkybox(
+			"http://www.roblox.com/asset/?id=150335574",
+			"http://www.roblox.com/asset/?id=150335585",
+			"http://www.roblox.com/asset/?id=150335628",
+			"http://www.roblox.com/asset/?id=150335620",
+			"http://www.roblox.com/asset/?id=150335610",
+			"http://www.roblox.com/asset/?id=150335642"
+		)
+		Skybox.Parent = Lighting
+		
+		local Atmosphere = Instance.new("Atmosphere")
+		Atmosphere.Color = Color3.fromRGB(199, 199, 199)
+		Atmosphere.Parent = Lighting
+		
+		local Bloom = Instance.new("BloomEffect")
+		Bloom.Enabled = true
+		Bloom.Intensity = 1.2
+		Bloom.Size = 25
+		Bloom.Threshold = 1.1
+		Bloom.Parent = Lighting
+		
+		local SunRays = Instance.new("SunRaysEffect")
+		SunRays.Spread = 0.186
+		SunRays.Intensity = 0.0475
+		SunRays.Parent = Lighting
+		
+		local DOF = Instance.new("DepthOfFieldEffect")
+		DOF.Enabled = true
+		DOF.FarIntensity = 0.205
+		DOF.FocusDistance = 0.05
+		DOF.InFocusRadius = 20
+		DOF.NearIntensity = 0.56
+		DOF.Parent = Lighting
+	elseif Type == "Grain" then
+		local Skybox = CreateSkybox(
+			"http://www.roblox.com/asset/?id=4495864450",
+			"http://www.roblox.com/asset/?id=4495864887",
+			"http://www.roblox.com/asset/?id=4495865458",
+			"http://www.roblox.com/asset/?id=4495866035",
+			"http://www.roblox.com/asset/?id=4495866584",
+			"http://www.roblox.com/asset/?id=4495867486"
+		)
+		Skybox.Parent = Lighting
+
+		
+		local Correction = Instance.new("ColorCorrectionEffect")
+		Correction.Brightness = -0.3
+		Correction.Contrast = 1
+		Correction.Enabled = true
+		Correction.Saturation = -1
+		Correction.Parent = Lighting
+		Correction.TintColor = Color3.fromRGB(240,240,240)
+		
+		local Atmosphere = Instance.new("Atmosphere")
+		Atmosphere.Color = Color3.fromRGB(199, 199, 199)
+		Atmosphere.Parent = Lighting
+	elseif Type == "Baked" then
+		local Correction = Instance.new("ColorCorrectionEffect")
+		Correction.Brightness = 0
+		Correction.Contrast = 390
+		Correction.Enabled = true
+		Correction.Saturation = -4
+		Correction.Parent = Lighting
+	elseif Type == "B&W" then
+		local Correction = Instance.new("ColorCorrectionEffect")
+		Correction.Brightness = 0
+		Correction.Contrast = 390
+		Correction.Enabled = true
+		Correction.Saturation = -1
+		Correction.Parent = Lighting
+	end
+end
+
+
 -- Setup Method
 
 local currentDraggableObject = OuterFrame
@@ -1389,7 +1494,11 @@ local function Setup()
 	MarkerUI.Name = "MarkerContainer"
 	MarkerUI.Parent = Player.PlayerGui
 
-
+	
+	for _,Shader in pairs(Lighting:GetChildren()) do
+		table.insert(DefaultLighting, Shader:Clone())
+	end
+	
 	-- Drag Handler
 
 	coroutine.resume(coroutine.create(function()
@@ -1687,10 +1796,18 @@ local function SetupCommands()
 	CreateCommand("Time", "Sets the in-game clock time, changing the skybox. May not work in games with daylight cycles.", "Time..", nil, "Fun",
 		function(Time)
 			if tonumber(Time) then
-				game:GetService("Lighting").ClockTime = tonumber(Time)
+				 Lighting.ClockTime = tonumber(Time)
 			end
 		end,
 		nil
+	)
+	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Grain", "Baked", "B&W"}, "Fun",
+		function(Type)
+			SetGameShaders(Type)
+		end,
+		function()
+			SetGameShaders("None")
+		end
 	)
 end
 
