@@ -1346,6 +1346,8 @@ end
 
 -- Setup Method
 
+local currentDraggableObject = OuterFrame
+
 local function Setup()
 	MainUI = CreateUI()
 	MainUI.Parent = Player.PlayerGui
@@ -1353,6 +1355,8 @@ local function Setup()
 	Contents = OuterFrame:WaitForChild("Contents")
 	ContentShrunken = OuterFrame:WaitForChild("ContentShrunken")
 	InfoFrame = Contents:WaitForChild("Info")
+	
+	currentDraggableObject = OuterFrame
 
 	MarkerUI = Instance.new("ScreenGui")
 	MarkerUI.ResetOnSpawn = false
@@ -1360,53 +1364,74 @@ local function Setup()
 	MarkerUI.Parent = Player.PlayerGui
 
 
-	--Drag Handler
+	-- Drag Handler
 
 	coroutine.resume(coroutine.create(function()
-		local userInputService : UserInputService = game:GetService("UserInputService") -- UserInputService
-		local tweenService : TweenService = game:GetService("TweenService") -- Tweenservice
-		local dragToggle : boolean = nil -- Toggle?
-		local dragObject : GuiObject = OuterFrame -- Object Being Dragged
-		local dragInput : InputObject = nil -- Input On The Drag Object
-		local dragStart : Vector2 = nil -- Starting Position
-		local dragInfo : TweenInfo = TweenInfo.new(0.075, Enum.EasingStyle.Quad) -- Drag Speed
-		local dragPos : UDim2 = nil -- Drag Pos
+		local userInputService: UserInputService = game:GetService("UserInputService") -- UserInputService
+		local tweenService: TweenService = game:GetService("TweenService") -- Tweenservice
+		local dragToggle: boolean = nil -- Toggle?
+		local dragObject: GuiObject = OuterFrame -- Object Being Dragged
+		local dragInput: InputObject = nil -- Input On The Drag Object
+		local dragStart: Vector2 = nil -- Starting Position
+		local dragInfo: TweenInfo = TweenInfo.new(0.075, Enum.EasingStyle.Quad) -- Drag Speed
+		local dragPos: UDim2 = nil -- Drag Pos
 
-		local updateInput = function(input) -- Updates Input
-			local delta : Vector2 = input.Position - dragStart
-			local position : UDim2 = UDim2.new(dragPos.X.Scale, dragPos.X.Offset + delta.X, dragPos.Y.Scale, dragPos.Y.Offset + delta.Y)
+		local function updateInput(input) -- Updates Input
+			local delta: Vector2 = input.Position - dragStart
+			local position: UDim2 = UDim2.new(dragPos.X.Scale, dragPos.X.Offset + delta.X, dragPos.Y.Scale, dragPos.Y.Offset + delta.Y)
 			tweenService:Create(dragObject, dragInfo, {Position = position}):Play()
 		end
 
-		local dragInputBegan = function(input: InputObject) 
+		local function dragInputBegan(input: InputObject)
 			if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and userInputService:GetFocusedTextBox() == nil then
-				dragToggle = true
-				dragStart = input.Position
-				dragPos = dragObject.Position
-				input.Changed:Connect(function()
-					if input.UserInputState == Enum.UserInputState.End then
-						dragToggle = false
+				if UIOpen then
+					dragToggle = true
+					dragStart = input.Position
+					dragPos = dragObject.Position
+					input.Changed:Connect(function()
+						if input.UserInputState == Enum.UserInputState.End then
+							dragToggle = false
+						end
+					end)
+				elseif not UIOpen and ContentShrunken then
+					-- Check if input started within ContentShrunken boundaries
+					local mousePosition = input.Position
+					local contentPosition = ContentShrunken.AbsolutePosition
+					local contentSize = ContentShrunken.AbsoluteSize
+
+					if mousePosition.X >= contentPosition.X and mousePosition.X <= contentPosition.X + contentSize.X and
+						mousePosition.Y >= contentPosition.Y and mousePosition.Y <= contentPosition.Y + contentSize.Y then
+						dragToggle = true
+						dragStart = input.Position
+						dragPos = dragObject.Position
+						input.Changed:Connect(function()
+							if input.UserInputState == Enum.UserInputState.End then
+								dragToggle = false
+							end
+						end)
 					end
-				end)
+				end
 			end
 		end
 
-		local dragInputChanged = function(input: InputObject)
+		local function dragInputChanged(input: InputObject)
 			if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 				dragInput = input
 			end
 		end
 
-		local userInputChanged = function(input: InputObject, gameProcessedEvent: boolean)
+		local function userInputChanged(input: InputObject, gameProcessedEvent: boolean)
 			if input == dragInput and dragToggle then
 				updateInput(input) -- Calls The Update Input Function With The Provided Input Object
 			end
 		end
 
-		OuterFrame.InputBegan:Connect(dragInputBegan) 
+		OuterFrame.InputBegan:Connect(dragInputBegan)
 		OuterFrame.InputChanged:Connect(dragInputChanged)
 		userInputService.InputChanged:Connect(userInputChanged)
 	end))
+
+
 end
 
 local function SetupCommands()
@@ -1671,7 +1696,6 @@ OuterFrame.Toggle.MouseButton1Click:Connect(function()
 	Contents.Visible = UIOpen
 	ToggleTween = TweenService:Create(OuterFrame, FadeTweenInfo, {BackgroundTransparency = Transparency})
 	ToggleTween:Play()
-	ToggleTween.Completed:Wait()
 end)
 
 OuterFrame.Close.MouseButton1Click:Connect(function()
