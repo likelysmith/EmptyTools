@@ -263,7 +263,7 @@ function CreateUI()
 	UICorner_6.Parent = Tips
 
 	UITextSizeConstraint_3.Parent = Tips
-	UITextSizeConstraint_3.MaxTextSize = 22
+	UITextSizeConstraint_3.MaxTextSize = 21
 
 	Toggle.Name = "Toggle"
 	Toggle.Parent = OuterFrame
@@ -1181,6 +1181,43 @@ local function SetupMarkers()
 	end
 end
 
+local function CreateStaircaseUpwards(Stairs)
+	local NumberedStairs = tonumber(Stairs)
+	if not NumberedStairs then return end
+	Stairs = NumberedStairs
+	if Stairs > 200 then
+		Stairs = 200
+	end
+	local StaircaseFolder = workspace:FindFirstChild("StaircaseInstance_" .. Player.UserId)
+	if not StaircaseFolder then
+		StaircaseFolder = Instance.new("Folder", workspace)
+		StaircaseFolder.Name = "StaircaseInstance_" .. Player.UserId
+	end
+	
+	local Character = Player.Character or Player.CharacterAdded:Wait()
+	local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+	local StaircaseItem = Instance.new("Part")
+	StaircaseItem.Transparency = 0.2
+	StaircaseItem.CastShadow = false
+	StaircaseItem.Material = Enum.Material.ForceField
+	StaircaseItem.Color = Color3.fromRGB(165, 38, 255)
+	StaircaseItem.CanCollide = true
+	StaircaseItem.Anchored = true
+
+	local LastStairPos = HumanoidRootPart.Position - Vector3.new(0,4,0)
+	local LookVector = HumanoidRootPart.CFrame.LookVector
+	local Orientation = HumanoidRootPart.Orientation
+	for i = 1, Stairs + 1 do
+		local NewStair = StaircaseItem:Clone()
+		NewStair.Position = LastStairPos + (LookVector * 2) + Vector3.new(0, StaircaseItem.Size.Y, 0)
+		NewStair.Orientation = Orientation
+		NewStair.Parent = StaircaseFolder
+		LastStairPos = NewStair.Position
+		task.wait(0.01)
+	end
+end
+
 local function SetCameraTarget(Type, Target)
 	if Player:FindFirstChild("RemoveViewPlayer") then
 		return
@@ -1221,16 +1258,16 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 		AttachmentOffset = CFrame.new(0,0,1.25) * CFrame.Angles(0, -3, 0)
 	elseif AttachPart == "Head" then
 		Part = "Head"
-		AttachmentOffset = CFrame.new(0,1.25,0)
+		AttachmentOffset = CFrame.new(0,1.45,0)
 	elseif AttachPart == "Front" then
 		Part = "HumanoidRootPart"
 		AttachmentOffset = CFrame.new(0,0,-1.25)
 	elseif AttachPart == "Left" then
 		Part = "LeftHand"
-		AttachmentOffset = CFrame.new(0,0,0)
+		AttachmentOffset = CFrame.Angles(0.3, -3, 0)
 	elseif AttachPart == "Right" then
 		Part = "LeftHand"
-		AttachmentOffset = CFrame.new(0,0,0)
+		AttachmentOffset = CFrame.Angles(0.3, -3, 0)
 	end
 	local StopAttach = Player:FindFirstChild("StopAttach")
 	if StopAttach then
@@ -1407,7 +1444,7 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Fly", "Flight using WASD for movement and Ctrl/Space for height with a max speed of 100. Not enabled for mobile.", "Speed..", nil, "Movement",
+	CreateCommand("Fly", "Flight using WASD for movement and Ctrl/Space for height with a max speed of 100. Not enabled for mobile.", "Speed..", nil, "Motion",
 		function(Speed)
 			if selected then
 				ToggleFlight(false, Speed)
@@ -1419,7 +1456,7 @@ local function SetupCommands()
 			ToggleFlight(false, FlySpeed)
 		end
 	)
-	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Movement",
+	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Motion",
 		function()
 			TeleportEnabled = true
 			PhaseEnabled = false
@@ -1441,6 +1478,17 @@ local function SetupCommands()
 			GetCharacter(Player):FindFirstChildOfClass("Humanoid").Health = 0
 		end,
 		nil
+	)
+	CreateCommand("Staircase", "Creates a staircase with a max of 200 steps in front of your character.", "Steps..", nil, "Fun",
+		function(Steps)
+			CreateStaircaseUpwards(Steps)
+		end,
+		function()
+			local StaircaseFolder = workspace:FindFirstChild("StaircaseInstance_" .. Player.UserId)
+			if StaircaseFolder then
+				StaircaseFolder:ClearAllChildren()
+			end
+		end
 	)
 	CreateCommand("Rejoin", "Return to the same server, or hop to a new one.", nil, {"Rejoin", "Hop"}, "Utility",
 		function(Type)
@@ -1476,7 +1524,7 @@ local function SetupCommands()
 			StopFreecam()
 		end
 	)
-	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "Movement",
+	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "Motion",
 		function()
 			PhaseEnabled = true
 			TeleportEnabled = false
@@ -1537,13 +1585,26 @@ local function SetupCommands()
 			SetCameraTarget("None", nil)
 		end
 	)
+	CreateCommand("Stats", "Allows the customization of player stats such as speed and jump height. Does not save on respawn.", "Value..", {"Speed","Jump"}, "Motion",
+		function(Value, Type)
+			local Character = GetCharacter(Player)
+			local Humanoid = Character:FindFirstChild("Humanoid")
+			if Type == "Speed" then
+				Humanoid.WalkSpeed = Value
+			elseif Type == "Jump" then
+				Humanoid.UseJumpPower = true
+				Humanoid.JumpPower = Value
+			end
+		end,
+		nil
+	)
 	CreateCommand("Fling", "Flings your character in the direction of your camera with adjustable power, capped at 300.", "Power..", nil,"Fun",
 		function(Power)
 			FlingSelf(Power)
 		end,
 		nil
 	)
-	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, nil, "Movement",
+	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, nil, "Motion",
 		function()
 			SetupMarkers()
 		end,
