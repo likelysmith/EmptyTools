@@ -1302,7 +1302,7 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 		Part = "LeftHand"
 		AttachmentOffset = CFrame.Angles(0.3, -3, 0)
 	elseif AttachPart == "Right" then
-		Part = "LeftHand"
+		Part = "RightHand"
 		AttachmentOffset = CFrame.Angles(0.3, -3, 0)
 	end
 	local StopAttach = Player:FindFirstChild("StopAttach")
