@@ -361,7 +361,7 @@ local function TipView(LabelObject, Title, Text)
 end
 
 function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, CallbackRun, CallbackStop)
-	
+
 	local Command = Instance.new("Frame")
 	local Title = Instance.new("TextLabel")
 	local Input = Instance.new("TextBox")
@@ -375,17 +375,17 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 	local EnumButton = Instance.new("TextButton")
 	local UITextSizeConstraint = Instance.new("UITextSizeConstraint")
 	local UICorner_4 = Instance.new("UICorner")
-	
+
 	if not table.find(CommandCategories, FilterTag) then
 		table.insert(CommandCategories, FilterTag)
 	end
 	Command:SetAttribute("Category", FilterTag)
-	
+
 	local SelectedEnum
 	if EnumTable ~= nil then
 		SelectedEnum = EnumTable[1]
 	end
-	
+
 	Command.Name = TitleText
 	Command.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
 	Command.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -408,7 +408,7 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 	Title.TextSize = 14.000
 	Title.TextWrapped = true
 	Title.TextXAlignment = Enum.TextXAlignment.Left
-	
+
 	TipView(Title, TitleText, Info)
 
 	if InputText ~= nil then
@@ -497,8 +497,8 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		EnumButton.TextScaled = true
 		EnumButton.TextSize = 25.000
 		EnumButton.TextWrapped = true
-	
-		
+
+
 		EnumButton.MouseButton1Click:Connect(function()
 			local CurrentIndex = table.find(EnumTable, SelectedEnum)
 			if CurrentIndex == #EnumTable then
@@ -509,14 +509,14 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 			EnumButton.Text = SelectedEnum
 		end)
 	end
-	
+
 
 	UITextSizeConstraint.Parent = EnumButton
 	UITextSizeConstraint.MaxTextSize = 25
 
 	UICorner_4.CornerRadius = UDim.new(0.189999998, 0)
 	UICorner_4.Parent = EnumButton
-	
+
 	table.insert(CommandFrames, Command)
 	Command.Parent = Contents:WaitForChild("Commands")
 end
@@ -1193,7 +1193,7 @@ local function CreateStaircaseUpwards(Stairs)
 		StaircaseFolder = Instance.new("Folder", workspace)
 		StaircaseFolder.Name = "StaircaseInstance_" .. Player.UserId
 	end
-	
+
 	local Character = Player.Character or Player.CharacterAdded:Wait()
 	local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
@@ -1216,6 +1216,32 @@ local function CreateStaircaseUpwards(Stairs)
 		LastStairPos = NewStair.Position
 		task.wait(0.01)
 	end
+end
+
+local ExplosionInProcess = false
+
+local function ExplodePlayer(Power)
+	if not tonumber(Power) then
+		Power = 75
+	end
+	Power = tonumber(Power)
+	if Power < 10 then
+		Power = 10
+	end
+	if ExplosionInProcess then return end
+	ExplosionInProcess = true
+	local Character = GetCharacter(Player)
+	local Root = GetRoot(Player)
+	local Humanoid = Character.Humanoid
+	Humanoid:ChangeState(Enum.HumanoidStateType.FallingDown)
+	local Velocity = Instance.new("BodyAngularVelocity")
+	Velocity.Name = "ExplosionVelocity"
+	Velocity.MaxTorque = Vector3.new(0,math.huge,0)
+	Velocity.AngularVelocity = Vector3.new(0,Power,0)
+	Velocity.Parent = Root
+	task.wait(0.5)
+	Character:BreakJoints()
+	ExplosionInProcess = false
 end
 
 local function SetCameraTarget(Type, Target)
@@ -1247,12 +1273,12 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 	end
 	TargetUsername = string.lower(TargetUsername)
 	local Target = GetPlayerFromNameSnippet(TargetUsername)
-	
+
 	if not Target then return end
-	
+
 	local Part
 	local AttachmentOffset
-	
+
 	if AttachPart == "Back" then
 		Part = "HumanoidRootPart"
 		AttachmentOffset = CFrame.new(0,0,1.25) * CFrame.Angles(0, -3, 0)
@@ -1273,7 +1299,7 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 	if StopAttach then
 		StopAttach:Destroy()
 	end
-	
+
 	repeat
 		pcall(function()
 			local Character = GetCharacter(Player)
@@ -1355,7 +1381,7 @@ local function Setup()
 	Contents = OuterFrame:WaitForChild("Contents")
 	ContentShrunken = OuterFrame:WaitForChild("ContentShrunken")
 	InfoFrame = Contents:WaitForChild("Info")
-	
+
 	currentDraggableObject = OuterFrame
 
 	MarkerUI = Instance.new("ScreenGui")
@@ -1548,6 +1574,12 @@ local function SetupCommands()
 		function()
 			StopFreecam()
 		end
+	)
+	CreateCommand("Explode", "Spins the character at a high velocity and then breaks the joints.", "Power..", nil, "Fun",
+		function(Power)
+			ExplodePlayer(Power)
+		end,
+		nil
 	)
 	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "Motion",
 		function()
