@@ -1,4 +1,4 @@
-# Empty Tools
+# Empty Tools v1.4
 ## Clean and Compact UI with fun and useful commands
 ```
 loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
