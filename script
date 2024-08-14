@@ -327,6 +327,279 @@ function CreateUI()
 	return EmptyTools
 end
 
+local function CallAlert(TitleText, Message, Callback)
+	local AlertScreen = Instance.new("ScreenGui")
+	local Overlay = Instance.new("TextButton")
+	local CallDialog = Instance.new("ImageButton")
+	local AlertContents = Instance.new("ImageLabel")
+	local Footer = Instance.new("ImageLabel")
+	local layout = Instance.new("UIListLayout")
+	local margin = Instance.new("UIPadding")
+	local Buttons = Instance.new("ImageLabel")
+	local _1 = Instance.new("ImageButton")
+	local ButtonContent = Instance.new("Frame")
+	local ButtonMiddleContent = Instance.new("Frame")
+	local UIListLayout = Instance.new("UIListLayout")
+	local Text = Instance.new("TextLabel")
+	local layout_2 = Instance.new("UIListLayout")
+	local margin_2 = Instance.new("UIPadding")
+	local layout_3 = Instance.new("UIListLayout")
+	local MiddleContent = Instance.new("ImageLabel")
+	local layout_4 = Instance.new("UIListLayout")
+	local Content = Instance.new("ImageLabel")
+	local BodyText = Instance.new("TextLabel")
+	local layout_5 = Instance.new("UIListLayout")
+	local margin_3 = Instance.new("UIPadding")
+	local margin_4 = Instance.new("UIPadding")
+	local TitleContainer = Instance.new("ImageLabel")
+	local TitleArea = Instance.new("ImageLabel")
+	local layout_6 = Instance.new("UIListLayout")
+	local Title = Instance.new("TextLabel")
+	local Underline = Instance.new("Frame")
+	local margin_5 = Instance.new("UIPadding")
+	local layout_7 = Instance.new("UIListLayout")
+	local margin_6 = Instance.new("UIPadding")
+	local margin_7 = Instance.new("UIPadding")
+
+	AlertScreen.Name = "AlertScreen"
+	AlertScreen.Parent = game.Players.LocalPlayer.PlayerGui
+	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	AlertScreen.DisplayOrder = 100
+	AlertScreen.IgnoreGuiInset = true
+
+	Overlay.Name = "Overlay"
+	Overlay.Parent = AlertScreen
+	Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	Overlay.BackgroundTransparency = 0.500
+	Overlay.BorderSizePixel = 0
+	Overlay.Selectable = false
+	Overlay.Size = UDim2.new(1, 0, 1, 0)
+	Overlay.Visible = false
+	Overlay.AutoButtonColor = false
+	Overlay.Text = ""
+
+	CallDialog.Name = "CallDialog"
+	CallDialog.Parent = AlertScreen
+	CallDialog.AnchorPoint = Vector2.new(0.5, 0.5)
+	CallDialog.BackgroundColor3 = Color3.fromRGB(57, 59, 61)
+	CallDialog.BackgroundTransparency = 1.000
+	CallDialog.BorderSizePixel = 0
+	CallDialog.AutomaticSize = Enum.AutomaticSize.Y
+	CallDialog.ClipsDescendants = true
+	CallDialog.Position = UDim2.new(0.5, 0, 0.5, 0)
+	CallDialog.Selectable = false
+	CallDialog.Size = UDim2.new(0, 400, 0, 182)
+	CallDialog.AutoButtonColor = false
+	CallDialog.Image = "rbxasset://LuaPackages/Packages/_Index/UIBlox/UIBlox/AppImageAtlas/img_set_1x_1.png"
+	CallDialog.ImageColor3 = Color3.fromRGB(57, 59, 61)
+	CallDialog.ImageRectOffset = Vector2.new(402, 494)
+	CallDialog.ImageRectSize = Vector2.new(17, 17)
+	CallDialog.ScaleType = Enum.ScaleType.Slice
+	CallDialog.SliceCenter = Rect.new(8, 8, 9, 9)
+
+	AlertContents.Name = "AlertContents"
+	AlertContents.Parent = CallDialog
+	AlertContents.BackgroundTransparency = 1.000
+	AlertContents.BorderSizePixel = 0
+	AlertContents.Size = UDim2.new(0, 400, 0, 182)
+
+	Footer.Name = "Footer"
+	Footer.Parent = AlertContents
+	Footer.BackgroundTransparency = 1.000
+	Footer.LayoutOrder = 3
+	Footer.Size = UDim2.new(1, 0, 0, 36)
+
+	layout.Name = "$layout"
+	layout.Parent = Footer
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 12)
+
+	margin.Name = "$margin"
+	margin.Parent = Footer
+
+	Buttons.Name = "Buttons"
+	Buttons.Parent = Footer
+	Buttons.BackgroundTransparency = 1.000
+	Buttons.LayoutOrder = 3
+	Buttons.Size = UDim2.new(1, 0, 0, 36)
+
+	_1.Name = "1"
+	_1.Parent = Buttons
+	_1.BackgroundTransparency = 1.000
+	_1.LayoutOrder = 1
+	_1.Size = UDim2.new(0, 352, 0, 36)
+	_1.AutoButtonColor = true
+	_1.Image = "rbxasset://LuaPackages/Packages/_Index/UIBlox/UIBlox/AppImageAtlas/img_set_1x_1.png"
+	_1.ImageRectOffset = Vector2.new(402, 494)
+	_1.ImageRectSize = Vector2.new(17, 17)
+	_1.ScaleType = Enum.ScaleType.Slice
+	_1.SliceCenter = Rect.new(8, 8, 9, 9)
+	
+	local function Hover()
+		_1.MouseEnter:Connect(function()
+			_1.ImageColor3 = Color3.fromRGB(172, 172, 172)
+		end)
+		_1.MouseLeave:Connect(function()
+			_1.ImageColor3 = Color3.fromRGB(255,255,255)
+		end)
+	end
+	
+	coroutine.wrap(Hover)()
+	
+	--
+
+	ButtonContent.Name = "ButtonContent"
+	ButtonContent.Parent = _1
+	ButtonContent.BackgroundTransparency = 1.000
+	ButtonContent.Size = UDim2.new(1, 0, 1, 0)
+
+	ButtonMiddleContent.Name = "ButtonMiddleContent"
+	ButtonMiddleContent.Parent = ButtonContent
+	ButtonMiddleContent.BackgroundTransparency = 1.000
+	ButtonMiddleContent.Size = UDim2.new(1, 0, 1, 0)
+
+	UIListLayout.Parent = ButtonMiddleContent
+	UIListLayout.FillDirection = Enum.FillDirection.Horizontal
+	UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	UIListLayout.Padding = UDim.new(0, 5)
+
+	Text.Name = "Text"
+	Text.Parent = ButtonMiddleContent
+	Text.BackgroundTransparency = 1.000
+	Text.LayoutOrder = 2
+	Text.Size = UDim2.new(0, 23, 0, 22)
+	Text.Font = Enum.Font.BuilderSansBold
+	Text.Text = "Ok"
+	Text.TextColor3 = Color3.fromRGB(57, 59, 61)
+	Text.TextSize = 20.000
+	Text.TextWrapped = true
+
+	layout_2.Name = "$layout"
+	layout_2.Parent = Buttons
+	layout_2.FillDirection = Enum.FillDirection.Horizontal
+	layout_2.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout_2.SortOrder = Enum.SortOrder.LayoutOrder
+
+	margin_2.Name = "$margin"
+	margin_2.Parent = Buttons
+
+	layout_3.Name = "$layout"
+	layout_3.Parent = AlertContents
+	layout_3.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_3.Padding = UDim.new(0, 24)
+
+	MiddleContent.Name = "MiddleContent"
+	MiddleContent.AutomaticSize = Enum.AutomaticSize.Y
+	MiddleContent.Parent = AlertContents
+	MiddleContent.BackgroundTransparency = 1.000
+	MiddleContent.LayoutOrder = 2
+	MiddleContent.Size = UDim2.new(1, 0, 0, 22)
+
+	layout_4.Name = "$layout"
+	layout_4.Parent = MiddleContent
+	layout_4.SortOrder = Enum.SortOrder.LayoutOrder
+
+	Content.Name = "Content"
+	Content.Parent = MiddleContent
+	Content.BackgroundTransparency = 1.000
+	Content.LayoutOrder = 2
+	Content.AutomaticSize = Enum.AutomaticSize.Y
+	Content.Size = UDim2.new(1, 0, 0, 22)
+
+	BodyText.Name = "BodyText"
+	BodyText.Parent = Content
+	BodyText.BackgroundTransparency = 1.000
+	BodyText.LayoutOrder = 1
+	BodyText.Size = UDim2.new(1, 0, 0, 22)
+	BodyText.Font = Enum.Font.BuilderSans
+	BodyText.Text = Message
+	BodyText.AutomaticSize = Enum.AutomaticSize.Y
+	BodyText.TextColor3 = Color3.fromRGB(189, 190, 190)
+	BodyText.TextSize = 20.000
+	BodyText.TextWrapped = true
+
+	layout_5.Name = "$layout"
+	layout_5.Parent = Content
+	layout_5.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_5.Padding = UDim.new(0, 12)
+
+	margin_3.Name = "$margin"
+	margin_3.Parent = Content
+
+	margin_4.Name = "$margin"
+	margin_4.Parent = MiddleContent
+
+	TitleContainer.Name = "TitleContainer"
+	TitleContainer.Parent = AlertContents
+	TitleContainer.BackgroundTransparency = 1.000
+	TitleContainer.LayoutOrder = 1
+	TitleContainer.Size = UDim2.new(1, 0, 0, 52)
+
+	TitleArea.Name = "TitleArea"
+	TitleArea.Parent = TitleContainer
+	TitleArea.BackgroundTransparency = 1.000
+	TitleArea.LayoutOrder = 1
+	TitleArea.Size = UDim2.new(1, 0, 0, 40)
+
+	layout_6.Name = "$layout"
+	layout_6.Parent = TitleArea
+	layout_6.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout_6.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_6.Padding = UDim.new(0, 12)
+
+	Title.Name = "Title"
+	Title.Parent = TitleArea
+	Title.AutomaticSize = Enum.AutomaticSize.X
+	Title.BackgroundTransparency = 1.000
+	Title.LayoutOrder = 1
+	Title.Size = UDim2.new(0, 14, 0, 27)
+	Title.Font = Enum.Font.BuilderSansBold
+	Title.Text = TitleText
+	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title.TextSize = 25.000
+	Title.TextWrapped = true
+
+	Underline.Name = "Underline"
+	Underline.Parent = TitleArea
+	Underline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Underline.BackgroundTransparency = 0.800
+	Underline.BorderSizePixel = 0
+	Underline.LayoutOrder = 2
+	Underline.Size = UDim2.new(1, 0, 0, 1)
+
+	margin_5.Name = "$margin"
+	margin_5.Parent = TitleArea
+
+	layout_7.Name = "$layout"
+	layout_7.Parent = TitleContainer
+	layout_7.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout_7.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_7.Padding = UDim.new(0, 8)
+
+	margin_6.Name = "$margin"
+	margin_6.Parent = TitleContainer
+	margin_6.PaddingTop = UDim.new(0, 12)
+
+	margin_7.Name = "$margin"
+	margin_7.Parent = AlertContents
+	margin_7.PaddingBottom = UDim.new(0, 24)
+	margin_7.PaddingLeft = UDim.new(0, 24)
+	margin_7.PaddingRight = UDim.new(0, 24)
+
+	_1.MouseButton1Click:Connect(function()
+		if Callback then
+			Callback()
+			AlertScreen:Destroy()
+		else
+			AlertScreen:Destroy()
+		end
+	end)
+
+	return AlertScreen
+end
+
 local FadeOutTween 
 local FadeOutTween2
 local FadeOutTween3
@@ -1402,31 +1675,31 @@ local function SetGameShaders(Type)
 		end
 	elseif Type == "Normal" then
 		local Skybox = CreateSkybox(
-			"http://www.roblox.com/asset/?id=150335574",
-			"http://www.roblox.com/asset/?id=150335585",
-			"http://www.roblox.com/asset/?id=150335628",
-			"http://www.roblox.com/asset/?id=150335620",
-			"http://www.roblox.com/asset/?id=150335610",
-			"http://www.roblox.com/asset/?id=150335642"
+			"rbxassetid://566598488",
+			"rbxassetid://566598717",
+			"rbxassetid://566598536",
+			"rbxassetid://566598581",
+			"rbxassetid://566598640",
+			"rbxassetid://566598894"
 		)
 		Skybox.Parent = Lighting
-		
+
 		local Atmosphere = Instance.new("Atmosphere")
 		Atmosphere.Color = Color3.fromRGB(199, 199, 199)
 		Atmosphere.Parent = Lighting
-		
+
 		local Bloom = Instance.new("BloomEffect")
 		Bloom.Enabled = true
 		Bloom.Intensity = 1.2
-		Bloom.Size = 25
-		Bloom.Threshold = 1.1
+		Bloom.Size = 22.5
+		Bloom.Threshold = 1.15
 		Bloom.Parent = Lighting
-		
+
 		local SunRays = Instance.new("SunRaysEffect")
 		SunRays.Spread = 0.186
 		SunRays.Intensity = 0.0475
 		SunRays.Parent = Lighting
-		
+
 		local DOF = Instance.new("DepthOfFieldEffect")
 		DOF.Enabled = true
 		DOF.FarIntensity = 0.205
@@ -1445,7 +1718,7 @@ local function SetGameShaders(Type)
 		)
 		Skybox.Parent = Lighting
 
-		
+
 		local Correction = Instance.new("ColorCorrectionEffect")
 		Correction.Brightness = -0.3
 		Correction.Contrast = 1
@@ -1453,7 +1726,7 @@ local function SetGameShaders(Type)
 		Correction.Saturation = -1
 		Correction.Parent = Lighting
 		Correction.TintColor = Color3.fromRGB(240,240,240)
-		
+
 		local Atmosphere = Instance.new("Atmosphere")
 		Atmosphere.Color = Color3.fromRGB(199, 199, 199)
 		Atmosphere.Parent = Lighting
@@ -1467,23 +1740,54 @@ local function SetGameShaders(Type)
 			"http://www.roblox.com/asset/?id=271077958"
 		)
 		Skybox.Parent = Lighting
-		
+
 		local Atmosphere = Instance.new("Atmosphere")
 		Atmosphere.Parent = Lighting
-		
+
 		local Bloom = Instance.new("BloomEffect")
 		Bloom.Enabled = true
 		Bloom.Intensity = 1.2
-		Bloom.Size = 25
+		Bloom.Size = 22.5
 		Bloom.Threshold = 1.1
 		Bloom.Parent = Lighting
-		
+
 		local Correction = Instance.new("ColorCorrectionEffect")
 		Correction.Contrast = -0.1
 		Correction.TintColor = Color3.fromRGB(245, 225, 255)
 		Correction.Enabled = true
 		Correction.Saturation = 0.2
 		Correction.Parent = Lighting
+	elseif Type == "Space" then
+		local Skybox = CreateSkybox(
+			"http://www.roblox.com/asset/?id=16262356578",
+			"http://www.roblox.com/asset/?id=16262358026",
+			"http://www.roblox.com/asset/?id=16262360469",
+			"http://www.roblox.com/asset/?id=16262362003",
+			"http://www.roblox.com/asset/?id=16262363873",
+			"http://www.roblox.com/asset/?id=16262366016"
+		)
+		Skybox.Parent = Lighting
+		
+		local Atmosphere = Instance.new("Atmosphere")
+		Atmosphere.Density = 0.7
+		Atmosphere.Offset = 1.93
+		Atmosphere.Parent = Lighting
+		
+		local Bloom = Instance.new("BloomEffect")
+		Bloom.Enabled = true
+		Bloom.Intensity = 1.05
+		Bloom.Size = 20
+		Bloom.Threshold = 1.25
+		Bloom.Parent = Lighting
+		
+		local Correction = Instance.new("ColorCorrectionEffect")
+		Correction.Contrast = 0.1
+		Correction.TintColor = Color3.fromRGB(229, 161, 229)
+		Correction.Enabled = true
+		Correction.Brightness = -0.1
+		Correction.Saturation = -0.2
+		Correction.Parent = Lighting
+		
 	elseif Type == "Baked" then
 		local Correction = Instance.new("ColorCorrectionEffect")
 		Correction.Brightness = 0
@@ -1507,6 +1811,13 @@ end
 local currentDraggableObject = OuterFrame
 
 local function Setup()
+	if Player:GetAttribute("EmptyToolsInstance") == true then
+		local Alert = CallAlert("Instance Found", "An instance of Empty Tools already exists. Please close it before opening a new one.", function() script:Destroy() end)
+		
+		return
+	end
+	Player:SetAttribute("EmptyToolsInstance", true)
+	
 	MainUI = CreateUI()
 	MainUI.Parent = Player.PlayerGui
 	OuterFrame = MainUI:WaitForChild("OuterFrame")
@@ -1521,11 +1832,11 @@ local function Setup()
 	MarkerUI.Name = "MarkerContainer"
 	MarkerUI.Parent = Player.PlayerGui
 
-	
+
 	for _,Shader in pairs(Lighting:GetChildren()) do
 		table.insert(DefaultLighting, Shader:Clone())
 	end
-	
+
 	-- Drag Handler
 
 	coroutine.resume(coroutine.create(function()
@@ -1597,6 +1908,7 @@ local function Setup()
 end
 
 local function SetupCommands()
+	if not MainUI then return end
 	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", nil, nil, "Utility",
 		function()
 			local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
@@ -1702,7 +2014,7 @@ local function SetupCommands()
 			end
 		end,
 		nil
-	)
+		)
 	CreateCommand("Freecam", "Detaches the camera from the player to move around freely and locks player movement controls.", nil, nil, "Utility",
 		function()
 			StartFreecam()
@@ -1766,7 +2078,7 @@ local function SetupCommands()
 			end
 		end,
 		nil
-	)
+		)
 	CreateCommand("View", "View the perspective of another player by typing their username or display name.", "Name..", nil,"Utility",
 		function(Username)
 			local TargetPlayer = GetPlayerFromNameSnippet(Username)
@@ -1823,12 +2135,12 @@ local function SetupCommands()
 	CreateCommand("Time", "Sets the in-game clock time, changing the skybox. May not work in games with daylight cycles.", "Time..", nil, "Fun",
 		function(Time)
 			if tonumber(Time) then
-				 Lighting.ClockTime = tonumber(Time)
+				Lighting.ClockTime = tonumber(Time)
 			end
 		end,
 		nil
 	)
-	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Grain", "Pink", "Baked", "B&W"}, "Fun",
+	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Grain", "Pink", "Space", "Baked", "B&W"}, "Fun",
 		function(Type)
 			SetGameShaders(Type)
 		end,
@@ -1859,6 +2171,8 @@ end)
 
 -- UI Control
 
+if not MainUI then return end
+
 local ToggleTween
 
 OuterFrame.Toggle.MouseButton1Click:Connect(function()
@@ -1875,6 +2189,7 @@ OuterFrame.Toggle.MouseButton1Click:Connect(function()
 end)
 
 OuterFrame.Close.MouseButton1Click:Connect(function()
+	Player:SetAttribute("EmptyToolsInstance", false)
 	local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
 	if PltInstance then
 		PltInstance:Destroy()
