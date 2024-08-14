@@ -8,6 +8,10 @@ local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 
+-- Changelog
+
+local ChangeLog = "• UI Improvements & Fixes\n• New 'Space' Shading mode\n• Revamped staircase command\n• Small changes to the 'Explode' force\n• Added duplicate instance protection" 
+
 -- Variables
 
 local Player = Players.LocalPlayer
@@ -46,6 +50,10 @@ local TeleportEnabled = false
 
 local FlySpeed = 30
 
+
+local LogsOpen = false
+local Log
+
 -- Sound Handling
 
 local ClickSoundID = 6895079853
@@ -64,6 +72,10 @@ end
 
 
 function CreateUI()
+	-- Gui to Lua
+	-- Version: 3.2
+
+	-- Instances:
 
 	local EmptyTools = Instance.new("ScreenGui")
 	local OuterFrame = Instance.new("Frame")
@@ -88,7 +100,7 @@ function CreateUI()
 	local Tips = Instance.new("TextButton")
 	local UICorner_6 = Instance.new("UICorner")
 	local UITextSizeConstraint_3 = Instance.new("UITextSizeConstraint")
-	local Toggle = Instance.new("TextButton")
+	local Info_3 = Instance.new("TextButton")
 	local UICorner_7 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_3 = Instance.new("UIAspectRatioConstraint")
 	local ContentShrunken = Instance.new("Frame")
@@ -97,12 +109,14 @@ function CreateUI()
 	local Close = Instance.new("TextButton")
 	local UICorner_9 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_5 = Instance.new("UIAspectRatioConstraint")
-
-	--Properties:
+	local Toggle = Instance.new("TextButton")
+	local UICorner_10 = Instance.new("UICorner")
+	local UIAspectRatioConstraint_6 = Instance.new("UIAspectRatioConstraint")
 
 	EmptyTools.Name = "EmptyTools"
 	EmptyTools.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	EmptyTools.ResetOnSpawn = false
+	EmptyTools.IgnoreGuiInset = true
 
 	OuterFrame.Name = "OuterFrame"
 	OuterFrame.Parent = EmptyTools
@@ -154,7 +168,7 @@ function CreateUI()
 	Commands.Position = UDim2.new(0.064338237, 0, 0.295194507, 0)
 	Commands.Size = UDim2.new(0.880514681, 0, 0.645308912, 0)
 	Commands.CanvasSize = UDim2.new(0, 0, 3.5, 0)
-	Commands.ScrollBarThickness = 11
+	Commands.ScrollBarThickness = 13
 
 	UIListLayout.Parent = Commands
 	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -180,7 +194,7 @@ function CreateUI()
 	UICorner_3.Parent = Search
 
 	UITextSizeConstraint.Parent = Search
-	UITextSizeConstraint.MaxTextSize = 25
+	UITextSizeConstraint.MaxTextSize = 23
 
 	Category.Name = "Category"
 	Category.Parent = Contents
@@ -200,7 +214,7 @@ function CreateUI()
 	UICorner_4.Parent = Category
 
 	UITextSizeConstraint_2.Parent = Category
-	UITextSizeConstraint_2.MaxTextSize = 22
+	UITextSizeConstraint_2.MaxTextSize = 20
 
 	Info.Name = "Info"
 	Info.Parent = Contents
@@ -265,27 +279,27 @@ function CreateUI()
 	UICorner_6.Parent = Tips
 
 	UITextSizeConstraint_3.Parent = Tips
-	UITextSizeConstraint_3.MaxTextSize = 21
+	UITextSizeConstraint_3.MaxTextSize = 20
 
-	Toggle.Name = "Toggle"
-	Toggle.Parent = OuterFrame
-	Toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Toggle.BorderSizePixel = 0
-	Toggle.Position = UDim2.new(0.8006953, 0, 0.0343249068, 0)
-	Toggle.Size = UDim2.new(0.0790441632, 0, 0.125858128, 0)
-	Toggle.ZIndex = 4
-	Toggle.Font = Enum.Font.Roboto
-	Toggle.Text = "-"
-	Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Toggle.TextScaled = true
-	Toggle.TextSize = 14.000
-	Toggle.TextWrapped = true
+	Info_3.Name = "Info"
+	Info_3.Parent = OuterFrame
+	Info_3.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Info_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Info_3.BorderSizePixel = 0
+	Info_3.Position = UDim2.new(0.701061368, 0, 0.0343248919, 0)
+	Info_3.Size = UDim2.new(0.0790441632, 0, 0.125858128, 0)
+	Info_3.ZIndex = 4
+	Info_3.Font = Enum.Font.Roboto
+	Info_3.Text = "?"
+	Info_3.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Info_3.TextScaled = true
+	Info_3.TextSize = 14.000
+	Info_3.TextWrapped = true
 
 	UICorner_7.CornerRadius = UDim.new(0.0500000007, 0)
-	UICorner_7.Parent = Toggle
+	UICorner_7.Parent = Info_3
 
-	UIAspectRatioConstraint_3.Parent = Toggle
+	UIAspectRatioConstraint_3.Parent = Info_3
 	UIAspectRatioConstraint_3.AspectRatio = 1.004
 
 	ContentShrunken.Name = "ContentShrunken"
@@ -324,10 +338,31 @@ function CreateUI()
 	UIAspectRatioConstraint_5.Parent = Close
 	UIAspectRatioConstraint_5.AspectRatio = 1.004
 
+	Toggle.Name = "Toggle"
+	Toggle.Parent = OuterFrame
+	Toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Toggle.BorderSizePixel = 0
+	Toggle.Position = UDim2.new(0.798575521, 0, 0.0343248919, 0)
+	Toggle.Size = UDim2.new(0.0790441632, 0, 0.125858128, 0)
+	Toggle.ZIndex = 4
+	Toggle.Font = Enum.Font.Roboto
+	Toggle.Text = "-"
+	Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Toggle.TextScaled = true
+	Toggle.TextSize = 14.000
+	Toggle.TextWrapped = true
+
+	UICorner_10.CornerRadius = UDim.new(0.0500000007, 0)
+	UICorner_10.Parent = Toggle
+
+	UIAspectRatioConstraint_6.Parent = Toggle
+	UIAspectRatioConstraint_6.AspectRatio = 1.004
+
 	return EmptyTools
 end
 
-local function CallAlert(TitleText, Message, Callback)
+function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Text, TextAlignment, Callback, SubCallback)
 	local AlertScreen = Instance.new("ScreenGui")
 	local Overlay = Instance.new("TextButton")
 	local CallDialog = Instance.new("ImageButton")
@@ -346,26 +381,38 @@ local function CallAlert(TitleText, Message, Callback)
 	local layout_3 = Instance.new("UIListLayout")
 	local MiddleContent = Instance.new("ImageLabel")
 	local layout_4 = Instance.new("UIListLayout")
-	local Content = Instance.new("ImageLabel")
-	local BodyText = Instance.new("TextLabel")
+	local Image = Instance.new("ImageLabel")
 	local layout_5 = Instance.new("UIListLayout")
 	local margin_3 = Instance.new("UIPadding")
+	local Image_2 = Instance.new("ImageLabel")
 	local margin_4 = Instance.new("UIPadding")
+	local Content = Instance.new("ImageLabel")
+	local BodyText = Instance.new("TextLabel")
+	local layout_6 = Instance.new("UIListLayout")
+	local margin_5 = Instance.new("UIPadding")
 	local TitleContainer = Instance.new("ImageLabel")
 	local TitleArea = Instance.new("ImageLabel")
-	local layout_6 = Instance.new("UIListLayout")
+	local layout_7 = Instance.new("UIListLayout")
 	local Title = Instance.new("TextLabel")
 	local Underline = Instance.new("Frame")
-	local margin_5 = Instance.new("UIPadding")
-	local layout_7 = Instance.new("UIListLayout")
 	local margin_6 = Instance.new("UIPadding")
+	local layout_8 = Instance.new("UIListLayout")
 	local margin_7 = Instance.new("UIPadding")
+	local margin_8 = Instance.new("UIPadding")
+
+	if not Button_Text then
+		Button_Text = "Ok"
+	end
+	if not Title_Text then
+		Title_Text = "Alert"
+	end
 
 	AlertScreen.Name = "AlertScreen"
-	AlertScreen.Parent = game.Players.LocalPlayer.PlayerGui
+	AlertScreen.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	AlertScreen.DisplayOrder = 100
 	AlertScreen.IgnoreGuiInset = true
+	AlertScreen.DisplayOrder = 100
+
 
 	Overlay.Name = "Overlay"
 	Overlay.Parent = AlertScreen
@@ -384,7 +431,6 @@ local function CallAlert(TitleText, Message, Callback)
 	CallDialog.BackgroundColor3 = Color3.fromRGB(57, 59, 61)
 	CallDialog.BackgroundTransparency = 1.000
 	CallDialog.BorderSizePixel = 0
-	CallDialog.AutomaticSize = Enum.AutomaticSize.Y
 	CallDialog.ClipsDescendants = true
 	CallDialog.Position = UDim2.new(0.5, 0, 0.5, 0)
 	CallDialog.Selectable = false
@@ -396,6 +442,7 @@ local function CallAlert(TitleText, Message, Callback)
 	CallDialog.ImageRectSize = Vector2.new(17, 17)
 	CallDialog.ScaleType = Enum.ScaleType.Slice
 	CallDialog.SliceCenter = Rect.new(8, 8, 9, 9)
+	CallDialog.AutomaticSize = Enum.AutomaticSize.Y
 
 	AlertContents.Name = "AlertContents"
 	AlertContents.Parent = CallDialog
@@ -405,6 +452,7 @@ local function CallAlert(TitleText, Message, Callback)
 
 	Footer.Name = "Footer"
 	Footer.Parent = AlertContents
+	Footer.AutomaticSize = Enum.AutomaticSize.Y
 	Footer.BackgroundTransparency = 1.000
 	Footer.LayoutOrder = 3
 	Footer.Size = UDim2.new(1, 0, 0, 36)
@@ -419,6 +467,7 @@ local function CallAlert(TitleText, Message, Callback)
 
 	Buttons.Name = "Buttons"
 	Buttons.Parent = Footer
+	Buttons.AutomaticSize = Enum.AutomaticSize.Y
 	Buttons.BackgroundTransparency = 1.000
 	Buttons.LayoutOrder = 3
 	Buttons.Size = UDim2.new(1, 0, 0, 36)
@@ -427,26 +476,14 @@ local function CallAlert(TitleText, Message, Callback)
 	_1.Parent = Buttons
 	_1.BackgroundTransparency = 1.000
 	_1.LayoutOrder = 1
+	_1.AutomaticSize = Enum.AutomaticSize.Y
 	_1.Size = UDim2.new(0, 352, 0, 36)
-	_1.AutoButtonColor = true
+	_1.AutoButtonColor = false
 	_1.Image = "rbxasset://LuaPackages/Packages/_Index/UIBlox/UIBlox/AppImageAtlas/img_set_1x_1.png"
 	_1.ImageRectOffset = Vector2.new(402, 494)
 	_1.ImageRectSize = Vector2.new(17, 17)
 	_1.ScaleType = Enum.ScaleType.Slice
 	_1.SliceCenter = Rect.new(8, 8, 9, 9)
-	
-	local function Hover()
-		_1.MouseEnter:Connect(function()
-			_1.ImageColor3 = Color3.fromRGB(172, 172, 172)
-		end)
-		_1.MouseLeave:Connect(function()
-			_1.ImageColor3 = Color3.fromRGB(255,255,255)
-		end)
-	end
-	
-	coroutine.wrap(Hover)()
-	
-	--
 
 	ButtonContent.Name = "ButtonContent"
 	ButtonContent.Parent = _1
@@ -471,7 +508,8 @@ local function CallAlert(TitleText, Message, Callback)
 	Text.LayoutOrder = 2
 	Text.Size = UDim2.new(0, 23, 0, 22)
 	Text.Font = Enum.Font.BuilderSansBold
-	Text.Text = "Ok"
+	Text.Text = Button_Text
+	Text.AutomaticSize = Enum.AutomaticSize.X
 	Text.TextColor3 = Color3.fromRGB(57, 59, 61)
 	Text.TextSize = 20.000
 	Text.TextWrapped = true
@@ -491,8 +529,8 @@ local function CallAlert(TitleText, Message, Callback)
 	layout_3.Padding = UDim.new(0, 24)
 
 	MiddleContent.Name = "MiddleContent"
-	MiddleContent.AutomaticSize = Enum.AutomaticSize.Y
 	MiddleContent.Parent = AlertContents
+	MiddleContent.AutomaticSize = Enum.AutomaticSize.Y
 	MiddleContent.BackgroundTransparency = 1.000
 	MiddleContent.LayoutOrder = 2
 	MiddleContent.Size = UDim2.new(1, 0, 0, 22)
@@ -501,35 +539,55 @@ local function CallAlert(TitleText, Message, Callback)
 	layout_4.Parent = MiddleContent
 	layout_4.SortOrder = Enum.SortOrder.LayoutOrder
 
-	Content.Name = "Content"
-	Content.Parent = MiddleContent
-	Content.BackgroundTransparency = 1.000
-	Content.LayoutOrder = 2
-	Content.AutomaticSize = Enum.AutomaticSize.Y
-	Content.Size = UDim2.new(1, 0, 0, 22)
+	Image.Name = "Image"
+	Image.Parent = MiddleContent
+	Image.BackgroundTransparency = 1.000
+	Image.LayoutOrder = 2
+	Image.AutomaticSize = Enum.AutomaticSize.Y
+	Image.Size = UDim2.new(1, 0, 0, 22)
+	Image.Visible = false
 
-	BodyText.Name = "BodyText"
-	BodyText.Parent = Content
-	BodyText.BackgroundTransparency = 1.000
-	BodyText.LayoutOrder = 1
-	BodyText.Size = UDim2.new(1, 0, 0, 22)
-	BodyText.Font = Enum.Font.BuilderSans
-	BodyText.Text = Message
-	BodyText.AutomaticSize = Enum.AutomaticSize.Y
-	BodyText.TextColor3 = Color3.fromRGB(189, 190, 190)
-	BodyText.TextSize = 20.000
-	BodyText.TextWrapped = true
 
 	layout_5.Name = "$layout"
-	layout_5.Parent = Content
+	layout_5.Parent = Image
 	layout_5.SortOrder = Enum.SortOrder.LayoutOrder
 	layout_5.Padding = UDim.new(0, 12)
 
 	margin_3.Name = "$margin"
-	margin_3.Parent = Content
+	margin_3.Parent = Image
+	margin_3.PaddingBottom = UDim.new(0, 15)
+	margin_3.PaddingLeft = UDim.new(0, 75)
 
 	margin_4.Name = "$margin"
 	margin_4.Parent = MiddleContent
+
+	Content.Name = "Content"
+	Content.Parent = MiddleContent
+	Content.BackgroundTransparency = 1.000
+	Content.AutomaticSize = Enum.AutomaticSize.Y
+	Content.LayoutOrder = 2
+	Content.Size = UDim2.new(1, 0, 0, 22)
+
+	BodyText.Name = "BodyText"
+	BodyText.Parent = Content
+	BodyText.TextXAlignment = TextAlignment
+	BodyText.BackgroundTransparency = 1.000
+	BodyText.LayoutOrder = 1
+	BodyText.Size = UDim2.new(1, 0, 0, 22)
+	BodyText.AutomaticSize = Enum.AutomaticSize.Y
+	BodyText.Font = Enum.Font.BuilderSans
+	BodyText.Text = Body_Text
+	BodyText.TextColor3 = Color3.fromRGB(189, 190, 190)
+	BodyText.TextSize = 20.000
+	BodyText.TextWrapped = true
+
+	layout_6.Name = "$layout"
+	layout_6.Parent = Content
+	layout_6.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_6.Padding = UDim.new(0, 12)
+
+	margin_5.Name = "$margin"
+	margin_5.Parent = Content
 
 	TitleContainer.Name = "TitleContainer"
 	TitleContainer.Parent = AlertContents
@@ -543,20 +601,20 @@ local function CallAlert(TitleText, Message, Callback)
 	TitleArea.LayoutOrder = 1
 	TitleArea.Size = UDim2.new(1, 0, 0, 40)
 
-	layout_6.Name = "$layout"
-	layout_6.Parent = TitleArea
-	layout_6.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout_6.SortOrder = Enum.SortOrder.LayoutOrder
-	layout_6.Padding = UDim.new(0, 12)
+	layout_7.Name = "$layout"
+	layout_7.Parent = TitleArea
+	layout_7.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout_7.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_7.Padding = UDim.new(0, 12)
 
 	Title.Name = "Title"
 	Title.Parent = TitleArea
-	Title.AutomaticSize = Enum.AutomaticSize.X
 	Title.BackgroundTransparency = 1.000
 	Title.LayoutOrder = 1
+	Title.AutomaticSize = Enum.AutomaticSize.X
 	Title.Size = UDim2.new(0, 14, 0, 27)
 	Title.Font = Enum.Font.BuilderSansBold
-	Title.Text = TitleText
+	Title.Text = Title_Text
 	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Title.TextSize = 25.000
 	Title.TextWrapped = true
@@ -569,34 +627,90 @@ local function CallAlert(TitleText, Message, Callback)
 	Underline.LayoutOrder = 2
 	Underline.Size = UDim2.new(1, 0, 0, 1)
 
-	margin_5.Name = "$margin"
-	margin_5.Parent = TitleArea
-
-	layout_7.Name = "$layout"
-	layout_7.Parent = TitleContainer
-	layout_7.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout_7.SortOrder = Enum.SortOrder.LayoutOrder
-	layout_7.Padding = UDim.new(0, 8)
-
 	margin_6.Name = "$margin"
-	margin_6.Parent = TitleContainer
-	margin_6.PaddingTop = UDim.new(0, 12)
+	margin_6.Parent = TitleArea
+
+	layout_8.Name = "$layout"
+	layout_8.Parent = TitleContainer
+	layout_8.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout_8.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_8.Padding = UDim.new(0, 8)
 
 	margin_7.Name = "$margin"
-	margin_7.Parent = AlertContents
-	margin_7.PaddingBottom = UDim.new(0, 24)
-	margin_7.PaddingLeft = UDim.new(0, 24)
-	margin_7.PaddingRight = UDim.new(0, 24)
+	margin_7.Parent = TitleContainer
+	margin_7.PaddingTop = UDim.new(0, 12)
 
+	margin_8.Name = "$margin"
+	margin_8.Parent = AlertContents
+	margin_8.PaddingBottom = UDim.new(0, 24)
+	margin_8.PaddingLeft = UDim.new(0, 24)
+	margin_8.PaddingRight = UDim.new(0, 24)
+
+	if Image_ID then
+		Image.Visible = true
+		Image_2.Name = "Image"
+		Image_2.Parent = Image
+		Image_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		Image_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		Image_2.BorderSizePixel = 0
+		Image_2.BackgroundTransparency = 1
+		Image_2.Size = UDim2.new(0, 200, 0, 200)
+		Image_2.Image = Image_ID
+		Image_2.Visible = true
+	end
 	_1.MouseButton1Click:Connect(function()
+		AlertScreen:Destroy()
 		if Callback then
 			Callback()
-			AlertScreen:Destroy()
-		else
-			AlertScreen:Destroy()
 		end
 	end)
 
+	if Sub_Button_Text then
+		local SubButton = Buttons:Clone()
+		SubButton.Parent = Buttons.Parent
+		local SubSubButton = SubButton:FindFirstChild("1")
+		local SubSubBtnClone = SubSubButton:Clone()
+		SubSubBtnClone:ClearAllChildren()
+		SubSubBtnClone.Parent = SubSubButton
+		local UICorner = Instance.new("UICorner", SubSubBtnClone)
+		local Stroke = Instance.new("UIStroke", SubSubBtnClone)
+		SubSubBtnClone.ImageTransparency = 1
+		Stroke.Color = Color3.fromRGB(139, 140, 143)
+		Stroke.Thickness = 1.5
+		SubSubButton.ImageColor3 = Color3.fromRGB(57, 59, 61)
+		SubSubButton.ButtonContent.ButtonMiddleContent.Text.Text = Sub_Button_Text
+		SubSubButton.ButtonContent.ButtonMiddleContent.Text.TextColor3 = Color3.fromRGB(182, 182, 182)
+
+		local function Hover()
+			SubSubButton.MouseEnter:Connect(function()
+				SubSubButton.ImageColor3 = Color3.fromRGB(43, 46, 47)
+			end)
+			SubSubButton.MouseLeave:Connect(function()
+				SubSubButton.ImageColor3 = Color3.fromRGB(57, 59, 61)
+			end)
+		end
+
+		coroutine.wrap(Hover)()
+
+		SubSubBtnClone.MouseButton1Click:Connect(function()
+			AlertScreen:Destroy()
+			if SubCallback then
+				SubCallback()
+			end
+		end)
+	end
+
+	local function Hover()
+		_1.MouseEnter:Connect(function()
+			_1.ImageColor3 = Color3.fromRGB(172, 172, 172)
+		end)
+		_1.MouseLeave:Connect(function()
+			_1.ImageColor3 = Color3.fromRGB(255,255,255)
+		end)
+	end
+
+	coroutine.wrap(Hover)()
+	
 	return AlertScreen
 end
 
@@ -1307,6 +1421,26 @@ local function PlayEmote(ID)
 	Humanoid:PlayEmote("NEW_EMOTE")
 end
 
+local function ShowChangeLogs(DSA, ClickCallback)
+	local SubText = "Don't show again"
+	if not DSA then
+		SubText = nil
+	end
+	return CreateAlert(
+		"Empty Tools v2.6 | What's New?", 
+		ChangeLog,
+		"http://www.roblox.com/asset/?id=18941848597", 
+		"Ok", 
+		SubText,
+		Enum.TextXAlignment.Left,
+		ClickCallback,
+		function()
+			ClickCallback()
+			Player:SetAttribute("NoChangeLogs", true)
+		end
+	)
+end
+
 -- Flight Control
 
 local userinput = game:GetService("UserInputService")
@@ -1812,8 +1946,17 @@ local currentDraggableObject = OuterFrame
 
 local function Setup()
 	if Player:GetAttribute("EmptyToolsInstance") == true then
-		local Alert = CallAlert("Instance Found", "An instance of Empty Tools already exists. Please close it before opening a new one.", function() script:Destroy() end)
-		
+		CreateAlert(
+			"Instance Already Found", 
+			"An instance of Empty Tools is already running. Please close all instances before executing again." ,
+			nil, 
+			"Ok", 
+			nil,
+			Enum.TextXAlignment.Center,
+			function()
+				script:Destroy()
+			end
+		)
 		return
 	end
 	Player:SetAttribute("EmptyToolsInstance", true)
@@ -1836,6 +1979,15 @@ local function Setup()
 	for _,Shader in pairs(Lighting:GetChildren()) do
 		table.insert(DefaultLighting, Shader:Clone())
 	end
+	
+	if not Player:GetAttribute("NoChangeLogs") then
+		LogsOpen = true
+		Log = ShowChangeLogs(true, function()
+			LogsOpen = false
+			Log = nil
+		end)
+	end
+
 
 	-- Drag Handler
 
@@ -2186,6 +2338,21 @@ OuterFrame.Toggle.MouseButton1Click:Connect(function()
 	Contents.Visible = UIOpen
 	ToggleTween = TweenService:Create(OuterFrame, FadeTweenInfo, {BackgroundTransparency = Transparency})
 	ToggleTween:Play()
+end)
+
+OuterFrame.Info.MouseButton1Click:Connect(function()
+	if LogsOpen then 
+		if Log then
+			Log:Destroy()
+			LogsOpen = false
+		end
+		return 
+	end
+	LogsOpen = true
+	Log = ShowChangeLogs(false)
+	repeat wait() until Log.Parent ~= Player.PlayerGui
+	LogsOpen = false
+	Log = nil
 end)
 
 OuterFrame.Close.MouseButton1Click:Connect(function()
