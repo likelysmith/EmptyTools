@@ -307,8 +307,8 @@ function CreateUI()
 	ContentShrunken.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
 	ContentShrunken.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	ContentShrunken.BorderSizePixel = 0
-	ContentShrunken.Position = UDim2.new(0.768011808, 0, 0.00245641591, 0)
-	ContentShrunken.Size = UDim2.new(0.236609057, 0, 0.160182983, 0)
+	ContentShrunken.Position = UDim2.new(0.670011808, 0, 0.00245641591, 0)
+	ContentShrunken.Size = UDim2.new(0.334, 0, 0.160182983, 0)
 	ContentShrunken.Visible = false
 
 	UICorner_8.CornerRadius = UDim.new(0.0500000007, 0)
