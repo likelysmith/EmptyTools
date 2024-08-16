@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
+local VersionString = "v1.4"
 local ChangeLog = "• UI Improvements & Fixes\n• New 'Space' Shading mode\n• Revamped staircase command\n• Small changes to the 'Explode' force\n• Added duplicate instance protection" 
 
 -- Variables
@@ -1427,7 +1428,7 @@ local function ShowChangeLogs(DSA, ClickCallback)
 		SubText = nil
 	end
 	return CreateAlert(
-		"Empty Tools v2.6 | What's New?", 
+		"Empty Tools " .. VersionString .. " | What's New?", 
 		ChangeLog,
 		"http://www.roblox.com/asset/?id=18941848597", 
 		"Ok", 
