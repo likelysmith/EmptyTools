@@ -2357,6 +2357,12 @@ end)
 
 OuterFrame.Close.MouseButton1Click:Connect(function()
 	Player:SetAttribute("EmptyToolsInstance", false)
+	if LogsOpen then 
+		if Log then
+			Log:Destroy()
+			LogsOpen = false
+		end 
+	end
 	local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
 	if PltInstance then
 		PltInstance:Destroy()
@@ -2369,6 +2375,10 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 	end
 	SetGameShaders("None")
 	TeleportEnabled = false
+	if TeleportIndicator then
+		TeleportIndicator:Destroy()
+	end
+	TeleportIndicator = nil
 	PhaseEnabled = false
 	MarkersActive = false
 	MarkerUI:Destroy()
