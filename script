@@ -10,8 +10,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.4"
-local ChangeLog = "• UI Improvements & Fixes\n• New 'Space' Shading mode\n• Revamped staircase command\n• Small changes to the 'Explode' force\n• Added duplicate instance protection" 
+local VersionString = "v1.2.1"
+local ChangeLog = "• Small command bug fixes\n• New 'Pop' command\n• New 'Safe Void' command\n• Shader improvements" 
 
 -- Variables
 
