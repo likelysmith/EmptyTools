@@ -51,6 +51,8 @@ local TeleportEnabled = false
 
 local FlySpeed = 30
 
+local ReturnOnFall = false
+local DefaultDestroyHeight
 
 local LogsOpen = false
 local Log
@@ -1396,6 +1398,7 @@ end
 local function TeleportToPlayer(PlayerTarget)
 	local Root = GetRoot(Player)
 	local TargetRoot = GetRoot(PlayerTarget)
+	TargetRoot.Velocity = Vector3.zero
 	if not TargetRoot then return end
 	Root.CFrame = TargetRoot.CFrame
 end
@@ -1996,6 +1999,8 @@ local function Setup()
 	MarkerUI.ResetOnSpawn = false
 	MarkerUI.Name = "MarkerContainer"
 	MarkerUI.Parent = Player.PlayerGui
+	
+	DefaultDestroyHeight = workspace.FallenPartsDestroyHeight
 
 
 	for _,Shader in pairs(Lighting:GetChildren()) do
@@ -2328,6 +2333,23 @@ local function SetupCommands()
 		end,
 		nil
 	)
+	CreateCommand("Safe Void", "Makes the void safe by either disabling the respawn height or returning to spawn.", nil, {"None", "Disable", "Return"}, "Utility",
+		function(EnumType)
+			ReturnOnFall = false
+			if EnumType == "None" then
+				workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
+			elseif EnumType == "Disable" then
+				workspace.FallenPartsDestroyHeight = -math.huge
+			elseif EnumType == "Return" then
+				ReturnOnFall = true
+				workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
+			end
+		end,
+		function()
+			ReturnOnFall = false
+			workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
+		end
+	)
 end
 
 Setup()
@@ -2341,6 +2363,7 @@ Mouse.Button1Down:Connect(function()
 	if TeleportEnabled then
 		local Location = Mouse.Hit.Position
 		if not Location then return end
+		GetRoot(Player).Velocity = Vector3.zero
 		GetCharacter(Player):MoveTo(Location)
 	elseif PhaseEnabled then
 		local Target = Mouse.Target
@@ -2401,6 +2424,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 			PhaseObj.CanCollide = true
 		end
 	end
+	workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
 	SetGameShaders("None")
 	TeleportEnabled = false
 	if TeleportIndicator then
@@ -2475,5 +2499,18 @@ RunService.RenderStepped:Connect(function()
 	elseif TeleportIndicator ~= nil then
 		TeleportIndicator:Destroy()
 		TeleportIndicator = nil
+	end
+	
+	if ReturnOnFall == true then
+		local Root = GetRoot(Player)
+		if Root then
+			if Root.Position.Y < (DefaultDestroyHeight + 18) then
+				local SpawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
+				if SpawnLocation then
+					Root.Velocity = Vector3.zero
+					Root.CFrame = SpawnLocation.CFrame + Vector3.new(0,4.5,0)
+				end
+			end
+		end
 	end
 end)
