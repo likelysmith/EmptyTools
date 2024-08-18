@@ -1,5 +1,6 @@
 -- Services
 
+
 local TeleportService = game:GetService("TeleportService")
 local PhysicsService = game:GetService("PhysicsService")
 local TweenService = game:GetService("TweenService")
@@ -10,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.2.1"
-local ChangeLog = "• Small command bug fixes\n• New 'Pop' command\n• New 'Safe Void' command\n• Shader improvements" 
+local VersionString = "v1.2.2"
+local ChangeLog = "• UI Scale changes\n• New category titles\n• New 'Free Zoom' command\n• New 'Magnet' command\• General bug fixes" 
 
 -- Variables
 
@@ -48,11 +49,13 @@ local PhaseObjects = {}
 
 local TeleportIndicator = nil
 local TeleportEnabled = false
+local ReturnOnFall = false
 
 local FlySpeed = 30
 
-local ReturnOnFall = false
 local DefaultDestroyHeight
+local DefaultMinZoomDistance
+local DefaultMaxZoomDistance
 
 local LogsOpen = false
 local Log
@@ -116,18 +119,20 @@ function CreateUI()
 	local UICorner_10 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_6 = Instance.new("UIAspectRatioConstraint")
 
+	--Properties:
+
 	EmptyTools.Name = "EmptyTools"
+	EmptyTools.IgnoreGuiInset = true
 	EmptyTools.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	EmptyTools.ResetOnSpawn = false
-	EmptyTools.IgnoreGuiInset = true
 
 	OuterFrame.Name = "OuterFrame"
 	OuterFrame.Parent = EmptyTools
 	OuterFrame.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
 	OuterFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	OuterFrame.BorderSizePixel = 0
-	OuterFrame.Position = UDim2.new(0.65821141, 0, 0.429824561, 0)
-	OuterFrame.Size = UDim2.new(0.329648048, 0, 0.492894381, 0)
+	OuterFrame.Position = UDim2.new(0.67014116, 0, 0.439849585, 0)
+	OuterFrame.Size = UDim2.new(0.317718238, 0, 0.462848485, 0)
 
 	UICorner.CornerRadius = UDim.new(0.0500000007, 0)
 	UICorner.Parent = OuterFrame
@@ -204,8 +209,8 @@ function CreateUI()
 	Category.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	Category.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Category.BorderSizePixel = 0
-	Category.Position = UDim2.new(0.372498095, 0, 0.192686543, 0)
-	Category.Size = UDim2.new(0.274057955, 0, 0.0800000057, 0)
+	Category.Position = UDim2.new(0.370289385, 0, 0.192686573, 0)
+	Category.Size = UDim2.new(0.309397668, 0, 0.0800000057, 0)
 	Category.Font = Enum.Font.Gotham
 	Category.Text = "Filter: None"
 	Category.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -217,7 +222,7 @@ function CreateUI()
 	UICorner_4.Parent = Category
 
 	UITextSizeConstraint_2.Parent = Category
-	UITextSizeConstraint_2.MaxTextSize = 20
+	UITextSizeConstraint_2.MaxTextSize = 19
 
 	Info.Name = "Info"
 	Info.Parent = Contents
@@ -269,7 +274,7 @@ function CreateUI()
 	Tips.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	Tips.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Tips.BorderSizePixel = 0
-	Tips.Position = UDim2.new(0.670165777, 0, 0.192686543, 0)
+	Tips.Position = UDim2.new(0.701087952, 0, 0.192686573, 0)
 	Tips.Size = UDim2.new(0.194556624, 0, 0.0800000057, 0)
 	Tips.Font = Enum.Font.Gotham
 	Tips.Text = "Tips: On"
@@ -282,7 +287,7 @@ function CreateUI()
 	UICorner_6.Parent = Tips
 
 	UITextSizeConstraint_3.Parent = Tips
-	UITextSizeConstraint_3.MaxTextSize = 20
+	UITextSizeConstraint_3.MaxTextSize = 19
 
 	Info_3.Name = "Info"
 	Info_3.Parent = OuterFrame
@@ -310,8 +315,8 @@ function CreateUI()
 	ContentShrunken.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
 	ContentShrunken.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	ContentShrunken.BorderSizePixel = 0
-	ContentShrunken.Position = UDim2.new(0.670011808, 0, 0.00245641591, 0)
-	ContentShrunken.Size = UDim2.new(0.334, 0, 0.160182983, 0)
+	ContentShrunken.Position = UDim2.new(0.670155883, 0, 0.0024564031, 0)
+	ContentShrunken.Size = UDim2.new(0.334465146, 0, 0.160182983, 0)
 	ContentShrunken.Visible = false
 
 	UICorner_8.CornerRadius = UDim.new(0.0500000007, 0)
@@ -713,7 +718,7 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	end
 
 	coroutine.wrap(Hover)()
-	
+
 	return AlertScreen
 end
 
@@ -1445,6 +1450,71 @@ local function ShowChangeLogs(DSA, ClickCallback)
 	)
 end
 
+-- Magnet Control
+
+function MagnetPlayer(TargetUsername)
+	local Target = GetPlayerFromNameSnippet(TargetUsername)
+	if not Target then return end
+
+	local StopMagnet = Instance.new("BoolValue", Player)
+	StopMagnet.Name = "StopMagnet"
+
+	wait(0.1)
+
+	if StopMagnet then
+		StopMagnet:Destroy()
+	end
+
+	repeat
+		pcall(function()
+			local Character = GetCharacter(Player)
+			local TargetCharacter = GetCharacter(Target)
+			local Root = GetRoot(Player)
+			local TargetRoot = GetRoot(Target)
+
+			local Magnet = Character:FindFirstChild("MagnetAlign")
+
+			if not Magnet then
+				Magnet = Instance.new("AlignPosition")
+				Magnet.Name = "MagnetForce"
+				Magnet.MaxForce = 350
+				Magnet.MaxVelocity = math.huge
+				Magnet.Parent = Root
+				Magnet.Responsiveness = 6
+			end
+
+			local Attachment0 = Root:FindFirstChild("MagnetA1")
+			if not Attachment0 then
+				Attachment0 = Instance.new("Attachment", Root)
+				Attachment0.Name = "MagnetA1"
+			end
+			local Attachment1 = Root:FindFirstChild("MagnetA2")
+			if not Attachment1 then
+				Attachment1 = Instance.new("Attachment", TargetRoot)
+				Attachment1.Name = "MagnetA2"
+			end
+			Magnet.Attachment0 = Attachment0
+			Magnet.Attachment1 = Attachment1
+
+			if Character.Humanoid.Sit == false then
+				Character.Humanoid.Sit = false
+				wait(0.01)
+				Character.Humanoid.Sit = true
+			end
+		end)
+		task.wait()
+	until Player:FindFirstChild("StopMagnet")
+
+	Player.StopMagnet:Destroy()
+	local Root = GetRoot(Player)
+	if Root:FindFirstChild("MagnetForce") then
+		Root.MagnetForce:Destroy()
+	end
+	if Root:FindFirstChild("MagnetA1") then
+		Root.MagnetA1:Destroy()
+	end
+end
+
 -- Flight Control
 
 local userinput = game:GetService("UserInputService")
@@ -1926,19 +1996,19 @@ local function SetGameShaders(Type)
 			"http://www.roblox.com/asset/?id=16262366016"
 		)
 		Skybox.Parent = Lighting
-		
+
 		local Atmosphere = Instance.new("Atmosphere")
 		Atmosphere.Density = 0.7
 		Atmosphere.Offset = 1.93
 		Atmosphere.Parent = Lighting
-		
+
 		local Bloom = Instance.new("BloomEffect")
 		Bloom.Enabled = true
 		Bloom.Intensity = 1.05
 		Bloom.Size = 20
 		Bloom.Threshold = 1.25
 		Bloom.Parent = Lighting
-		
+
 		local Correction = Instance.new("ColorCorrectionEffect")
 		Correction.Contrast = 0.1
 		Correction.TintColor = Color3.fromRGB(229, 161, 229)
@@ -1946,7 +2016,7 @@ local function SetGameShaders(Type)
 		Correction.Brightness = -0.1
 		Correction.Saturation = -0.2
 		Correction.Parent = Lighting
-		
+
 	elseif Type == "Baked" then
 		local Correction = Instance.new("ColorCorrectionEffect")
 		Correction.Brightness = 0
@@ -1985,7 +2055,7 @@ local function Setup()
 		return
 	end
 	Player:SetAttribute("EmptyToolsInstance", true)
-	
+
 	MainUI = CreateUI()
 	MainUI.Parent = Player.PlayerGui
 	OuterFrame = MainUI:WaitForChild("OuterFrame")
@@ -1999,14 +2069,17 @@ local function Setup()
 	MarkerUI.ResetOnSpawn = false
 	MarkerUI.Name = "MarkerContainer"
 	MarkerUI.Parent = Player.PlayerGui
-	
+
+	--Defaults
 	DefaultDestroyHeight = workspace.FallenPartsDestroyHeight
+	DefaultMinZoomDistance = Player.CameraMinZoomDistance
+	DefaultMaxZoomDistance = Player.CameraMaxZoomDistance
 
 
 	for _,Shader in pairs(Lighting:GetChildren()) do
 		table.insert(DefaultLighting, Shader:Clone())
 	end
-	
+
 	if not Player:GetAttribute("NoChangeLogs") then
 		LogsOpen = true
 		Log = ShowChangeLogs(true, function()
@@ -2088,7 +2161,7 @@ end
 
 local function SetupCommands()
 	if not MainUI then return end
-	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", nil, nil, "Utility",
+	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", nil, nil, "World",
 		function()
 			local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
 			if PltInstance then
@@ -2116,13 +2189,13 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Emote", "Play any emote from the marketplace by pasting the ID found in the URL.", "Emote ID..", nil, "Fun", 
+	CreateCommand("Emote", "Play any emote from the marketplace by pasting the ID found in the URL.", "Emote ID..", nil, "Character", 
 		function(ID)
 			PlayEmote(ID)
 		end,
 		nil
 	)
-	CreateCommand("Fly", "Flight using WASD for movement and Ctrl/Space for height with a max speed of 100. Not enabled for mobile.", "Speed..", nil, "Motion",
+	CreateCommand("Fly", "Flight using WASD for movement and Ctrl/Space for height with a max speed of 100. Not enabled for mobile.", "Speed..", nil, "Character",
 		function(Speed)
 			if selected then
 				ToggleFlight(false, Speed)
@@ -2134,7 +2207,7 @@ local function SetupCommands()
 			ToggleFlight(false, FlySpeed)
 		end
 	)
-	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Motion",
+	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Character",
 		function()
 			TeleportEnabled = true
 			PhaseEnabled = false
@@ -2151,13 +2224,13 @@ local function SetupCommands()
 			TeleportEnabled = false
 		end
 	)
-	CreateCommand("Reset", "Kills your character in order to reset it. Useful for games with reset disabled.", nil, nil, "Utility",
+	CreateCommand("Reset", "Kills your character in order to reset it. Useful for games with reset disabled.", nil, nil, "Character",
 		function()
 			GetCharacter(Player):FindFirstChildOfClass("Humanoid").Health = 0
 		end,
 		nil
 	)
-	CreateCommand("Staircase", "Creates a staircase with a max of 200 steps in front of your character.", "Steps..", nil, "Fun",
+	CreateCommand("Staircase", "Creates a staircase with a max of 200 steps in front of your character.", "Steps..", nil, "World",
 		function(Steps)
 			CreateStaircaseUpwards(Steps)
 		end,
@@ -2168,7 +2241,7 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Rejoin", "Return to the same server, or hop to a new one.", nil, {"Rejoin", "Hop"}, "Utility",
+	CreateCommand("Rejoin", "Return to the same server, or hop to a new one.", nil, {"Rejoin", "Hop"}, "Game",
 		function(Type)
 			if Type == "Rejoin" then
 				TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
@@ -2193,8 +2266,8 @@ local function SetupCommands()
 			end
 		end,
 		nil
-		)
-	CreateCommand("Freecam", "Detaches the camera from the player to move around freely and locks player movement controls.", nil, nil, "Utility",
+	)
+	CreateCommand("Freecam", "Detaches the camera from the player to move around freely and locks player movement controls.", nil, nil, "Camera",
 		function()
 			StartFreecam()
 		end,
@@ -2202,13 +2275,13 @@ local function SetupCommands()
 			StopFreecam()
 		end
 	)
-	CreateCommand("Explode", "Spins the character at a high velocity and then breaks the joints.", "Power..", nil, "Fun",
+	CreateCommand("Explode", "Spins the character at a high velocity and then breaks the joints.", "Power..", nil, "Character",
 		function(Power)
 			ExplodePlayer(Power)
 		end,
 		nil
 	)
-	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "Motion",
+	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "World",
 		function()
 			PhaseEnabled = true
 			TeleportEnabled = false
@@ -2223,7 +2296,7 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Respawn", "Attempts to find a loaded spawn locaton and teleport you to it.", nil, {"Fastest", "Closest", "Random"}, "Utility",
+	CreateCommand("Respawn", "Attempts to find a loaded spawn locaton and teleport you to it.", nil, {"Fastest", "Closest", "Random"}, "Character",
 		function(Type)
 			local SpawnLocation
 			if Type == "Fastest" then
@@ -2257,8 +2330,8 @@ local function SetupCommands()
 			end
 		end,
 		nil
-		)
-	CreateCommand("View", "View the perspective of another player by typing their username or display name.", "Name..", nil,"Utility",
+	)
+	CreateCommand("View", "View the perspective of another player by typing their username or display name.", "Name..", nil,"Camera",
 		function(Username)
 			local TargetPlayer = GetPlayerFromNameSnippet(Username)
 			if TargetPlayer then
@@ -2269,7 +2342,7 @@ local function SetupCommands()
 			SetCameraTarget("None", nil)
 		end
 	)
-	CreateCommand("Stats", "Allows the customization of player stats such as speed and jump height. Does not save on respawn.", "Value..", {"Speed","Jump"}, "Motion",
+	CreateCommand("Stats", "Allows the customization of player stats such as speed and jump height. Does not save on respawn.", "Value..", {"Speed","Jump"}, "Character",
 		function(Value, Type)
 			local Character = GetCharacter(Player)
 			local Humanoid = Character:FindFirstChild("Humanoid")
@@ -2282,13 +2355,13 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Fling", "Flings your character in the direction of your camera with adjustable power, capped at 300.", "Power..", nil,"Fun",
+	CreateCommand("Fling", "Flings your character in the direction of your camera with adjustable power, capped at 300.", "Power..", nil,"Character",
 		function(Power)
 			FlingSelf(Power)
 		end,
 		nil
 	)
-	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, nil, "Motion",
+	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, nil, "World",
 		function()
 			SetupMarkers()
 		end,
@@ -2297,7 +2370,7 @@ local function SetupCommands()
 			MarkerUI:ClearAllChildren()
 		end
 	)
-	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", {"Back","Head","Front","Left","Right"}, "Fun",
+	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", {"Back","Head","Front","Left","Right"}, "Character",
 		function(Username, PartEnum)
 			print(PartEnum)
 			AttachToPlayer(Username, PartEnum)
@@ -2311,7 +2384,7 @@ local function SetupCommands()
 			StopAttach.Parent = Player
 		end
 	)
-	CreateCommand("Time", "Sets the in-game clock time, changing the skybox. May not work in games with daylight cycles.", "Time..", nil, "Fun",
+	CreateCommand("Time", "Sets the in-game clock time, changing the skybox. May not work in games with daylight cycles.", "Time..", nil, "Game",
 		function(Time)
 			if tonumber(Time) then
 				Lighting.ClockTime = tonumber(Time)
@@ -2319,7 +2392,7 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Grain", "Pink", "Space", "Baked", "B&W"}, "Fun",
+	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Grain", "Pink", "Space", "Baked", "B&W"}, "Game",
 		function(Type)
 			SetGameShaders(Type)
 		end,
@@ -2327,13 +2400,13 @@ local function SetupCommands()
 			SetGameShaders("None")
 		end
 	)
-	CreateCommand("Pop", "Flings your character upwards with adjustable power.", "Power..", nil,"Fun",
+	CreateCommand("Pop", "Flings your character upwards with adjustable power.", "Power..", nil,"Character",
 		function(Power)
 			Pop(Power)
 		end,
 		nil
 	)
-	CreateCommand("Safe Void", "Makes the void safe by either disabling the respawn height or returning to spawn.", nil, {"None", "Disable", "Return"}, "Utility",
+	CreateCommand("Safe Void", "Makes the void safe by either disabling the respawn height or returning to spawn.", nil, {"None", "Disable", "Return"}, "Game",
 		function(EnumType)
 			ReturnOnFall = false
 			if EnumType == "None" then
@@ -2348,6 +2421,29 @@ local function SetupCommands()
 		function()
 			ReturnOnFall = false
 			workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
+		end
+	)
+	CreateCommand("Free Zoom", "Unlocks the camera maximum and minmum zoom distance", nil, nil, "Camera",
+		function()
+			Player.CameraMinZoomDistance = 0
+			Player.CameraMaxZoomDistance = math.huge
+		end,
+		function()
+			Player.CameraMinZoomDistance = DefaultMinZoomDistance
+			Player.CameraMaxZoomDistance = DefaultMaxZoomDistance
+		end
+	)
+	CreateCommand("Magnet", "Brings your character to another with an invisible force", "Name..", nil, "Character",
+		function(Username)
+			MagnetPlayer(Username)
+		end,
+		function()
+			if Player:FindFirstChild("StopMagnet") then
+				return
+			end
+			local StopAttach = Instance.new("StringValue")
+			StopAttach.Name = "StopMagnet"
+			StopAttach.Parent = Player
 		end
 	)
 end
@@ -2457,6 +2553,7 @@ Contents.Category.MouseButton1Click:Connect(function()
 
 		Command.Visible = CommandMatchesCategory and CommandMatchesSearch
 	end
+	Contents.Commands.CanvasPosition = Vector2.zero
 end)
 
 Contents.Search:GetPropertyChangedSignal("Text"):Connect(function()
@@ -2469,6 +2566,8 @@ Contents.Search:GetPropertyChangedSignal("Text"):Connect(function()
 
 		Command.Visible = CommandMatchesCategory and CommandMatchesSearch
 	end
+
+	Contents.Commands.CanvasPosition = Vector2.zero
 end)
 
 Contents.Tips.MouseButton1Click:Connect(function()
@@ -2500,7 +2599,7 @@ RunService.RenderStepped:Connect(function()
 		TeleportIndicator:Destroy()
 		TeleportIndicator = nil
 	end
-	
+
 	if ReturnOnFall == true then
 		local Root = GetRoot(Player)
 		if Root then

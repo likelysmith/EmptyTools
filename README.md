@@ -1,4 +1,4 @@
-# Empty Tools v1.2.1
+# Empty Tools v1.2.2
 ## Clean and Compact UI with fun and useful commands
 ```
 loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
@@ -9,8 +9,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTool
 loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/windup"))()
 ```
 
-
-# Wind-Up (Now included with Empty Tools)
+# Wind-Up (Now included with Empty Tools v1.1)
 ## Hold Z to launch yourself in the direction of the camera, power shown in bottom right corner
 ```
 loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/windup"))()
