@@ -1,5 +1,3 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/MiscScripts/fakecheatwarn"))()
-
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local userInputService = game:GetService("UserInputService")
