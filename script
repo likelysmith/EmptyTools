@@ -78,10 +78,6 @@ end
 
 
 function CreateUI()
-	-- Gui to Lua
-	-- Version: 3.2
-
-	-- Instances:
 
 	local EmptyTools = Instance.new("ScreenGui")
 	local OuterFrame = Instance.new("Frame")
@@ -1372,6 +1368,7 @@ local function GetRoot(Target)
 end
 
 local function GetPlayerFromNameSnippet(Snippet)
+	Snippet = string.lower(Snippet)
 	for _,User in pairs(Players:GetPlayers()) do
 		if User == Player then continue end
 		local LoweredName = string.lower(User.Name)
