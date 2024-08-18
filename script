@@ -416,7 +416,7 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	end
 
 	AlertScreen.Name = "AlertScreen"
-	AlertScreen.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+	AlertScreen.Parent = Player:WaitForChild("PlayerGui")
 	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	AlertScreen.IgnoreGuiInset = true
 	AlertScreen.DisplayOrder = 100
