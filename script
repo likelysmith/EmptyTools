@@ -51,7 +51,7 @@ local TeleportIndicator = nil
 local TeleportEnabled = false
 local ReturnOnFall = false
 
-local FlySpeed = 30
+local FlySpeed = 40
 
 local DefaultDestroyHeight
 local DefaultMinZoomDistance
@@ -2038,7 +2038,11 @@ local currentDraggableObject = OuterFrame
 
 local function Setup()
 	if Player:GetAttribute("EmptyToolsInstance") == true then
-		CreateAlert(
+		if Player.PlayerGui:FindFirstChild("DuplicateInstanceAlert_" .. Player.UserId) then
+			script:Destroy()
+			return
+		end
+		local Alert = CreateAlert(
 			"Instance Already Found", 
 			"An instance of Empty Tools is already running. Please close all instances before executing again." ,
 			nil, 
@@ -2049,6 +2053,7 @@ local function Setup()
 				script:Destroy()
 			end
 		)
+		Alert.Name = "DuplicateInstanceAlert_" .. Player.UserId 
 		return
 	end
 	Player:SetAttribute("EmptyToolsInstance", true)
@@ -2574,8 +2579,6 @@ end)
 
 -- Loop
 
-
-
 RunService.RenderStepped:Connect(function()
 	if TeleportEnabled then
 		if TeleportIndicator then
@@ -2584,7 +2587,7 @@ RunService.RenderStepped:Connect(function()
 			Part.Position = TeleportIndicator.WorldPivot.Position
 			local Root = GetRoot(Player)
 			if Root then
-				if (Root.Position - Part.Position).Magnitude < 7 then
+				if (Root.Position - Part.Position).Magnitude < 6 then
 					Part.CanCollide = false
 				else
 					Part.CanCollide = true
