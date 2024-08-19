@@ -6,7 +6,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTool
 # Empty Tools Legacy
 ## Legacy Empty Tools with old UI and commands
 ```
-loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/windup"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/legacyscript"))()
 ```
 
 # Wind-Up (Now included with Empty Tools v1.1)
