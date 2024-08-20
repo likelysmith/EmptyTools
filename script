@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- Changelog
 
 local VersionString = "v1.2.2"
-local ChangeLog = "• New 'Link' Command\n• New category titles\n• New 'Free Zoom' command\n• New 'Magnet' command\• General bug fixes" 
+local ChangeLog = "• New 'Link' Command\n• New category titles\n• New 'Free Zoom' command\n• New 'Magnet' command\n• General bug fixes" 
 
 -- Variables
 
