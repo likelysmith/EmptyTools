@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- Changelog
 
 local VersionString = "v1.2.2"
-local ChangeLog = "• UI Scale changes\n• New category titles\n• New 'Free Zoom' command\n• New 'Magnet' command\n• General bug fixes" 
+local ChangeLog = "• New 'Link' Command\n• New category titles\n• New 'Free Zoom' command\n• New 'Magnet' command\• General bug fixes" 
 
 -- Variables
 
@@ -51,7 +51,7 @@ local TeleportIndicator = nil
 local TeleportEnabled = false
 local ReturnOnFall = false
 
-local FlySpeed = 40
+local FlySpeed = 30
 
 local DefaultDestroyHeight
 local DefaultMinZoomDistance
@@ -78,6 +78,10 @@ end
 
 
 function CreateUI()
+	-- Gui to Lua
+	-- Version: 3.2
+
+	-- Instances:
 
 	local EmptyTools = Instance.new("ScreenGui")
 	local OuterFrame = Instance.new("Frame")
@@ -412,7 +416,7 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	end
 
 	AlertScreen.Name = "AlertScreen"
-	AlertScreen.Parent = Player:WaitForChild("PlayerGui")
+	AlertScreen.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	AlertScreen.IgnoreGuiInset = true
 	AlertScreen.DisplayOrder = 100
@@ -1368,7 +1372,6 @@ local function GetRoot(Target)
 end
 
 local function GetPlayerFromNameSnippet(Snippet)
-	Snippet = string.lower(Snippet)
 	for _,User in pairs(Players:GetPlayers()) do
 		if User == Player then continue end
 		local LoweredName = string.lower(User.Name)
@@ -1446,6 +1449,373 @@ local function ShowChangeLogs(DSA, ClickCallback)
 		end
 	)
 end
+
+-- Link Control
+
+local function CreateLinkAlert(ID)
+	-- Gui to Lua
+	-- Version: 3.2
+
+	-- Instances:
+
+	local AlertScreen = Instance.new("ScreenGui")
+	local Overlay = Instance.new("TextButton")
+	local CallDialog = Instance.new("ImageButton")
+	local AlertContents = Instance.new("ImageLabel")
+	local Footer = Instance.new("ImageLabel")
+	local layout = Instance.new("UIListLayout")
+	local margin = Instance.new("UIPadding")
+	local Buttons = Instance.new("ImageLabel")
+	local _1 = Instance.new("ImageButton")
+	local ButtonContent = Instance.new("Frame")
+	local ButtonMiddleContent = Instance.new("Frame")
+	local UIListLayout = Instance.new("UIListLayout")
+	local Text = Instance.new("TextLabel")
+	local layout_2 = Instance.new("UIListLayout")
+	local margin_2 = Instance.new("UIPadding")
+	local layout_3 = Instance.new("UIListLayout")
+	local MiddleContent = Instance.new("ImageLabel")
+	local layout_4 = Instance.new("UIListLayout")
+	local margin_3 = Instance.new("UIPadding")
+	local Image = Instance.new("ImageLabel")
+	local layout_5 = Instance.new("UIListLayout")
+	local margin_4 = Instance.new("UIPadding")
+	local Image_2 = Instance.new("ImageLabel")
+	local Content = Instance.new("ImageLabel")
+	local BodyText = Instance.new("TextLabel")
+	local layout_6 = Instance.new("UIListLayout")
+	local margin_5 = Instance.new("UIPadding")
+	local Content_2 = Instance.new("ImageLabel")
+	local layout_7 = Instance.new("UIListLayout")
+	local margin_6 = Instance.new("UIPadding")
+	local TextBox = Instance.new("TextBox")
+	local TitleContainer = Instance.new("ImageLabel")
+	local TitleArea = Instance.new("ImageLabel")
+	local layout_8 = Instance.new("UIListLayout")
+	local Title = Instance.new("TextLabel")
+	local Underline = Instance.new("Frame")
+	local margin_7 = Instance.new("UIPadding")
+	local layout_9 = Instance.new("UIListLayout")
+	local margin_8 = Instance.new("UIPadding")
+	local margin_9 = Instance.new("UIPadding")
+
+	--Properties:
+
+	AlertScreen.Name = "LinkScreen"
+	AlertScreen.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	AlertScreen.DisplayOrder = 100
+
+	Overlay.Name = "Overlay"
+	Overlay.Parent = AlertScreen
+	Overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	Overlay.BackgroundTransparency = 0.500
+	Overlay.BorderSizePixel = 0
+	Overlay.Selectable = false
+	Overlay.Size = UDim2.new(1, 0, 1, 0)
+	Overlay.Visible = false
+	Overlay.AutoButtonColor = false
+	Overlay.Text = ""
+
+	CallDialog.Name = "CallDialog"
+	CallDialog.Parent = AlertScreen
+	CallDialog.AnchorPoint = Vector2.new(0.5, 0.5)
+	CallDialog.BackgroundColor3 = Color3.fromRGB(57, 59, 61)
+	CallDialog.BackgroundTransparency = 1.000
+	CallDialog.BorderSizePixel = 0
+	CallDialog.ClipsDescendants = true
+	CallDialog.AutomaticSize = Enum.AutomaticSize.Y
+	CallDialog.Position = UDim2.new(0.5, 0, 0.5, 0)
+	CallDialog.Selectable = false
+	CallDialog.Size = UDim2.new(0, 400, 0, 182)
+	CallDialog.AutoButtonColor = false
+	CallDialog.Image = "rbxasset://LuaPackages/Packages/_Index/UIBlox/UIBlox/AppImageAtlas/img_set_1x_1.png"
+	CallDialog.ImageColor3 = Color3.fromRGB(57, 59, 61)
+	CallDialog.ImageRectOffset = Vector2.new(402, 494)
+	CallDialog.ImageRectSize = Vector2.new(17, 17)
+	CallDialog.ScaleType = Enum.ScaleType.Slice
+	CallDialog.SliceCenter = Rect.new(8, 8, 9, 9)
+
+	AlertContents.Name = "AlertContents"
+	AlertContents.Parent = CallDialog
+	AlertContents.BackgroundTransparency = 1.000
+	AlertContents.BorderSizePixel = 0
+	AlertContents.Size = UDim2.new(0, 400, 0, 182)
+
+	Footer.Name = "Footer"
+	Footer.Parent = AlertContents
+	Footer.AutomaticSize = Enum.AutomaticSize.Y
+	Footer.BackgroundTransparency = 1.000
+	Footer.LayoutOrder = 3
+	Footer.Size = UDim2.new(1, 0, 0, 36)
+
+	layout.Name = "$layout"
+	layout.Parent = Footer
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 12)
+
+	margin.Name = "$margin"
+	margin.Parent = Footer
+
+	Buttons.Name = "Buttons"
+	Buttons.Parent = Footer
+	Buttons.BackgroundTransparency = 1.000
+	Buttons.LayoutOrder = 3
+	Buttons.Size = UDim2.new(1, 0, 0, 36)
+
+	_1.Name = "1"
+	_1.Parent = Buttons
+	_1.BackgroundTransparency = 1.000
+	_1.LayoutOrder = 1
+	_1.Size = UDim2.new(0, 352, 0, 36)
+	_1.AutoButtonColor = false
+	_1.Image = "rbxasset://LuaPackages/Packages/_Index/UIBlox/UIBlox/AppImageAtlas/img_set_1x_1.png"
+	_1.ImageRectOffset = Vector2.new(402, 494)
+	_1.ImageRectSize = Vector2.new(17, 17)
+	_1.ScaleType = Enum.ScaleType.Slice
+	_1.SliceCenter = Rect.new(8, 8, 9, 9)
+
+	ButtonContent.Name = "ButtonContent"
+	ButtonContent.Parent = _1
+	ButtonContent.BackgroundTransparency = 1.000
+	ButtonContent.Size = UDim2.new(1, 0, 1, 0)
+
+	ButtonMiddleContent.Name = "ButtonMiddleContent"
+	ButtonMiddleContent.Parent = ButtonContent
+	ButtonMiddleContent.BackgroundTransparency = 1.000
+	ButtonMiddleContent.Size = UDim2.new(1, 0, 1, 0)
+
+	UIListLayout.Parent = ButtonMiddleContent
+	UIListLayout.FillDirection = Enum.FillDirection.Horizontal
+	UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	UIListLayout.Padding = UDim.new(0, 5)
+
+	Text.Name = "Text"
+	Text.Parent = ButtonMiddleContent
+	Text.BackgroundTransparency = 1.000
+	Text.LayoutOrder = 2
+	Text.Size = UDim2.new(0, 23, 0, 22)
+	Text.Font = Enum.Font.BuilderSansBold
+	Text.Text = "Done"
+	Text.AutomaticSize = Enum.AutomaticSize.X
+	Text.TextColor3 = Color3.fromRGB(57, 59, 61)
+	Text.TextSize = 20.000
+	Text.TextWrapped = true
+
+	layout_2.Name = "$layout"
+	layout_2.Parent = Buttons
+	layout_2.FillDirection = Enum.FillDirection.Horizontal
+	layout_2.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout_2.SortOrder = Enum.SortOrder.LayoutOrder
+
+	margin_2.Name = "$margin"
+	margin_2.Parent = Buttons
+
+	layout_3.Name = "$layout"
+	layout_3.Parent = AlertContents
+	layout_3.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_3.Padding = UDim.new(0, 24)
+
+	MiddleContent.Name = "MiddleContent"
+	MiddleContent.Parent = AlertContents
+	MiddleContent.BackgroundTransparency = 1.000
+	MiddleContent.LayoutOrder = 2
+	MiddleContent.AutomaticSize = Enum.AutomaticSize.Y
+	MiddleContent.Size = UDim2.new(1, 0, 0, 22)
+
+	layout_4.Name = "$layout"
+	layout_4.Parent = MiddleContent
+	layout_4.SortOrder = Enum.SortOrder.LayoutOrder
+
+	margin_3.Name = "$margin"
+	margin_3.Parent = MiddleContent
+
+	Image.Name = "Image"
+	Image.Parent = MiddleContent
+	Image.BackgroundTransparency = 1.000
+	Image.LayoutOrder = 2
+	Image.Size = UDim2.new(1, 0, 0, 22)
+	Image.Visible = false
+
+	layout_5.Name = "$layout"
+	layout_5.Parent = Image
+	layout_5.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_5.Padding = UDim.new(0, 12)
+
+	margin_4.Name = "$margin"
+	margin_4.Parent = Image
+	margin_4.PaddingBottom = UDim.new(0, 15)
+	margin_4.PaddingLeft = UDim.new(0, 75)
+
+	Image_2.Name = "Image"
+	Image_2.Parent = Image
+	Image_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Image_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Image_2.BorderSizePixel = 0
+	Image_2.Size = UDim2.new(0, 200, 0, 200)
+	Image_2.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
+
+	Content.Name = "Content"
+	Content.Parent = MiddleContent
+	Content.BackgroundTransparency = 1.000
+	Content.LayoutOrder = 2
+	Content.AutomaticSize = Enum.AutomaticSize.Y
+	Content.Size = UDim2.new(1, 0, 0, 22)
+
+	BodyText.Name = "BodyText"
+	BodyText.Parent = Content
+	BodyText.BackgroundTransparency = 1.000
+	BodyText.LayoutOrder = 1
+	BodyText.AutomaticSize = Enum.AutomaticSize.Y
+	BodyText.Size = UDim2.new(1, 0, 0, 22)
+	BodyText.Font = Enum.Font.BuilderSans
+	BodyText.Text = "Copy the code below and send it to another user with Empty Tools to allow them to join this game instance."
+	BodyText.TextColor3 = Color3.fromRGB(189, 190, 190)
+	BodyText.TextSize = 20.000
+	BodyText.TextWrapped = true
+
+	layout_6.Name = "$layout"
+	layout_6.Parent = Content
+	layout_6.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_6.Padding = UDim.new(0, 12)
+
+	margin_5.Name = "$margin"
+	margin_5.Parent = Content
+
+	Content_2.Name = "Content"
+	Content_2.Parent = MiddleContent
+	Content_2.BackgroundTransparency = 1.000
+	Content_2.LayoutOrder = 2
+	Content_2.Position = UDim2.new(0, 0, 0.520437717, 0)
+	Content_2.Size = UDim2.new(1, 0, 0.276637852, 22)
+
+	layout_7.Name = "$layout"
+	layout_7.Parent = Content_2
+	layout_7.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_7.Padding = UDim.new(0, 12)
+
+	margin_6.Name = "$margin"
+	margin_6.Parent = Content_2
+	margin_6.PaddingLeft = UDim.new(0, 22)
+	margin_6.PaddingTop = UDim.new(0, 20)
+
+	TextBox.Parent = Content_2
+	TextBox.AnchorPoint = Vector2.new(0.5, 0.5)
+	TextBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	TextBox.BackgroundTransparency = 1.000
+	TextBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	TextBox.BorderSizePixel = 0
+	TextBox.Position = UDim2.new(0.431250006, 0, 0.669518828, 0)
+	TextBox.Size = UDim2.new(0.9375, 0, 1.33903766, 0)
+	TextBox.ClearTextOnFocus = false
+	TextBox.Font = Enum.Font.Unknown
+	TextBox.TextEditable = false
+	TextBox.PlaceholderColor3 = Color3.fromRGB(255, 255, 255)
+	TextBox.Text = ID
+	TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextBox.TextScaled = true
+	TextBox.TextWrapped = true
+
+	TitleContainer.Name = "TitleContainer"
+	TitleContainer.Parent = AlertContents
+	TitleContainer.BackgroundTransparency = 1.000
+	TitleContainer.LayoutOrder = 1
+	TitleContainer.Size = UDim2.new(1, 0, 0, 52)
+
+	TitleArea.Name = "TitleArea"
+	TitleArea.Parent = TitleContainer
+	TitleArea.BackgroundTransparency = 1.000
+	TitleArea.LayoutOrder = 1
+	TitleArea.Size = UDim2.new(1, 0, 0, 40)
+
+	layout_8.Name = "$layout"
+	layout_8.Parent = TitleArea
+	layout_8.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout_8.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_8.Padding = UDim.new(0, 12)
+
+	Title.Name = "Title"
+	Title.Parent = TitleArea
+	Title.BackgroundTransparency = 1.000
+	Title.LayoutOrder = 1
+	Title.AutomaticSize = Enum.AutomaticSize.X
+	Title.Size = UDim2.new(0, 14, 0, 27)
+	Title.Font = Enum.Font.BuilderSansBold
+	Title.Text = "Link Code"
+	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title.TextSize = 25.000
+	Title.TextWrapped = true
+
+	Underline.Name = "Underline"
+	Underline.Parent = TitleArea
+	Underline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Underline.BackgroundTransparency = 0.800
+	Underline.BorderSizePixel = 0
+	Underline.LayoutOrder = 2
+	Underline.Size = UDim2.new(1, 0, 0, 1)
+
+	margin_7.Name = "$margin"
+	margin_7.Parent = TitleArea
+
+	layout_9.Name = "$layout"
+	layout_9.Parent = TitleContainer
+	layout_9.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout_9.SortOrder = Enum.SortOrder.LayoutOrder
+	layout_9.Padding = UDim.new(0, 8)
+
+	margin_8.Name = "$margin"
+	margin_8.Parent = TitleContainer
+	margin_8.PaddingTop = UDim.new(0, 12)
+
+	margin_9.Name = "$margin"
+	margin_9.Parent = AlertContents
+	margin_9.PaddingBottom = UDim.new(0, 24)
+	margin_9.PaddingLeft = UDim.new(0, 24)
+	margin_9.PaddingRight = UDim.new(0, 24)
+
+	local function Hover()
+		_1.MouseEnter:Connect(function()
+			_1.ImageColor3 = Color3.fromRGB(172, 172, 172)
+		end)
+		_1.MouseLeave:Connect(function()
+			_1.ImageColor3 = Color3.fromRGB(255,255,255)
+		end)
+	end
+
+	coroutine.wrap(Hover)()
+
+	_1.MouseButton1Click:Connect(function()
+		AlertScreen.Parent = nil
+		AlertScreen:Destroy()
+	end)
+
+
+	return AlertScreen
+end
+
+local function CreateLinkKey(JobId)
+	local result = JobId:gsub("-", "")
+	return result .. "-" .. game.PlaceId
+end
+
+
+local function RecieveLinkKey(linkKey)
+	local lastDashIndex = linkKey:find("-%w+$")
+
+	local placeId = string.sub(linkKey, lastDashIndex + 1)
+	
+	local jobIdWithoutPlaceId = string.sub(linkKey, 1, lastDashIndex - 1)
+	local formattedJobId = string.sub(jobIdWithoutPlaceId, 1, 8) .. "-" ..
+		string.sub(jobIdWithoutPlaceId, 9, 12) .. "-" ..
+		string.sub(jobIdWithoutPlaceId, 13, 16) .. "-" ..
+		string.sub(jobIdWithoutPlaceId, 17, 20) .. "-" ..
+		string.sub(jobIdWithoutPlaceId, 21)
+
+	return formattedJobId, tonumber(placeId)
+end
+
 
 -- Magnet Control
 
@@ -2038,11 +2408,7 @@ local currentDraggableObject = OuterFrame
 
 local function Setup()
 	if Player:GetAttribute("EmptyToolsInstance") == true then
-		if Player.PlayerGui:FindFirstChild("DuplicateInstanceAlert_" .. Player.UserId) then
-			script:Destroy()
-			return
-		end
-		local Alert = CreateAlert(
+		CreateAlert(
 			"Instance Already Found", 
 			"An instance of Empty Tools is already running. Please close all instances before executing again." ,
 			nil, 
@@ -2053,7 +2419,6 @@ local function Setup()
 				script:Destroy()
 			end
 		)
-		Alert.Name = "DuplicateInstanceAlert_" .. Player.UserId 
 		return
 	end
 	Player:SetAttribute("EmptyToolsInstance", true)
@@ -2448,6 +2813,21 @@ local function SetupCommands()
 			StopAttach.Parent = Player
 		end
 	)
+	CreateCommand("Link", "Allows users with Empty Tools to join your current game. ID is only required for joins.", "ID..", {"Invite", "Join"}, "Game",
+		function(ID, Type)
+			if Type == "Invite" then
+				local IDKey = CreateLinkKey(game.JobId)
+				local Alert = CreateLinkAlert(IDKey)
+			elseif Type == "Join" then
+				if not ID then return end
+				local ID_Decode, PlaceID = RecieveLinkKey(ID)
+				if ID_Decode then
+					TeleportService:TeleportToPlaceInstance(PlaceID, ID_Decode, Player)
+				end
+			end
+		end,
+		nil
+	)
 end
 
 Setup()
@@ -2524,6 +2904,9 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 	end
 	workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
 	SetGameShaders("None")
+	if Player.PlayerGui:FindFirstChild("LinkScreen") then
+		Player.PlayerGui.LinkScreen:Destroy()
+	end
 	TeleportEnabled = false
 	if TeleportIndicator then
 		TeleportIndicator:Destroy()
@@ -2579,6 +2962,8 @@ end)
 
 -- Loop
 
+
+
 RunService.RenderStepped:Connect(function()
 	if TeleportEnabled then
 		if TeleportIndicator then
@@ -2587,7 +2972,7 @@ RunService.RenderStepped:Connect(function()
 			Part.Position = TeleportIndicator.WorldPivot.Position
 			local Root = GetRoot(Player)
 			if Root then
-				if (Root.Position - Part.Position).Magnitude < 6 then
+				if (Root.Position - Part.Position).Magnitude < 7 then
 					Part.CanCollide = false
 				else
 					Part.CanCollide = true
