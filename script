@@ -1502,7 +1502,7 @@ local function CreateLinkAlert(ID)
 	--Properties:
 
 	AlertScreen.Name = "LinkScreen"
-	AlertScreen.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+	AlertScreen.Parent = Player:WaitForChild("PlayerGui")
 	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	AlertScreen.DisplayOrder = 100
 
