@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- Changelog
 
 local VersionString = "v1.2.2"
-local ChangeLog = "• New 'Link' Command\n• New category titles\n• New 'Free Zoom' command\n• New 'Magnet' command\n• General bug fixes" 
+local ChangeLog = "• New 'Link' Command\n• Optimized Magnet\n• New category titles\n• New 'Free Zoom' command\n• New 'Magnet' command" 
 
 -- Variables
 
@@ -1839,7 +1839,7 @@ function MagnetPlayer(TargetUsername)
 			local Root = GetRoot(Player)
 			local TargetRoot = GetRoot(Target)
 
-			local Magnet = Character:FindFirstChild("MagnetAlign")
+			local Magnet = Character:FindFirstChild("MagnetForce")
 
 			if not Magnet then
 				Magnet = Instance.new("AlignPosition")
