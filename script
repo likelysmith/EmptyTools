@@ -1844,10 +1844,10 @@ function MagnetPlayer(TargetUsername)
 			if not Magnet then
 				Magnet = Instance.new("AlignPosition")
 				Magnet.Name = "MagnetForce"
-				Magnet.MaxForce = 350
+				Magnet.MaxForce = 2850
 				Magnet.MaxVelocity = math.huge
 				Magnet.Parent = Root
-				Magnet.Responsiveness = 6
+				Magnet.Responsiveness = 12
 			end
 
 			local Attachment0 = Root:FindFirstChild("MagnetA1")
