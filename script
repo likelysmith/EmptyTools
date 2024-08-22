@@ -1839,7 +1839,7 @@ function MagnetPlayer(TargetUsername)
 			local Root = GetRoot(Player)
 			local TargetRoot = GetRoot(Target)
 
-			local Magnet = Character:FindFirstChild("MagnetForce")
+			local Magnet = Root:FindFirstChild("MagnetForce")
 
 			if not Magnet then
 				Magnet = Instance.new("AlignPosition")
