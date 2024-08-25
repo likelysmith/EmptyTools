@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- Changelog
 
 local VersionString = "v1.2.3"
-local ChangeLog = "• New 'Block' command\n• Updated link to work cross-game\n• Optimizations for Magnet and Point Teleport\n• Updated CoreUI to latest SpriteSheet system" 
+local ChangeLog = "• New 'Block' command\n• Updated link to work cross-game\n• Added 'Stack Jump' command\n• Updated CoreUI to latest SpriteSheet system" 
 
 -- Variables
 
@@ -31,6 +31,7 @@ local InfoFrame
 
 local CommandFrames = {}
 local DefaultLighting = {}
+local AttachmentLocations = {"Back","Head","Front","Left","Right"}
 
 local CommandCategories = {"None"}
 local CurrentCategory = "None"
@@ -50,6 +51,9 @@ local PhaseObjects = {}
 local TeleportIndicator = nil
 local TeleportEnabled = false
 local ReturnOnFall = false
+
+local DoubleJump = false
+local JumpInstances = 1
 
 local FlySpeed = 30
 
@@ -1371,6 +1375,14 @@ local function GetRoot(Target)
 	end
 end
 
+local function GetHumanoid(Target)
+	local Character = GetCharacter(Target)
+	if Character then
+		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+		return Humanoid
+	end
+end
+
 local function GetPlayerFromNameSnippet(Snippet)
 	for _,User in pairs(Players:GetPlayers()) do
 		if User == Player then continue end
@@ -1402,7 +1414,7 @@ end
 
 local function TogglePlayerCharacter(Target, Value)
 	local Character = GetCharacter(Target)
-	
+
 	if Value then
 		for _,Object in pairs(Character:GetDescendants()) do
 			if not Object:IsA("BasePart") and not Object:IsA("Decal") then continue end
@@ -1459,8 +1471,7 @@ end
 
 local function PlayEmote(ID)
 	ID = tonumber(ID)
-	local Character = GetCharacter(Player)
-	local Humanoid = Character.Humanoid
+	local Humanoid = GetHumanoid(Player)
 	local EmoteArray =
 		{
 			["NEW_EMOTE"] = {ID}
@@ -1845,7 +1856,7 @@ local function RecieveLinkKey(linkKey)
 	local lastDashIndex = linkKey:find("-%w+$")
 
 	local placeId = string.sub(linkKey, lastDashIndex + 1)
-	
+
 	local jobIdWithoutPlaceId = string.sub(linkKey, 1, lastDashIndex - 1)
 	local formattedJobId = string.sub(jobIdWithoutPlaceId, 1, 8) .. "-" ..
 		string.sub(jobIdWithoutPlaceId, 9, 12) .. "-" ..
@@ -1903,10 +1914,12 @@ function MagnetPlayer(TargetUsername)
 			Magnet.Attachment0 = Attachment0
 			Magnet.Attachment1 = Attachment1
 
-			if Character.Humanoid.Sit == false then
+			local Humanoid = GetHumanoid(Player)
+
+			if Humanoid.Sit == false then
 				Character.Humanoid.Sit = false
 				wait(0.01)
-				Character.Humanoid.Sit = true
+				Humanoid.Sit = true
 			end
 		end)
 		task.wait()
@@ -1956,7 +1969,7 @@ local flyForce, bodyGyro
 
 local function ToggleFlight(Value, FlySpeedValue)
 	local Character = GetCharacter(Player)
-	local Humanoid = Character:WaitForChild("Humanoid")
+	local Humanoid = GetHumanoid(Player)
 	local HumanoidRootPart = GetRoot(Player)
 
 	if tonumber(FlySpeedValue) then
@@ -2130,7 +2143,7 @@ local function ExplodePlayer(Power)
 	ExplosionInProcess = true
 	local Character = GetCharacter(Player)
 	local Root = GetRoot(Player)
-	local Humanoid = Character.Humanoid
+	local Humanoid = GetHumanoid(Player)
 	Humanoid:ChangeState(Enum.HumanoidStateType.FallingDown)
 	local Velocity = Instance.new("BodyAngularVelocity")
 	Velocity.Name = "ExplosionVelocity"
@@ -2150,18 +2163,18 @@ local function SetCameraTarget(Type, Target)
 		local Value = Instance.new("BoolValue", Player)
 		Value.Name = "RemoveViewPlayer"
 		Camera.CameraType = Enum.CameraType.Custom
-		Camera.CameraSubject = GetCharacter(Player).Humanoid
+		Camera.CameraSubject = GetHumanoid(Player)
 	elseif Type == "View" then
 		repeat
 			pcall(function()
 				local TargetCharacter = GetCharacter(Target)
-				Camera.CameraSubject = TargetCharacter.Humanoid
+				Camera.CameraSubject = GetHumanoid(TargetCharacter)
 			end)
 			task.wait(0.15)
 		until Player:FindFirstChild("RemoveViewPlayer")
 		Player:FindFirstChild("RemoveViewPlayer"):Destroy()
 		Camera.CameraType = Enum.CameraType.Custom
-		Camera.CameraSubject = GetCharacter(Player).Humanoid
+		Camera.CameraSubject = GetHumanoid(Player)
 	end
 end
 
@@ -2192,6 +2205,9 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 	elseif AttachPart == "Right" then
 		Part = "RightHand"
 		AttachmentOffset = CFrame.Angles(-1.5, 3, 0) + Vector3.new(0,-0.45,1)
+	elseif AttachPart == "???" then
+		Part = "Head"
+		AttachmentOffset = CFrame.Angles(0, 3, 3) + Vector3.new(0,-0.4,-1) 
 	end
 	local StopAttach = Player:FindFirstChild("StopAttach")
 	if StopAttach then
@@ -2200,15 +2216,15 @@ local function AttachToPlayer(TargetUsername, AttachPart)
 
 	repeat
 		pcall(function()
-			local Character = GetCharacter(Player)
 			local TargetCharacter = GetCharacter(Target)
 			local Root = GetRoot(Player)
 			Root.CFrame = TargetCharacter:FindFirstChild(Part).CFrame * AttachmentOffset
 			Root.Velocity = Vector3.zero
-			if Character.Humanoid.Sit == false then
-				Character.Humanoid.Sit = false
+			local Humanoid = GetHumanoid(Player)
+			if Humanoid.Sit == false then
+				Humanoid.Sit = false
 				wait(0.05)
-				Character.Humanoid.Sit = true
+				Humanoid.Sit = true
 			end
 		end)
 		task.wait()
@@ -2217,7 +2233,7 @@ end
 
 local function Pop(Height)
 	local Character = GetCharacter(Player)
-	local Humanoid = Character.Humanoid
+	local Humanoid = GetHumanoid(Player)
 	if not Humanoid then return end
 	Humanoid.Sit = true
 	StopPlayerAnimation()
@@ -2247,7 +2263,7 @@ local function FlingSelf(Power)
 		Power = 300
 	end
 	local character = GetCharacter(Player)
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local humanoid = GetHumanoid(Player)
 	if humanoid then
 		humanoid.Sit = true
 		wait(0.5)
@@ -2309,6 +2325,9 @@ local function SetGameShaders(Type)
 		for _,Shader in pairs(DefaultLighting) do
 			Shader:Clone().Parent = Lighting
 		end
+		if workspace.Terrain:FindFirstChild("ShadingCloudInstance_" .. Player.UserId) then
+			workspace.Terrain:FindFirstChild("ShadingCloudInstance_" .. Player.UserId):Destroy()
+		end
 	elseif Type == "Normal" then
 		local Skybox = CreateSkybox(
 			"rbxassetid://566598488",
@@ -2343,6 +2362,14 @@ local function SetGameShaders(Type)
 		DOF.InFocusRadius = 20
 		DOF.NearIntensity = 0.56
 		DOF.Parent = Lighting
+		
+		if not workspace.Terrain:FindFirstChildOfClass("Clouds") then
+			local Clouds = Instance.new("Clouds")
+			Clouds.Cover = 0.67
+			Clouds.Density = 0.56
+			Clouds.Name = "ShadingCloudInstance_" .. Player.UserId
+			Clouds.Parent = workspace.Terrain
+		end
 	elseif Type == "Grain" then
 		local Skybox = CreateSkybox(
 			"http://www.roblox.com/asset/?id=4495864450",
@@ -2393,6 +2420,15 @@ local function SetGameShaders(Type)
 		Correction.Enabled = true
 		Correction.Saturation = 0.2
 		Correction.Parent = Lighting
+		
+		if not workspace.Terrain:FindFirstChildOfClass("Clouds") then
+			local Clouds = Instance.new("Clouds")
+			Clouds.Cover = 0.67
+			Clouds.Density = 0.56
+			Clouds.Name = "ShadingCloudInstance_" .. Player.UserId
+			Clouds.Parent = workspace.Terrain
+			Clouds.Color = Color3.fromRGB(255, 149, 204)
+		end
 	elseif Type == "Space" then
 		local Skybox = CreateSkybox(
 			"http://www.roblox.com/asset/?id=16262356578",
@@ -2476,6 +2512,10 @@ local function Setup()
 	MarkerUI.ResetOnSpawn = false
 	MarkerUI.Name = "MarkerContainer"
 	MarkerUI.Parent = Player.PlayerGui
+	
+	if Player:GetAttribute("EmptyToolz") then
+		table.insert(AttachmentLocations, "???")
+	end
 
 	--Defaults
 	DefaultDestroyHeight = workspace.FallenPartsDestroyHeight
@@ -2584,8 +2624,7 @@ local function SetupCommands()
 			Platform.CastShadow = false
 
 			local Root = GetRoot(Player)
-			local Character = GetCharacter(Player)
-			Platform.Position = Root.Position - Vector3.new(0,4.88,0)
+			Platform.Position = Root.Position - Vector3.new(0,4.86,0)
 			PltInstance = Instance.new("Folder", workspace)
 			PltInstance.Name = "PlatformFolder_" .. Player.UserId
 			Platform.Parent = PltInstance
@@ -2634,7 +2673,7 @@ local function SetupCommands()
 	)
 	CreateCommand("Reset", "Kills your character in order to reset it. Useful for games with reset disabled.", nil, nil, "Character",
 		function()
-			GetCharacter(Player):FindFirstChildOfClass("Humanoid").Health = 0
+			GetHumanoid(Player).Health = 0
 		end,
 		nil
 	)
@@ -2753,7 +2792,7 @@ local function SetupCommands()
 	CreateCommand("Stats", "Allows the customization of player stats such as speed and jump height. Does not save on respawn.", "Value..", {"Speed","Jump"}, "Character",
 		function(Value, Type)
 			local Character = GetCharacter(Player)
-			local Humanoid = Character:FindFirstChild("Humanoid")
+			local Humanoid = GetHumanoid(Player)
 			if Type == "Speed" then
 				Humanoid.WalkSpeed = Value
 			elseif Type == "Jump" then
@@ -2778,7 +2817,7 @@ local function SetupCommands()
 			MarkerUI:ClearAllChildren()
 		end
 	)
-	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", {"Back","Head","Front","Left","Right"}, "Character",
+	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", AttachmentLocations, "Character",
 		function(Username, PartEnum)
 			print(PartEnum)
 			AttachToPlayer(Username, PartEnum)
@@ -2887,6 +2926,18 @@ local function SetupCommands()
 			for i,v in pairs(Players:GetPlayers()) do
 				v:SetAttribute("Blocked", false)
 			end
+		end
+	)
+	CreateCommand("Stack Jumps", "Allows your character to 'double jump' or repeat jumps while in the air, with a configurable amount of jumps.", "Amount..", nil, "Character",
+		function(Amount)
+			Amount = tonumber(Amount)
+			if not Amount or Amount < 1 then JumpInstances = 1 end
+			DoubleJump = true
+			JumpInstances = Amount
+		end,
+		function()
+			DoubleJump = false
+			JumpInstances = 1
 		end
 	)
 end
@@ -3029,9 +3080,33 @@ Contents.Tips.MouseButton1Click:Connect(function()
 	Contents.Tips.Text = TipsEnabled and "Tips: On" or "Tips: Off"
 end)
 
+-- Input
+
+local LocalJumpInstances = JumpInstances
+
+UserInputService.InputBegan:Connect(function(Input, GPE) 
+	if GPE then return end
+	if Input.KeyCode == Enum.KeyCode.Space then
+		if not DoubleJump then return end
+		local Root = GetRoot(Player)
+		local Humanoid = GetHumanoid(Player)
+		if Root and Humanoid then
+			if Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+				if LocalJumpInstances >= 1 then
+					LocalJumpInstances -= 1
+					Humanoid:ChangeState(Enum.HumanoidStateType.Jumping, true)
+					Humanoid.StateChanged:Connect(function(old, new)
+						if new == Enum.HumanoidStateType.Landed then
+							LocalJumpInstances = JumpInstances
+						end
+					end)
+				end
+			end
+		end
+	end
+end)
+
 -- Loop
-
-
 
 RunService.RenderStepped:Connect(function()
 	if TeleportEnabled then
@@ -3066,7 +3141,7 @@ RunService.RenderStepped:Connect(function()
 			end
 		end
 	end
-	
+
 	for i,v in pairs(Players:GetPlayers()) do
 		if v:GetAttribute("Blocked") == true then
 			local Character = GetCharacter(v)
