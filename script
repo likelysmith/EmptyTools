@@ -2167,8 +2167,7 @@ local function SetCameraTarget(Type, Target)
 	elseif Type == "View" then
 		repeat
 			pcall(function()
-				local TargetCharacter = GetCharacter(Target)
-				Camera.CameraSubject = GetHumanoid(TargetCharacter)
+				Camera.CameraSubject = GetHumanoid(Target)
 			end)
 			task.wait(0.15)
 		until Player:FindFirstChild("RemoveViewPlayer")
