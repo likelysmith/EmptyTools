@@ -2169,7 +2169,7 @@ local function SetCameraTarget(Type, Target)
 			pcall(function()
 				Camera.CameraSubject = GetHumanoid(Target)
 			end)
-			task.wait(0.15)
+			task.wait()
 		until Player:FindFirstChild("RemoveViewPlayer")
 		Player:FindFirstChild("RemoveViewPlayer"):Destroy()
 		Camera.CameraType = Enum.CameraType.Custom
