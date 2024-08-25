@@ -1,6 +1,6 @@
 -- Services
 
-
+local TextChatService = game:GetService("TextChatService")
 local TeleportService = game:GetService("TeleportService")
 local PhysicsService = game:GetService("PhysicsService")
 local TweenService = game:GetService("TweenService")
@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.2.2"
-local ChangeLog = "• New 'Link' Command\n• Optimized Magnet\n• New category titles\n• New 'Free Zoom' command\n• New 'Magnet' command" 
+local VersionString = "v1.2.3"
+local ChangeLog = "• New 'Block' command\n• Updated link to work cross-game\n• Optimizations for Magnet and Point Teleport\n• Updated CoreUI to latest SpriteSheet system" 
 
 -- Variables
 
@@ -1400,6 +1400,46 @@ local function CreateTeleportIndicator()
 	return Model
 end
 
+local function TogglePlayerCharacter(Target, Value)
+	local Character = GetCharacter(Target)
+	
+	if Value then
+		for _,Object in pairs(Character:GetDescendants()) do
+			if not Object:IsA("BasePart") and not Object:IsA("Decal") then continue end
+			if Object:GetAttribute("OGTransparency") then
+				Object.Transparency = Object:GetAttribute("OGTransparency")
+			end
+			if Object.Name == "Head" then
+				local Neck = Object:FindFirstChild("Neck")
+				if Neck:IsA("Motor6D") then
+					local OldPos = Neck:FindFirstChild("OldPos")
+					if OldPos then
+						Neck.C1 = OldPos.Value
+						OldPos:Destroy()
+					end
+				end
+			end
+		end
+	else
+		for _,Object in pairs(Character:GetDescendants()) do
+			if not Object:IsA("BasePart") and not Object:IsA("Decal") then continue end
+			if Object.Transparency ~= 1 then
+				Object:SetAttribute("OGTransparency", Object.Transparency)
+				Object.Transparency = 1
+			end
+			if Object.Name == "Head" then
+				local Neck = Object:FindFirstChild("Neck")
+				if Neck:IsA("Motor6D") then
+					local OldPos = Instance.new("CFrameValue", Neck)
+					OldPos.Name = "OldPos"
+					OldPos.Value = Neck.C1
+					Neck.C1 += Vector3.new(0, -1935, 0)
+				end
+			end
+		end
+	end
+end
+
 local function TeleportToPlayer(PlayerTarget)
 	local Root = GetRoot(Player)
 	local TargetRoot = GetRoot(PlayerTarget)
@@ -2544,7 +2584,12 @@ local function SetupCommands()
 			Platform.CastShadow = false
 
 			local Root = GetRoot(Player)
-			Platform.Position = Root.Position - Vector3.new(0,4.6,0)
+			local Character = GetCharacter(Player)
+			if Character:FindFirstChild("LeftFoot") then
+				Platform.Position = Character.LeftFoot.Position - Vector3.new(0,1.8,0)
+			else
+				Platform.Position = Root.Position - Vector3.new(0,4.7,0)
+			end
 			PltInstance = Instance.new("Folder", workspace)
 			PltInstance.Name = "PlatformFolder_" .. Player.UserId
 			Platform.Parent = PltInstance
@@ -2828,6 +2873,26 @@ local function SetupCommands()
 		end,
 		nil
 	)
+	CreateCommand("Block", "Hide another player's character and voice chat, text chat currently unsupported.", "Name..", {"Block", "Unblock"}, "Game",
+		function(Username, Type)
+			if Type == "Block" then
+				local Target = GetPlayerFromNameSnippet(Username)
+				if Target then
+					Target:SetAttribute("Blocked", true)
+				end
+			elseif Type == "Unblock" then
+				local Target = GetPlayerFromNameSnippet(Username)
+				if Target then
+					Target:SetAttribute("Blocked", true)
+				end
+			end
+		end,
+		function()
+			for i,v in pairs(Players:GetPlayers()) do
+				v:SetAttribute("Blocked", false)
+			end
+		end
+	)
 end
 
 Setup()
@@ -2911,6 +2976,14 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 	if TeleportIndicator then
 		TeleportIndicator:Destroy()
 	end
+	for i,v in pairs(Players:GetPlayers()) do
+		coroutine.resume(coroutine.create(function()
+			v:SetAttribute("Blocked", false)
+			task.wait()
+			TogglePlayerCharacter(v, true)
+		end))
+	end
+	wait(0.005)
 	TeleportIndicator = nil
 	PhaseEnabled = false
 	MarkersActive = false
@@ -2994,6 +3067,21 @@ RunService.RenderStepped:Connect(function()
 					Root.Velocity = Vector3.zero
 					Root.CFrame = SpawnLocation.CFrame + Vector3.new(0,4.5,0)
 				end
+			end
+		end
+	end
+	
+	for i,v in pairs(Players:GetPlayers()) do
+		if v:GetAttribute("Blocked") == true then
+			local Character = GetCharacter(v)
+			if Character:GetAttribute("CharacterHidden") == true then continue end
+			Character:SetAttribute("CharacterHidden", true)
+			TogglePlayerCharacter(v, false)
+		else
+			local Character = GetCharacter(v)
+			if Character:GetAttribute("CharacterHidden") == true then
+				Character:SetAttribute("CharacterHidden", false)
+				TogglePlayerCharacter(v, true)
 			end
 		end
 	end
