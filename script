@@ -2585,11 +2585,7 @@ local function SetupCommands()
 
 			local Root = GetRoot(Player)
 			local Character = GetCharacter(Player)
-			if Character:FindFirstChild("LeftFoot") then
-				Platform.Position = Character.LeftFoot.Position - Vector3.new(0,1.8,0)
-			else
-				Platform.Position = Root.Position - Vector3.new(0,4.7,0)
-			end
+			Platform.Position = Root.Position - Vector3.new(0,4.88,0)
 			PltInstance = Instance.new("Folder", workspace)
 			PltInstance.Name = "PlatformFolder_" .. Player.UserId
 			Platform.Parent = PltInstance
