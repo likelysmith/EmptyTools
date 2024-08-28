@@ -2320,12 +2320,12 @@ end
 
 local function SetGameShaders(Type)
 	Lighting:ClearAllChildren()
+	if workspace.Terrain:FindFirstChild("ShadingCloudInstance_" .. Player.UserId) then
+		workspace.Terrain:FindFirstChild("ShadingCloudInstance_" .. Player.UserId):Destroy()
+	end
 	if Type == "None" then
 		for _,Shader in pairs(DefaultLighting) do
 			Shader:Clone().Parent = Lighting
-		end
-		if workspace.Terrain:FindFirstChild("ShadingCloudInstance_" .. Player.UserId) then
-			workspace.Terrain:FindFirstChild("ShadingCloudInstance_" .. Player.UserId):Destroy()
 		end
 	elseif Type == "Normal" then
 		local Skybox = CreateSkybox(
