@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.2.3"
-local ChangeLog = "• New 'Block' command\n• Updated link to work cross-game\n• Added 'Stack Jump' command\n• Updated CoreUI to latest SpriteSheet system" 
+local VersionString = "v1.2.4"
+local ChangeLog = "• Added 'Animate' command\n• Improved 'Block' command\n• Updated link to work cross-game\n• Added 'Stack Jump' command" 
 
 -- Variables
 
@@ -60,6 +60,17 @@ local FlySpeed = 30
 local DefaultDestroyHeight
 local DefaultMinZoomDistance
 local DefaultMaxZoomDistance
+local DefaultAnimations = {
+	Idle1 = nil,
+	Idle2 = nil,
+	Walk = nil,
+	Run = nil,
+	Jump = nil,
+	Climb = nil, 
+	Fall = nil,
+	Swim = nil,
+	SwimIdle = nil
+}
 
 local LogsOpen = false
 local Log
@@ -420,7 +431,7 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	end
 
 	AlertScreen.Name = "AlertScreen"
-	AlertScreen.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+	AlertScreen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	AlertScreen.IgnoreGuiInset = true
 	AlertScreen.DisplayOrder = 100
@@ -1460,6 +1471,26 @@ local function TeleportToPlayer(PlayerTarget)
 	Root.CFrame = TargetRoot.CFrame
 end
 
+local function ShowChangeLogs(DSA, ClickCallback)
+	local SubText = "Don't show again"
+	if not DSA then
+		SubText = nil
+	end
+	return CreateAlert(
+		"Empty Tools " .. VersionString .. " | What's New?", 
+		ChangeLog,
+		"http://www.roblox.com/asset/?id=18941848597", 
+		"Ok", 
+		SubText,
+		Enum.TextXAlignment.Left,
+		ClickCallback,
+		function()
+			ClickCallback()
+			Player:SetAttribute("NoChangeLogs", true)
+		end
+	)
+end
+
 local function StopPlayerAnimation()
 	local animator = GetCharacter(Player).Humanoid:FindFirstChildOfClass("Animator")
 	if animator then
@@ -1481,29 +1512,242 @@ local function PlayEmote(ID)
 	Humanoid:PlayEmote("NEW_EMOTE")
 end
 
-local function ShowChangeLogs(DSA, ClickCallback)
-	local SubText = "Don't show again"
-	if not DSA then
-		SubText = nil
+
+
+-- Animation Control
+
+local AnimationPacks = {
+	["Ninja"] = {
+		Swim = 656119721,
+		SwimIdle = 656121397,
+		Idle = {656117400, 656118341, 886742569},
+		Jump = 656117878,
+		Fall = 656115606,
+		Walk = 656121766,
+		Run = 656118852,
+		Climb = 656114359
+	},
+	["Cartoony"] = {
+		Swim = 742639220,
+		SwimIdle = 742639812,
+		Idle = {742637544, 742638445, 885477856},
+		Jump = 742637942,
+		Fall = 742637151,
+		Walk = 742640026,
+		Run = 742638842,
+		Climb = 742636889
+	},
+	["Levitation"] = {
+		Swim = 616011509,
+		SwimIdle = 616012453,
+		Idle = {616006778, 616008087, 886862142},
+		Jump = 616008936,
+		Fall = 616005863,
+		Walk = 616013216,
+		Run = 616010382,
+		Climb = 616003713
+	},
+	["Stylish"] = {
+		Swim = 616143378,
+		SwimIdle = 616144772,
+		Idle = {616136790, 616138447, 886888594},
+		Jump = 616139451,
+		Fall = 616134815,
+		Walk = 616146177,
+		Run = 616140816,
+		Climb = 616133594
+	},
+	["Vampire"] = {
+		Swim = 1083464683,
+		SwimIdle = 1083467779,
+		Idle = {1083445855, 1083450166, 1088037547},
+		Jump = 1083455352,
+		Fall = 1083443587,
+		Walk = 1083473930,
+		Run = 1083462077,
+		Climb = 1083439238
+	},
+	["Robot"] = {
+		Swim = 616092998,
+		SwimIdle = 616094091,
+		Idle = {616088211, 616089559, 885531463},
+		Jump = 616090535,
+		Fall = 616087089,
+		Walk = 616095330,
+		Run = 616091570,
+		Climb = 616086039
+	},
+	["Toy"] = {
+		Swim = 782844582,
+		SwimIdle = 782845186,
+		Idle = {782841498, 782845736, 980952228},
+		Jump = 782847020,
+		Fall = 782846423,
+		Walk = 782843345,
+		Run = 782842708,
+		Climb = 782843869
+	},
+	["Bubbly"] = {
+		Swim = 910028158,
+		SwimIdle = 910030921,
+		Idle = {910004836, 910009958, 1018536639},
+		Jump = 910016857,
+		Fall = 910001910,
+		Walk = 910034870,
+		Run = 910025107,
+		Climb = 909997997
+	},
+	["Zombie"] = {
+		Swim = 616165109,
+		SwimIdle = 616166655,
+		Idle = {616158929, 616160636, 885545458},
+		Jump = 616161997,
+		Fall = 616157476,
+		Walk = 616168032,
+		Run = 616163682,
+		Climb = 616156119
+	},
+	["Elder"] = {
+		Swim = 845401742,
+		SwimIdle = 845403127,
+		Idle = {845397899, 845400520, 901160519},
+		Jump = 845398858,
+		Fall = 845396048,
+		Walk = 845403856,
+		Run = 845386501,
+		Climb = 845392038
+	},
+	["Superhero"] = {
+		Swim = 616119360,
+		SwimIdle = 616120861,
+		Idle = {616111295, 616113536, 885535855},
+		Jump = 616115533,
+		Fall = 616108001,
+		Walk = 616122287,
+		Run = 616117076,
+		Climb = 616104706
+	},
+	["Werewolf"] = {
+		Swim = 1083222527,
+		SwimIdle = 1083225406,
+		Idle = {1083195517, 1083214717, 1099492820},
+		Jump = 1083218792,
+		Fall = 1083189019,
+		Walk = 1083178339,
+		Run = 1083216690,
+		Climb = 1083182000
+	},
+	["Mage"] = {
+		Swim = 707876443,
+		SwimIdle = 707894699,
+		Idle = {707742142, 707855907, 885508740},
+		Jump = 707853694,
+		Fall = 707829716,
+		Walk = 707897309,
+		Run = 707861613,
+		Climb = 707826056
+	},
+	["Astronaut"] = {
+		Swim = 891639666,
+		SwimIdle = 891663592,
+		Idle = {891621366, 891633237, 1047759695},
+		Jump = 891627522,
+		Fall = 891617961,
+		Walk = 891636393,
+		Run = 891636393,
+		Climb = 891609353
+	},
+	["Pirate"] = {
+		Swim = 750784579,
+		SwimIdle = 750785176,
+		Idle = {750781874, 750782770, 885515365},
+		Jump = 750782230,
+		Fall = 750780242,
+		Walk = 750785693,
+		Run = 750783738,
+		Climb = 750779899
+	},
+	["Knight"] = {
+		Swim = 657560551,
+		SwimIdle = 657557095,
+		Idle = {657595757, 657568135, 885499184},
+		Jump = 658409194,
+		Fall = 657600338,
+		Walk = 657552124,
+		Run = 657564596,
+		Climb = 658360781
+	},
+	["Rthro"] = {
+		Swim = 2510199791,
+		SwimIdle = 2510201162,
+		Idle = {2510197257, 2510196951, 3711062489},
+		Jump = 2510197830,
+		Fall = 2510195892,
+		Walk = 2510202577,
+		Run = 2510198475,
+		Climb = 2510192778
+	},
+	["Oldschool"] = {
+		Swim = 10921243048,
+		SwimIdle = 2510201162,
+		Idle = {10921230744, 10921230744, 10921230744},
+		Jump = 10921242013,
+		Fall = 10921241244,
+		Walk = 10921244891,
+		Run = 10921240218,
+		Climb = 10921229866
+	},
+	["Bold"] = {
+		Swim = 16738339158,
+		SwimIdle = 16738339817,
+		Idle = {16738333868, 16738334710, 16738333868},
+		Jump = 10921263860,
+		Fall = 16738333171,
+		Walk = 16738340646,
+		Run = 16738337225,
+		Climb = 16738332169
+	}
+}
+
+
+
+local function SetPlayerAnimations(AnimationPack)
+	local Character = GetCharacter(Player)
+	local AnimationIDs = AnimationPacks[AnimationPack]
+	
+	local Animate = Character:FindFirstChild("Animate")
+	if not Animate then return end
+	Animate.Disabled = true
+	StopPlayerAnimation()
+	if AnimationPack == "None" then
+		Animate.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Idle1
+		Animate.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=" ..DefaultAnimations.Idle2
+		Animate.walk.WalkAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Walk
+		Animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Run
+		Animate.jump.JumpAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Jump
+		Animate.climb.ClimbAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Climb
+		Animate.fall.FallAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Fall
+		Animate.swim.Swim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Swim
+		Animate.swimidle.SwimIdle.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.SwimIdle
+	elseif AnimationIDs then
+		Animate.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Idle[1]
+		Animate.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Idle[2]
+		Animate.walk.WalkAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Walk
+		Animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Run
+		Animate.jump.JumpAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Jump
+		Animate.climb.ClimbAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Climb
+		Animate.fall.FallAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Fall
+		Animate.swim.Swim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Swim
+		Animate.swimidle.SwimIdle.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.SwimIdle
 	end
-	return CreateAlert(
-		"Empty Tools " .. VersionString .. " | What's New?", 
-		ChangeLog,
-		"http://www.roblox.com/asset/?id=18941848597", 
-		"Ok", 
-		SubText,
-		Enum.TextXAlignment.Left,
-		ClickCallback,
-		function()
-			ClickCallback()
-			Player:SetAttribute("NoChangeLogs", true)
-		end
-	)
+	Animate.Disabled = false
 end
 
 -- Link Control
 
 local function CreateLinkAlert(ID)
+	-- Gui to Lua
+	-- Version: 3.2
 
 	-- Instances:
 
@@ -1864,6 +2108,8 @@ local function RecieveLinkKey(linkKey)
 
 	return formattedJobId, tonumber(placeId)
 end
+
+
 
 
 -- Magnet Control
@@ -2477,6 +2723,9 @@ end
 
 -- Setup Method
 
+local AnimationPackEnums = {}
+local DefaultAnimationsInitialized = false
+
 local currentDraggableObject = OuterFrame
 
 local function Setup()
@@ -2513,11 +2762,34 @@ local function Setup()
 	if Player:GetAttribute("EmptyToolz") then
 		table.insert(AttachmentLocations, "???")
 	end
+	
+	for i,v in pairs(AnimationPacks) do
+		table.insert(AnimationPackEnums, i)
+	end
 
 	--Defaults
 	DefaultDestroyHeight = workspace.FallenPartsDestroyHeight
 	DefaultMinZoomDistance = Player.CameraMinZoomDistance
 	DefaultMaxZoomDistance = Player.CameraMaxZoomDistance
+	
+	coroutine.resume(coroutine.create(function()
+		local Character = GetCharacter(Player)
+		if Character then
+			local Animate = Character:FindFirstChild("Animate")
+			if Animate then
+				DefaultAnimationsInitialized = true
+				DefaultAnimations.Idle1 = Animate.idle.Animation1.AnimationId
+				DefaultAnimations.Idle2 = Animate.idle.Animation2.AnimationId
+				DefaultAnimations.Walk = Animate.walk.WalkAnim.AnimationId
+				DefaultAnimations.Run = Animate.run.RunAnim.AnimationId
+				DefaultAnimations.Jump = Animate.jump.JumpAnim.AnimationId
+				DefaultAnimations.Climb = Animate.climb.ClimbAnim.AnimationId
+				DefaultAnimations.Fall = Animate.fall.FallAnim.AnimationId
+				DefaultAnimations.Swim = Animate.swim.Swim.AnimationId
+				DefaultAnimations.SwimIdle = Animate.swimidle.SwimIdle.AnimationId
+			end
+		end
+	end))
 
 
 	for _,Shader in pairs(Lighting:GetChildren()) do
@@ -2816,7 +3088,6 @@ local function SetupCommands()
 	)
 	CreateCommand("Attach", "Attaches your character to the back of any player. Use username or display name.", "Name..", AttachmentLocations, "Character",
 		function(Username, PartEnum)
-			print(PartEnum)
 			AttachToPlayer(Username, PartEnum)
 		end,
 		function()
@@ -2935,6 +3206,16 @@ local function SetupCommands()
 		function()
 			DoubleJump = false
 			JumpInstances = 1
+		end
+	)
+	CreateCommand("Animate", "Change your character's animation pack from the list of existing animation packs.", nil, AnimationPackEnums, "Character",
+		function(Animation)
+			SetPlayerAnimations(Animation)
+		end,
+		function()
+			if DefaultAnimationsInitialized then
+				SetPlayerAnimations("None")
+			end
 		end
 	)
 end
