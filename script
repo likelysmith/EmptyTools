@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.2.4"
-local ChangeLog = "• Added 'Animate' command\n• Improved 'Block' command\n• Updated link to work cross-game\n• Added 'Stack Jump' command" 
+local VersionString = "v1.2.5"
+local ChangeLog = "• Added 'Car' command\n• Compatibility updates" 
 
 -- Variables
 
@@ -1461,6 +1461,121 @@ local function TogglePlayerCharacter(Target, Value)
 			end
 		end
 	end
+end
+
+local carActive = false
+local carInputBeganConn, carInputEndedConn, carHeartbeatConn
+local carCurrentVelocity = Vector3.new(0, 0, 0)
+local carAcceleration = 50
+local carBrakeDeceleration = 150
+local carHorizontalVelocity = Vector3.new(0, 0, 0)
+local carVerticalVelocity = 0
+local carKeysPressed = {}
+local carLastHeading = nil
+local carMaxSpeed = 100
+local carLockedY = nil
+
+local function StartCarMode(maxSpeedInput)
+	carMaxSpeed = tonumber(maxSpeedInput) or 100
+	carActive = true
+	local player = Players.LocalPlayer
+	local UserInputService = game:GetService("UserInputService")
+	local RunService = game:GetService("RunService")
+	local camera = workspace.CurrentCamera
+	local character = player.Character
+	local hrp = character:WaitForChild("HumanoidRootPart")
+	local humanoid = character:WaitForChild("Humanoid")
+	humanoid.Sit = true
+	carLockedY = hrp.Position.Y
+	carCurrentVelocity = Vector3.new(0, 0, 0)
+	carHorizontalVelocity = Vector3.new(0, 0, 0)
+	carVerticalVelocity = 0
+	carKeysPressed = {}
+	carLastHeading = nil
+	carInputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			carKeysPressed[input.KeyCode] = true
+		end
+	end)
+	carInputEndedConn = UserInputService.InputEnded:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			carKeysPressed[input.KeyCode] = false
+		end
+	end)
+	carHeartbeatConn = RunService.Heartbeat:Connect(function(deltaTime)
+		if not carActive then return end
+		humanoid.Sit = true
+		local horizontalInput = Vector3.new(0, 0, 0)
+		if carKeysPressed[Enum.KeyCode.W] then horizontalInput = horizontalInput + Vector3.new(0, 0, -1) end
+		if carKeysPressed[Enum.KeyCode.S] then horizontalInput = horizontalInput + Vector3.new(0, 0, 1) end
+		if carKeysPressed[Enum.KeyCode.A] then horizontalInput = horizontalInput + Vector3.new(-1, 0, 0) end
+		if carKeysPressed[Enum.KeyCode.D] then horizontalInput = horizontalInput + Vector3.new(1, 0, 0) end
+		local verticalInput = 0
+		if carKeysPressed[Enum.KeyCode.E] then verticalInput = verticalInput + 1 end
+		if carKeysPressed[Enum.KeyCode.Q] then verticalInput = verticalInput - 1 end
+		if horizontalInput.Magnitude > 0 then
+			horizontalInput = horizontalInput.Unit
+			local camCFrame = camera.CFrame
+			local camLook = camCFrame.LookVector
+			local camRight = camCFrame.RightVector
+			camLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
+			camRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
+			local forwardComponent = horizontalInput.Z
+			local rightComponent = horizontalInput.X
+			local worldHorizontal = (camLook * -forwardComponent) + (camRight * rightComponent)
+			if worldHorizontal.Magnitude > 0 then worldHorizontal = worldHorizontal.Unit end
+			carHorizontalVelocity = carHorizontalVelocity + (worldHorizontal * carAcceleration * deltaTime)
+			if carHorizontalVelocity.Magnitude > carMaxSpeed then
+				carHorizontalVelocity = carHorizontalVelocity.Unit * carMaxSpeed
+			end
+		end
+		if verticalInput ~= 0 then
+			carVerticalVelocity = carVerticalVelocity + (carAcceleration * verticalInput * deltaTime)
+		else
+			carVerticalVelocity = 0
+		end
+		if carKeysPressed[Enum.KeyCode.B] then
+			if carHorizontalVelocity.Magnitude > 0 then
+				local decelAmount = carBrakeDeceleration * deltaTime
+				local newMag = carHorizontalVelocity.Magnitude - decelAmount
+				if newMag < 0 then newMag = 0 end
+				carHorizontalVelocity = carHorizontalVelocity.Unit * newMag
+			end
+			if math.abs(carVerticalVelocity) > 0 then
+				local decelAmount = carBrakeDeceleration * deltaTime
+				if math.abs(carVerticalVelocity) - decelAmount < 0 then
+					carVerticalVelocity = 0
+				else
+					carVerticalVelocity = carVerticalVelocity - (decelAmount * math.sign(carVerticalVelocity))
+				end
+			end
+		end
+		carCurrentVelocity = carHorizontalVelocity + Vector3.new(0, (verticalInput ~= 0 and carVerticalVelocity or 0), 0)
+		hrp.Velocity = carCurrentVelocity
+		local flatVel = Vector3.new(carHorizontalVelocity.X, 0, carHorizontalVelocity.Z)
+		if flatVel.Magnitude > 0.1 then carLastHeading = flatVel.Unit end
+		local currentPos = hrp.Position
+		if verticalInput == 0 then
+			currentPos = Vector3.new(currentPos.X, carLockedY, currentPos.Z)
+		else
+			carLockedY = hrp.Position.Y
+		end
+		if carLastHeading then
+			hrp.CFrame = CFrame.new(currentPos, currentPos + carLastHeading)
+		else
+			hrp.CFrame = CFrame.new(currentPos)
+		end
+	end)
+end
+
+local function StopCarMode()
+	carActive = false
+	if carInputBeganConn then carInputBeganConn:Disconnect() end
+	if carInputEndedConn then carInputEndedConn:Disconnect() end
+	if carHeartbeatConn then carHeartbeatConn:Disconnect() end
+	workspace.Gravity = 196.2
 end
 
 local function TeleportToPlayer(PlayerTarget)
@@ -3216,6 +3331,14 @@ local function SetupCommands()
 			if DefaultAnimationsInitialized then
 				SetPlayerAnimations("None")
 			end
+		end
+	)	
+	CreateCommand("Car", "Drivable car mode. Input max speed.", "Max Speed..", nil, "Character",
+		function(input)
+			StartCarMode(input)
+		end,
+		function()
+			StopCarMode()
 		end
 	)
 end
