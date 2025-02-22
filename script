@@ -2294,6 +2294,27 @@ function MagnetPlayer(TargetUsername)
 	end
 end
 
+local function EnablePhaseForInvisibleParts()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.CanCollide and obj.Transparency >= 1 then
+            -- Store the original transparency if not already stored
+            if obj:GetAttribute("OriginalTransparency") == nil then
+                obj:SetAttribute("OriginalTransparency", obj.Transparency)
+            end
+            obj.Transparency = 0.8
+        end
+    end
+end
+
+local function DisablePhaseForInvisibleParts()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj:GetAttribute("OriginalTransparency") ~= nil then
+            obj.Transparency = obj:GetAttribute("OriginalTransparency")
+            obj:SetAttribute("OriginalTransparency", nil)
+        end
+    end
+end
+
 -- Flight Control
 
 local userinput = game:GetService("UserInputService")
@@ -3113,19 +3134,27 @@ local function SetupCommands()
 		nil
 	)
 	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "World",
-		function()
-			PhaseEnabled = true
-			TeleportEnabled = false
-		end,
-		function()
-			PhaseEnabled = false
-			for _,Object in pairs(PhaseObjects) do
-				if Object:FindFirstChild("PhaseHighlight") then
-					Object.PhaseHighlight:Destroy()
-					Object.CanCollide = true
-				end
-			end
-		end
+	    function()
+	        PhaseEnabled = true
+	        TeleportEnabled = false
+	        for _, phaseObj in pairs(PhaseObjects) do
+	            if phaseObj:FindFirstChild("PhaseHighlight") then
+	                phaseObj.PhaseHighlight:Destroy()
+	                phaseObj.CanCollide = true
+	            end
+	        end
+	        EnablePhaseForInvisibleParts()
+	    end,
+	    function()
+	        PhaseEnabled = false
+	        for _, phaseObj in pairs(PhaseObjects) do
+	            if phaseObj:FindFirstChild("PhaseHighlight") then
+	                phaseObj.PhaseHighlight:Destroy()
+	                phaseObj.CanCollide = true
+	            end
+	        end
+	        DisablePhaseForInvisibleParts()
+	    end
 	)
 	CreateCommand("Respawn", "Attempts to find a loaded spawn locaton and teleport you to it.", nil, {"Fastest", "Closest", "Random"}, "Character",
 		function(Type)
