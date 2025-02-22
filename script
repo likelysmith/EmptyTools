@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 -- Changelog
 
 local VersionString = "v1.2.6"
-local ChangeLog = "• Added 'Spawnpoint' command\n• Added 'Car' command\n• Compatibility updates" 
+local ChangeLog = "• Added 'Spawnpoint' command\n• Added 'Car' command (now with animations)\n• Compatibility updates" 
 
 -- Variables
 
@@ -1507,6 +1507,14 @@ local carLastHeading = nil
 local carMaxSpeed = 100
 local carLockedY = nil
 
+local driveAnimId = "http://www.roblox.com/asset/?id=17360699557"
+local carAnimation = nil
+local driveAnimDirection = 1
+local driveAnimTime = 3
+local animSpeed = 0.5
+local minAnimSpeed = 0.2
+local maxAnimSpeed = 0.8
+
 local function StartCarMode(maxSpeedInput)
 	carMaxSpeed = tonumber(maxSpeedInput) or 100
 	carActive = true
@@ -1539,6 +1547,33 @@ local function StartCarMode(maxSpeedInput)
 	carHeartbeatConn = RunService.Heartbeat:Connect(function(deltaTime)
 		if not carActive then return end
 		humanoid.Sit = true
+		if not carAnimation then
+			local animator = humanoid:FindFirstChildOfClass("Animator")
+			if not animator then
+				animator = Instance.new("Animator")
+				animator.Parent = humanoid
+			end
+			local anim = Instance.new("Animation")
+			anim.AnimationId = driveAnimId
+			carAnimation = animator:LoadAnimation(anim)
+			carAnimation:Play()
+			carAnimation:AdjustSpeed(0)
+			driveAnimDirection = 1
+			driveAnimTime = 3
+			carAnimation.TimePosition = driveAnimTime
+		else
+			local currentSpeed = carCurrentVelocity.Magnitude
+			animSpeed = math.clamp((currentSpeed / carMaxSpeed) * (maxAnimSpeed - minAnimSpeed) + minAnimSpeed, minAnimSpeed, maxAnimSpeed)
+			driveAnimTime = driveAnimTime + driveAnimDirection * deltaTime * animSpeed
+			if driveAnimTime >= 6 then
+				driveAnimTime = 6
+				driveAnimDirection = -1
+			elseif driveAnimTime <= 3 then
+				driveAnimTime = 3
+				driveAnimDirection = 1
+			end
+			carAnimation.TimePosition = driveAnimTime
+		end
 		local horizontalInput = Vector3.new(0, 0, 0)
 		if carKeysPressed[Enum.KeyCode.W] then horizontalInput = horizontalInput + Vector3.new(0, 0, -1) end
 		if carKeysPressed[Enum.KeyCode.S] then horizontalInput = horizontalInput + Vector3.new(0, 0, 1) end
@@ -1607,6 +1642,10 @@ local function StopCarMode()
 	if carInputBeganConn then carInputBeganConn:Disconnect() end
 	if carInputEndedConn then carInputEndedConn:Disconnect() end
 	if carHeartbeatConn then carHeartbeatConn:Disconnect() end
+	if carAnimation then
+		carAnimation:Stop()
+		carAnimation = nil
+	end
 	workspace.Gravity = 196.2
 end
 
