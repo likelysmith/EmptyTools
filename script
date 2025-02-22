@@ -1514,10 +1514,15 @@ local driveAnimTime = 3
 local animSpeed = 0.5
 local minAnimSpeed = 0.2
 local maxAnimSpeed = 0.8
+local sittingSet = false
+
+local smoothFactor = 0.1
+local bodyVel, bodyGyro
 
 local function StartCarMode(maxSpeedInput)
 	carMaxSpeed = tonumber(maxSpeedInput) or 100
 	carActive = true
+	
 	local player = Players.LocalPlayer
 	local UserInputService = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
@@ -1532,6 +1537,14 @@ local function StartCarMode(maxSpeedInput)
 	carVerticalVelocity = 0
 	carKeysPressed = {}
 	carLastHeading = nil
+	bodyVel = Instance.new("BodyVelocity")
+	bodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+	bodyVel.Parent = hrp
+	bodyVel.Velocity = Vector3.new(0,0,0)
+	bodyGyro = Instance.new("BodyGyro")
+	bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+	bodyGyro.Parent = hrp
+	bodyGyro.CFrame = hrp.CFrame
 	carInputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 		if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -1546,7 +1559,10 @@ local function StartCarMode(maxSpeedInput)
 	end)
 	carHeartbeatConn = RunService.Heartbeat:Connect(function(deltaTime)
 		if not carActive then return end
-		humanoid.Sit = true
+		if not sittingSet then
+			--humanoid.Sit = true
+			sittingSet = true
+		end
 		if not carAnimation then
 			local animator = humanoid:FindFirstChildOfClass("Animator")
 			if not animator then
@@ -1620,7 +1636,7 @@ local function StartCarMode(maxSpeedInput)
 			end
 		end
 		carCurrentVelocity = carHorizontalVelocity + Vector3.new(0, (verticalInput ~= 0 and carVerticalVelocity or 0), 0)
-		hrp.Velocity = carCurrentVelocity
+		bodyVel.Velocity = bodyVel.Velocity:Lerp(carCurrentVelocity, smoothFactor)
 		local flatVel = Vector3.new(carHorizontalVelocity.X, 0, carHorizontalVelocity.Z)
 		if flatVel.Magnitude > 0.1 then carLastHeading = flatVel.Unit end
 		local currentPos = hrp.Position
@@ -1629,16 +1645,19 @@ local function StartCarMode(maxSpeedInput)
 		else
 			carLockedY = hrp.Position.Y
 		end
+		local desiredCFrame
 		if carLastHeading then
-			hrp.CFrame = CFrame.new(currentPos, currentPos + carLastHeading)
+			desiredCFrame = CFrame.new(hrp.Position, hrp.Position + carLastHeading)
 		else
-			hrp.CFrame = CFrame.new(currentPos)
+			desiredCFrame = hrp.CFrame
 		end
+		bodyGyro.CFrame = bodyGyro.CFrame:Lerp(desiredCFrame, smoothFactor)
 	end)
 end
 
 local function StopCarMode()
 	carActive = false
+	sittingSet = false
 	if carInputBeganConn then carInputBeganConn:Disconnect() end
 	if carInputEndedConn then carInputEndedConn:Disconnect() end
 	if carHeartbeatConn then carHeartbeatConn:Disconnect() end
@@ -1646,8 +1665,17 @@ local function StopCarMode()
 		carAnimation:Stop()
 		carAnimation = nil
 	end
+	if bodyVel then
+		bodyVel:Destroy()
+		bodyVel = nil
+	end
+	if bodyGyro then
+		bodyGyro:Destroy()
+		bodyGyro = nil
+	end
 	workspace.Gravity = 196.2
 end
+
 
 local function TeleportToPlayer(PlayerTarget)
 	local Root = GetRoot(Player)
