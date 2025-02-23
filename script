@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.2.6"
-local ChangeLog = "• Added 'Spawnpoint' command\n• Added 'Car' command (now with animations)\n• Compatibility updates" 
+local VersionString = "v1.2.7"
+local ChangeLog = "• Added alerts/toasts to some commands\n• Created a settings menu\n• Added 'Spawnpoint' command\n• Added 'Car' command (now with animations)" 
 
 -- Variables
 
@@ -29,7 +29,20 @@ local Contents
 local ContentShrunken
 local InfoFrame
 
+local ToastFrame
+local ToastText = nil
+local TextInc = 45
+local ToastQueue = {}
+local IsShowing = false
+
+local function GetFrameSize()
+	if ToastText == nil then return end
+	local b = ToastText.TextBounds
+	return UDim2.new(0, b.X + TextInc, 0, b.Y + TextInc * 0.6)
+end
+
 local CommandFrames = {}
+local SettingsFrames = {}
 local DefaultLighting = {}
 local AttachmentLocations = {"Back","Head","Front","Left","Right"}
 
@@ -43,6 +56,8 @@ local FadeTweenInfo = TweenInfo.new(
 
 local UIOpen = true
 local TipsEnabled = true
+local AlertsEnabled = true
+
 local MarkersActive = false
 
 local PhaseEnabled = false
@@ -93,11 +108,6 @@ end
 
 
 function CreateUI()
-	-- Gui to Lua
-	-- Version: 3.2
-
-	-- Instances:
-
 	local EmptyTools = Instance.new("ScreenGui")
 	local OuterFrame = Instance.new("Frame")
 	local UICorner = Instance.new("UICorner")
@@ -118,9 +128,11 @@ function CreateUI()
 	local Title_2 = Instance.new("TextLabel")
 	local Info_2 = Instance.new("TextLabel")
 	local UIAspectRatioConstraint_2 = Instance.new("UIAspectRatioConstraint")
-	local Tips = Instance.new("TextButton")
+	local Settings = Instance.new("TextButton")
 	local UICorner_6 = Instance.new("UICorner")
 	local UITextSizeConstraint_3 = Instance.new("UITextSizeConstraint")
+	local Settings_2 = Instance.new("ScrollingFrame")
+	local UIListLayout_2 = Instance.new("UIListLayout")
 	local Info_3 = Instance.new("TextButton")
 	local UICorner_7 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_3 = Instance.new("UIAspectRatioConstraint")
@@ -133,21 +145,25 @@ function CreateUI()
 	local Toggle = Instance.new("TextButton")
 	local UICorner_10 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_6 = Instance.new("UIAspectRatioConstraint")
+	local ToastFrame = Instance.new("Frame")
+	local UICorner_11 = Instance.new("UICorner")
+	local Text = Instance.new("TextLabel")
 
 	--Properties:
 
 	EmptyTools.Name = "EmptyTools"
-	EmptyTools.IgnoreGuiInset = true
 	EmptyTools.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	EmptyTools.ResetOnSpawn = false
+	EmptyTools.IgnoreGuiInset = true
+	EmptyTools.DisplayOrder = 0
 
 	OuterFrame.Name = "OuterFrame"
 	OuterFrame.Parent = EmptyTools
 	OuterFrame.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
 	OuterFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	OuterFrame.BorderSizePixel = 0
-	OuterFrame.Position = UDim2.new(0.67014116, 0, 0.439849585, 0)
-	OuterFrame.Size = UDim2.new(0.317718238, 0, 0.462848485, 0)
+	OuterFrame.Position = UDim2.new(0.65821141, 0, 0.429824561, 0)
+	OuterFrame.Size = UDim2.new(0.329648048, 0, 0.492894381, 0)
 
 	UICorner.CornerRadius = UDim.new(0.0500000007, 0)
 	UICorner.Parent = OuterFrame
@@ -224,8 +240,8 @@ function CreateUI()
 	Category.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	Category.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Category.BorderSizePixel = 0
-	Category.Position = UDim2.new(0.370289385, 0, 0.192686573, 0)
-	Category.Size = UDim2.new(0.309397668, 0, 0.0800000057, 0)
+	Category.Position = UDim2.new(0.370332718, 0, 0.192686558, 0)
+	Category.Size = UDim2.new(0.274057955, 0, 0.0800000057, 0)
 	Category.Font = Enum.Font.Gotham
 	Category.Text = "Filter: None"
 	Category.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -237,7 +253,7 @@ function CreateUI()
 	UICorner_4.Parent = Category
 
 	UITextSizeConstraint_2.Parent = Category
-	UITextSizeConstraint_2.MaxTextSize = 19
+	UITextSizeConstraint_2.MaxTextSize = 20
 
 	Info.Name = "Info"
 	Info.Parent = Contents
@@ -284,25 +300,42 @@ function CreateUI()
 	UIAspectRatioConstraint_2.Parent = Info
 	UIAspectRatioConstraint_2.AspectRatio = 5.731
 
-	Tips.Name = "Tips"
-	Tips.Parent = Contents
-	Tips.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Tips.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Tips.BorderSizePixel = 0
-	Tips.Position = UDim2.new(0.701087952, 0, 0.192686573, 0)
-	Tips.Size = UDim2.new(0.194556624, 0, 0.0800000057, 0)
-	Tips.Font = Enum.Font.Gotham
-	Tips.Text = "Tips: On"
-	Tips.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Tips.TextScaled = true
-	Tips.TextSize = 20.000
-	Tips.TextWrapped = true
+	Settings.Name = "Settings"
+	Settings.Parent = Contents
+	Settings.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Settings.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Settings.BorderSizePixel = 0
+	Settings.Position = UDim2.new(0.663670063, 0, 0.192686558, 0)
+	Settings.Size = UDim2.new(0.244357735, 0, 0.0800000057, 0)
+	Settings.Font = Enum.Font.Gotham
+	Settings.Text = "Settings"
+	Settings.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Settings.TextScaled = true
+	Settings.TextSize = 20.000
+	Settings.TextWrapped = true
 
 	UICorner_6.CornerRadius = UDim.new(0.550000012, 0)
-	UICorner_6.Parent = Tips
+	UICorner_6.Parent = Settings
 
-	UITextSizeConstraint_3.Parent = Tips
-	UITextSizeConstraint_3.MaxTextSize = 19
+	UITextSizeConstraint_3.Parent = Settings
+	UITextSizeConstraint_3.MaxTextSize = 20
+
+	Settings_2.Name = "SettingsFrame"
+	Settings_2.Parent = Contents
+	Settings_2.Active = true
+	Settings_2.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Settings_2.BackgroundTransparency = 1
+	Settings_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Settings_2.BorderSizePixel = 0
+	Settings_2.Position = UDim2.new(0.064338237, 0, 0.295194507, 0)
+	Settings_2.Size = UDim2.new(0.880514681, 0, 0.645308912, 0)
+	Settings_2.Visible = false
+	Settings_2.CanvasSize = UDim2.new(0, 0, 3.5, 0)
+	Settings_2.ScrollBarThickness = 13
+
+	UIListLayout_2.Parent = Settings_2
+	UIListLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
+	UIListLayout_2.Padding = UDim.new(0.00249999994, 0)
 
 	Info_3.Name = "Info"
 	Info_3.Parent = OuterFrame
@@ -381,6 +414,36 @@ function CreateUI()
 
 	UIAspectRatioConstraint_6.Parent = Toggle
 	UIAspectRatioConstraint_6.AspectRatio = 1.004
+
+	ToastFrame.Name = "ToastFrame"
+	ToastFrame.Parent = EmptyTools
+	ToastFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	ToastFrame.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
+	ToastFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	ToastFrame.BorderSizePixel = 0
+	ToastFrame.Position = UDim2.new(0.499656826, 0, 0.0427135676, 0)
+	ToastFrame.Size = UDim2.new(0.427590936, 0, 0.0527638197, 0)
+	ToastFrame.Visible = false
+	ToastFrame.ZIndex = 99
+
+	UICorner_11.CornerRadius = UDim.new(0.400000006, 0)
+	UICorner_11.Parent = ToastFrame
+
+	Text.Name = "ToastText"
+	Text.Parent = EmptyTools
+	Text.AnchorPoint = Vector2.new(0.5, 0.5)
+	Text.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Text.BackgroundTransparency = 1.000
+	Text.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Text.BorderSizePixel = 0
+	Text.Position = UDim2.new(0.499313653, 0, 0.0427135676, 0)
+	Text.Size = UDim2.new(0.0179999992, 0, 0.0529999994, 0)
+	Text.Visible = false
+	Text.Font = Enum.Font.Gotham
+	Text.Text = "[nil]"
+	Text.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Text.TextSize = 24.000
+	Text.ZIndex = 100
 
 	return EmptyTools
 end
@@ -737,6 +800,86 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	return AlertScreen
 end
 
+local interruptCurrentToast = false
+
+local function ShowToast(msg, t)
+	ToastText.Text = msg
+	ToastText.Size = UDim2.new(0, ToastText.TextBounds.X, 0, ToastText.TextBounds.Y)
+	local fs = GetFrameSize()
+	local isize = UDim2.new(0, fs.X.Offset * 0.15, 0, fs.Y.Offset)
+	ToastFrame.Size = isize
+	ToastText.TextTransparency = 1
+	ToastFrame.BackgroundTransparency = 1
+	ToastText.Visible = true
+	ToastFrame.Visible = true
+	local sizeTween = TweenService:Create(ToastFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {Size = fs})
+	local fadeInText = TweenService:Create(ToastText, TweenInfo.new(0.55), {TextTransparency = 0})
+	local fadeInFrame = TweenService:Create(ToastFrame, TweenInfo.new(0.5), {BackgroundTransparency = 0})
+	sizeTween:Play()
+	fadeInFrame:Play()
+	wait(0.1)
+	fadeInText:Play()
+	fadeInText.Completed:Wait()
+
+
+	local elapsed = 0
+	local interval = 0.1 
+	while elapsed < t do
+		if interruptCurrentToast then
+			break
+		end
+		wait(interval)
+		elapsed = elapsed + interval
+	end
+
+	interruptCurrentToast = false
+
+	local sizeTweenOut = TweenService:Create(ToastFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back), {Size = isize})
+	local fadeOutText = TweenService:Create(ToastText, TweenInfo.new(0.5), {TextTransparency = 1})
+	local fadeOutFrame = TweenService:Create(ToastFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+	fadeOutText:Play()
+	wait(0.15)
+	fadeOutFrame:Play()
+	wait(0.1)
+	sizeTweenOut:Play()
+	fadeOutText.Completed:Wait()
+	ToastText.Visible = false
+	ToastText.Text = "[nil]"
+	ToastFrame.Visible = false
+end
+
+local function ToastQueueRunner()
+	if IsShowing then return end
+	IsShowing = true
+	while #ToastQueue > 0 do
+		local current = table.remove(ToastQueue, 1)
+		ShowToast(current.msg, current.t)
+	end
+	IsShowing = false
+end
+
+local function Toast(msg, t)
+	if not AlertsEnabled then return end
+	if not MainUI or not ToastFrame or not ToastText then return end
+	if IsShowing then
+		interruptCurrentToast = true
+	end
+	for i, toast in ipairs(ToastQueue) do
+		if toast.msg == msg then
+			return
+		end
+	end
+	if ToastText.Text == msg then
+		return
+	end
+	table.insert(ToastQueue, {msg = msg, t = t})
+	ToastQueueRunner()
+end
+
+
+
+
+
 local FadeOutTween 
 local FadeOutTween2
 local FadeOutTween3
@@ -931,6 +1074,100 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 
 	table.insert(CommandFrames, Command)
 	Command.Parent = Contents:WaitForChild("Commands")
+end
+
+local function SetOptionChecked(OptionButton, Value)
+	OptionButton.Text = Value and "✓" or ""
+end
+
+
+function CreateSettingsOption(TitleText, Info, Type, Default, CallbackClicked)
+
+	local SettingsOption = Instance.new("Frame")
+	local Title = Instance.new("TextLabel")
+	local UICorner = Instance.new("UICorner")
+	local Title_2 = Instance.new("TextLabel")
+	local Check = Instance.new("TextButton")
+	local UICorner_2 = Instance.new("UICorner")
+	local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
+
+	--Properties:
+
+	SettingsOption.Name = "SettingsOption"
+	SettingsOption.BackgroundColor3 = Color3.fromRGB(4, 4, 4)
+	SettingsOption.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	SettingsOption.BorderSizePixel = 0
+	SettingsOption.Position = UDim2.new(1.50091054e-07, 0, 2.54941881e-07, 0)
+	SettingsOption.Size = UDim2.new(0.936999857, 0, 0.0461164564, 0)
+	SettingsOption.Name = TitleText
+
+	Title.Name = "Title"
+	Title.Parent = SettingsOption
+	Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Title.BackgroundTransparency = 1.000
+	Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title.BorderSizePixel = 0
+	Title.Position = UDim2.new(0.0238095392, 0, 0.0882362947, 0)
+	Title.Size = UDim2.new(0.562692106, 0, 0.350000024, 0)
+	Title.Font = Enum.Font.GothamBold
+	Title.Text = TitleText
+	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title.TextScaled = true
+	Title.TextSize = 14.000
+	Title.TextWrapped = true
+	Title.TextXAlignment = Enum.TextXAlignment.Left
+
+	UICorner.Parent = SettingsOption
+
+	Title_2.Name = "Info"
+	Title_2.Parent = SettingsOption
+	Title_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Title_2.BackgroundTransparency = 1.000
+	Title_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Title_2.BorderSizePixel = 0
+	Title_2.Position = UDim2.new(0.0240000002, 0, 0.43599999, 0)
+	Title_2.Size = UDim2.new(0.657068729, 0, 0.534385622, 0)
+	Title_2.Font = Enum.Font.Gotham
+	Title_2.Text = Info
+	Title_2.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Title_2.TextScaled = true
+	Title_2.TextSize = 14.000
+	Title_2.TextWrapped = true
+	Title_2.TextXAlignment = Enum.TextXAlignment.Left
+
+	Check.Name = "Check"
+	Check.Parent = SettingsOption
+	Check.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Check.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Check.BorderSizePixel = 0
+	Check.Position = UDim2.new(0.842000008, 0, 0.0930000022, 0)
+	Check.Size = UDim2.new(0.123999998, 0, 0.806999981, 0)
+	Check.Font = Enum.Font.SourceSans
+	Check.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Check.TextScaled = true
+	Check.Text = ""
+	Check.TextSize = 14.000
+	Check.TextWrapped = true
+
+	if Type == "Boolean" then
+		if Default == true then
+			Check.Text = "✓"
+		else
+			Check.Text = ""
+		end
+	end
+
+	Check.MouseButton1Click:Connect(function()
+		CallbackClicked(Check)
+	end)
+
+	UICorner_2.CornerRadius = UDim.new(0.189999998, 0)
+	UICorner_2.Parent = Check
+
+	UIAspectRatioConstraint.Parent = Check
+
+	table.insert(SettingsFrames, SettingsOption)
+	SettingsOption.Parent = Contents:WaitForChild("SettingsFrame")
 end
 
 local function CreateMarker(TargetPlayer)
@@ -1483,15 +1720,34 @@ local function DisablePhaseForInvisibleParts()
 	end
 end
 
+local function toWholeNum(num)
+	if num == 0 then
+		return 1
+	end
+	return math.sign(num) * math.ceil(math.abs(num) / 10)
+end
+
+local function toDecimalPoint(num, numDecimalPlaces)
+	return math.floor(num * 10 ^ numDecimalPlaces) / 10 ^ numDecimalPlaces
+end
+
 local playerSpawnPoint = nil
 
 local function SetSpawnPoint()
 	local root = GetRoot(Player)
 	if not root then return end
 	playerSpawnPoint = root.CFrame 
+	local pos = playerSpawnPoint.Position
+	local x = toDecimalPoint(pos.X, 2)
+	local y = toDecimalPoint(pos.Y, 2)
+	local z = toDecimalPoint(pos.Z, 2)
+	Toast("Spawnpoint set to (" .. x .. ", " .. y .. ", " .. z .. ")", 2)
 end
 
 local function EraseSpawnPoint()
+	if playerSpawnPoint ~= nil then
+		Toast("Spawnpoint removed", 1.5)
+	end
 	playerSpawnPoint = nil
 end
 
@@ -1522,7 +1778,7 @@ local bodyVel, bodyGyro
 local function StartCarMode(maxSpeedInput)
 	carMaxSpeed = tonumber(maxSpeedInput) or 100
 	carActive = true
-	
+
 	local player = Players.LocalPlayer
 	local UserInputService = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
@@ -1928,7 +2184,7 @@ local AnimationPacks = {
 local function SetPlayerAnimations(AnimationPack)
 	local Character = GetCharacter(Player)
 	local AnimationIDs = AnimationPacks[AnimationPack]
-	
+
 	local Animate = Character:FindFirstChild("Animate")
 	if not Animate then return end
 	Animate.Disabled = true
@@ -2819,7 +3075,7 @@ local function SetGameShaders(Type)
 		DOF.InFocusRadius = 20
 		DOF.NearIntensity = 0.56
 		DOF.Parent = Lighting
-		
+
 		if not workspace.Terrain:FindFirstChildOfClass("Clouds") then
 			local Clouds = Instance.new("Clouds")
 			Clouds.Cover = 0.67
@@ -2877,7 +3133,7 @@ local function SetGameShaders(Type)
 		Correction.Enabled = true
 		Correction.Saturation = 0.2
 		Correction.Parent = Lighting
-		
+
 		if not workspace.Terrain:FindFirstChildOfClass("Clouds") then
 			local Clouds = Instance.new("Clouds")
 			Clouds.Cover = 0.67
@@ -2966,17 +3222,20 @@ local function Setup()
 	ContentShrunken = OuterFrame:WaitForChild("ContentShrunken")
 	InfoFrame = Contents:WaitForChild("Info")
 
+	ToastFrame = MainUI:WaitForChild("ToastFrame")
+	ToastText = MainUI:WaitForChild("ToastText")
+
 	currentDraggableObject = OuterFrame
 
 	MarkerUI = Instance.new("ScreenGui")
 	MarkerUI.ResetOnSpawn = false
 	MarkerUI.Name = "MarkerContainer"
 	MarkerUI.Parent = Player.PlayerGui
-	
+
 	if Player:GetAttribute("EmptyToolz") then
 		table.insert(AttachmentLocations, "???")
 	end
-	
+
 	for i,v in pairs(AnimationPacks) do
 		table.insert(AnimationPackEnums, i)
 	end
@@ -2985,7 +3244,7 @@ local function Setup()
 	DefaultDestroyHeight = workspace.FallenPartsDestroyHeight
 	DefaultMinZoomDistance = Player.CameraMinZoomDistance
 	DefaultMaxZoomDistance = Player.CameraMaxZoomDistance
-	
+
 	coroutine.resume(coroutine.create(function()
 		local Character = GetCharacter(Player)
 		if Character then
@@ -3325,6 +3584,7 @@ local function SetupCommands()
 		function(Time)
 			if tonumber(Time) then
 				Lighting.ClockTime = tonumber(Time)
+				Toast("Time set to " .. Lighting.ClockTime .. " (" .. Lighting.TimeOfDay .. ")", 2)
 			end
 		end,
 		nil
@@ -3404,11 +3664,13 @@ local function SetupCommands()
 				local Target = GetPlayerFromNameSnippet(Username)
 				if Target then
 					Target:SetAttribute("Blocked", true)
+					Toast(Target.DisplayName .. " (@" .. Target.Name .. " ) blocked", 1.5)
 				end
 			elseif Type == "Unblock" then
 				local Target = GetPlayerFromNameSnippet(Username)
 				if Target then
-					Target:SetAttribute("Blocked", true)
+					Target:SetAttribute("Blocked", false)
+					Toast(Target.DisplayName .. " (@" .. Target.Name .. " ) unblocked!", 1.5)
 				end
 			end
 		end,
@@ -3440,7 +3702,7 @@ local function SetupCommands()
 			end
 		end
 	)	
-	CreateCommand("Car", "Drivable car mode. Input max speed.", "Max Speed..", nil, "Character",
+	CreateCommand("Car", "Drivable floating car. Controls: WASD, Q & E.", "Max Speed..", nil, "Character",
 		function(input)
 			StartCarMode(input)
 		end,
@@ -3448,7 +3710,7 @@ local function SetupCommands()
 			StopCarMode()
 		end
 	)
-	CreateCommand("Spawnpoint", "Set your spawnpoint", nil, nil, "Character",
+	CreateCommand("Spawnpoint", "Set your character's spawnpoint, stop to remove it.", nil, nil, "Character",
 		function(input)
 			SetSpawnPoint()
 		end,
@@ -3458,9 +3720,26 @@ local function SetupCommands()
 	)
 end
 
+local function SetupSettings()
+	if not MainUI then return end
+	CreateSettingsOption("Tips", "Enable command tips when hovering over the titles", "Boolean", true, 
+		function(CheckBox)
+			TipsEnabled = not TipsEnabled
+			SetOptionChecked(CheckBox, TipsEnabled)
+		end
+	)
+	CreateSettingsOption("Alerts", "Enable top screen alerts/toasts for certain commands", "Boolean", true, 
+		function(CheckBox)
+			AlertsEnabled = not AlertsEnabled
+			SetOptionChecked(CheckBox, AlertsEnabled)
+		end
+	)
+end
+
 Setup()
 
 SetupCommands()
+SetupSettings()
 
 -- Mouse Handling
 
@@ -3589,11 +3868,27 @@ Contents.Search:GetPropertyChangedSignal("Text"):Connect(function()
 	end
 
 	Contents.Commands.CanvasPosition = Vector2.zero
+
+	for _, Option in pairs(SettingsFrames) do
+		local OptionTitleMatchesSearch = (SearchText == "" or #SearchText < 1 or string.find(string.lower(Option.Name), SearchText))
+		local OptionInfoMatchesSearch = (SearchText == "" or #SearchText < 1 or string.find(string.lower(Option.Info.Text), SearchText))
+
+		Option.Visible = OptionTitleMatchesSearch or OptionInfoMatchesSearch
+	end
+
+	Contents.SettingsFrame.CanvasPosition = Vector2.zero
 end)
 
-Contents.Tips.MouseButton1Click:Connect(function()
-	TipsEnabled = not TipsEnabled
-	Contents.Tips.Text = TipsEnabled and "Tips: On" or "Tips: Off"
+Contents.Settings.MouseButton1Click:Connect(function()
+	if Contents.Commands.Visible then
+		Contents.Settings.BackgroundColor3 = Color3.fromRGB(4, 4, 4)
+		Contents.Commands.Visible = false
+		Contents.SettingsFrame.Visible = true
+	else
+		Contents.Settings.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		Contents.Commands.Visible = true
+		Contents.SettingsFrame.Visible = false
+	end
 end)
 
 -- Character Added
@@ -3602,7 +3897,7 @@ Players.LocalPlayer.CharacterAdded:Connect(function(character)
 
 	local root = character:WaitForChild("HumanoidRootPart")
 	if playerSpawnPoint then
-		
+
 		root.CFrame = playerSpawnPoint
 	end
 end)
