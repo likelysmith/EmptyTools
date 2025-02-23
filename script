@@ -1,5 +1,5 @@
 -- Services
-
+local UserInputService = game:GetService("UserInputService")
 local TextChatService = game:GetService("TextChatService")
 local TeleportService = game:GetService("TeleportService")
 local PhysicsService = game:GetService("PhysicsService")
@@ -56,6 +56,7 @@ local FadeTweenInfo = TweenInfo.new(
 
 local UIOpen = true
 local TipsEnabled = true
+local PointTeleportIndicatorEnabled = true
 local AlertsEnabled = true
 
 local MarkersActive = false
@@ -444,7 +445,7 @@ function CreateUI()
 	Text.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Text.TextSize = 24.000
 	Text.ZIndex = 100
-
+	
 	return EmptyTools
 end
 
@@ -832,7 +833,9 @@ local function ShowToast(msg, t)
 		elapsed = elapsed + interval
 	end
 
+
 	interruptCurrentToast = false
+
 
 	local sizeTweenOut = TweenService:Create(ToastFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back), {Size = isize})
 	local fadeOutText = TweenService:Create(ToastText, TweenInfo.new(0.5), {TextTransparency = 1})
@@ -861,9 +864,6 @@ end
 local function Toast(msg, t)
 	if not AlertsEnabled then return end
 	if not MainUI or not ToastFrame or not ToastText then return end
-	if IsShowing then
-		interruptCurrentToast = true
-	end
 	for i, toast in ipairs(ToastQueue) do
 		if toast.msg == msg then
 			return
@@ -872,10 +872,12 @@ local function Toast(msg, t)
 	if ToastText.Text == msg then
 		return
 	end
+	if IsShowing then
+		interruptCurrentToast = true
+	end
 	table.insert(ToastQueue, {msg = msg, t = t})
 	ToastQueueRunner()
 end
-
 
 
 
@@ -1148,7 +1150,7 @@ function CreateSettingsOption(TitleText, Info, Type, Default, CallbackClicked)
 	Check.Text = ""
 	Check.TextSize = 14.000
 	Check.TextWrapped = true
-
+	
 	if Type == "Boolean" then
 		if Default == true then
 			Check.Text = "✓"
@@ -1156,7 +1158,7 @@ function CreateSettingsOption(TitleText, Info, Type, Default, CallbackClicked)
 			Check.Text = ""
 		end
 	end
-
+	
 	Check.MouseButton1Click:Connect(function()
 		CallbackClicked(Check)
 	end)
@@ -1168,6 +1170,28 @@ function CreateSettingsOption(TitleText, Info, Type, Default, CallbackClicked)
 
 	table.insert(SettingsFrames, SettingsOption)
 	SettingsOption.Parent = Contents:WaitForChild("SettingsFrame")
+end
+
+local currentlyFocusedMarker = nil
+
+local function tweenMarker(marker, targetOffset)
+	local tween = TweenService:Create(marker, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {StudsOffset = targetOffset})
+	tween:Play()
+end
+
+local function tweenStroke(stroke, targetThickness)
+	if stroke then
+		local tween = TweenService:Create(stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Thickness = targetThickness})
+		tween:Play()
+	end
+end
+
+local function isMouseOver(button)
+	local mousePos = UserInputService:GetMouseLocation() 
+	local pos = button.AbsolutePosition
+	local size = button.AbsoluteSize
+	return mousePos.X >= pos.X and mousePos.X <= pos.X + size.X 
+		and mousePos.Y >= pos.Y and mousePos.Y <= pos.Y + size.Y
 end
 
 local function CreateMarker(TargetPlayer)
@@ -1243,12 +1267,20 @@ local function CreateMarker(TargetPlayer)
 	Stroke.Color = Color3.fromRGB(255,255,255)
 	Stroke.Thickness = 0
 	Stroke.Parent = Frame
+	
+	local defaultOffset = Marker.StudsOffset
+	local hoverOffset = defaultOffset + Vector3.new(0, 5, 0)
 
 	Button.MouseEnter:Connect(function()
 		Stroke.Thickness = 0
 		TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 2}):Play()
+		local tween = TweenService:Create(Marker, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {StudsOffset = hoverOffset})
+		tween:Play()
 	end)
+
 	Button.MouseLeave:Connect(function()
+		local tween = TweenService:Create(Marker, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {StudsOffset = defaultOffset})
+		tween:Play()
 		TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 0}):Play()
 	end)
 
@@ -1778,7 +1810,7 @@ local bodyVel, bodyGyro
 local function StartCarMode(maxSpeedInput)
 	carMaxSpeed = tonumber(maxSpeedInput) or 100
 	carActive = true
-
+	
 	local player = Players.LocalPlayer
 	local UserInputService = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
@@ -2184,7 +2216,7 @@ local AnimationPacks = {
 local function SetPlayerAnimations(AnimationPack)
 	local Character = GetCharacter(Player)
 	local AnimationIDs = AnimationPacks[AnimationPack]
-
+	
 	local Animate = Character:FindFirstChild("Animate")
 	if not Animate then return end
 	Animate.Disabled = true
@@ -3075,7 +3107,7 @@ local function SetGameShaders(Type)
 		DOF.InFocusRadius = 20
 		DOF.NearIntensity = 0.56
 		DOF.Parent = Lighting
-
+		
 		if not workspace.Terrain:FindFirstChildOfClass("Clouds") then
 			local Clouds = Instance.new("Clouds")
 			Clouds.Cover = 0.67
@@ -3133,7 +3165,7 @@ local function SetGameShaders(Type)
 		Correction.Enabled = true
 		Correction.Saturation = 0.2
 		Correction.Parent = Lighting
-
+		
 		if not workspace.Terrain:FindFirstChildOfClass("Clouds") then
 			local Clouds = Instance.new("Clouds")
 			Clouds.Cover = 0.67
@@ -3221,7 +3253,7 @@ local function Setup()
 	Contents = OuterFrame:WaitForChild("Contents")
 	ContentShrunken = OuterFrame:WaitForChild("ContentShrunken")
 	InfoFrame = Contents:WaitForChild("Info")
-
+	
 	ToastFrame = MainUI:WaitForChild("ToastFrame")
 	ToastText = MainUI:WaitForChild("ToastText")
 
@@ -3231,11 +3263,11 @@ local function Setup()
 	MarkerUI.ResetOnSpawn = false
 	MarkerUI.Name = "MarkerContainer"
 	MarkerUI.Parent = Player.PlayerGui
-
+	
 	if Player:GetAttribute("EmptyToolz") then
 		table.insert(AttachmentLocations, "???")
 	end
-
+	
 	for i,v in pairs(AnimationPacks) do
 		table.insert(AnimationPackEnums, i)
 	end
@@ -3244,7 +3276,7 @@ local function Setup()
 	DefaultDestroyHeight = workspace.FallenPartsDestroyHeight
 	DefaultMinZoomDistance = Player.CameraMinZoomDistance
 	DefaultMaxZoomDistance = Player.CameraMaxZoomDistance
-
+	
 	coroutine.resume(coroutine.create(function()
 		local Character = GetCharacter(Player)
 		if Character then
@@ -3406,7 +3438,9 @@ local function SetupCommands()
 					PhaseObj.CanCollide = true
 				end
 			end
-			TeleportIndicator = CreateTeleportIndicator()
+			if PointTeleportIndicatorEnabled then
+				TeleportIndicator = CreateTeleportIndicator()
+			end
 			Mouse.TargetFilter = TeleportIndicator
 		end,
 		function()
@@ -3584,7 +3618,6 @@ local function SetupCommands()
 		function(Time)
 			if tonumber(Time) then
 				Lighting.ClockTime = tonumber(Time)
-				Toast("Time set to " .. Lighting.ClockTime .. " (" .. Lighting.TimeOfDay .. ")", 2)
 			end
 		end,
 		nil
@@ -3664,13 +3697,13 @@ local function SetupCommands()
 				local Target = GetPlayerFromNameSnippet(Username)
 				if Target then
 					Target:SetAttribute("Blocked", true)
-					Toast(Target.DisplayName .. " (@" .. Target.Name .. " ) blocked", 1.5)
+					Toast(Target.DisplayName .. " (@" .. Target.Name .. " ) blocked", 2)
 				end
 			elseif Type == "Unblock" then
 				local Target = GetPlayerFromNameSnippet(Username)
 				if Target then
 					Target:SetAttribute("Blocked", false)
-					Toast(Target.DisplayName .. " (@" .. Target.Name .. " ) unblocked!", 1.5)
+					Toast(Target.DisplayName .. " (@" .. Target.Name .. " ) unblocked", 2)
 				end
 			end
 		end,
@@ -3732,6 +3765,12 @@ local function SetupSettings()
 		function(CheckBox)
 			AlertsEnabled = not AlertsEnabled
 			SetOptionChecked(CheckBox, AlertsEnabled)
+		end
+	)
+	CreateSettingsOption("Teleport Indicator", "Enable green teleport indicator for point teleport", "Boolean", true, 
+		function(CheckBox)
+			PointTeleportIndicatorEnabled = not PointTeleportIndicatorEnabled
+			SetOptionChecked(CheckBox, PointTeleportIndicatorEnabled)
 		end
 	)
 end
@@ -3811,6 +3850,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 	end
 	workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
 	SetGameShaders("None")
+	SetPlayerAnimations("None")
 	if Player.PlayerGui:FindFirstChild("LinkScreen") then
 		Player.PlayerGui.LinkScreen:Destroy()
 	end
@@ -3825,6 +3865,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 			TogglePlayerCharacter(v, true)
 		end))
 	end
+	StopCarMode()
 	wait(0.005)
 	TeleportIndicator = nil
 	PhaseEnabled = false
@@ -3868,7 +3909,7 @@ Contents.Search:GetPropertyChangedSignal("Text"):Connect(function()
 	end
 
 	Contents.Commands.CanvasPosition = Vector2.zero
-
+	
 	for _, Option in pairs(SettingsFrames) do
 		local OptionTitleMatchesSearch = (SearchText == "" or #SearchText < 1 or string.find(string.lower(Option.Name), SearchText))
 		local OptionInfoMatchesSearch = (SearchText == "" or #SearchText < 1 or string.find(string.lower(Option.Info.Text), SearchText))
@@ -3897,7 +3938,7 @@ Players.LocalPlayer.CharacterAdded:Connect(function(character)
 
 	local root = character:WaitForChild("HumanoidRootPart")
 	if playerSpawnPoint then
-
+		
 		root.CFrame = playerSpawnPoint
 	end
 end)
@@ -3931,7 +3972,7 @@ end)
 -- Loop
 
 RunService.RenderStepped:Connect(function()
-	if TeleportEnabled then
+	if TeleportEnabled and PointTeleportIndicatorEnabled then
 		if TeleportIndicator then
 			TeleportIndicator:MoveTo(Mouse.Hit.Position)
 			local Part = TeleportIndicator:GetChildren()[1]
@@ -3944,7 +3985,10 @@ RunService.RenderStepped:Connect(function()
 					Part.CanCollide = true
 				end
 			end
-
+		else
+			if PointTeleportIndicatorEnabled then
+				TeleportIndicator = CreateTeleportIndicator()
+			end
 		end
 	elseif TeleportIndicator ~= nil then
 		TeleportIndicator:Destroy()
