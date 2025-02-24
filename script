@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.2.7"
-local ChangeLog = "• Added alerts/toasts to some commands\n• Created a settings menu\n• Added 'Spawnpoint' command\n• Added 'Car' command (now with animations)" 
+local VersionString = "v1.2.8"
+local ChangeLog = "• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu\n• Added 'Spawnpoint' command\n• Added 'Car' command (now with animations)" 
 
 -- Variables
 
@@ -2611,6 +2611,150 @@ local function RecieveLinkKey(linkKey)
 	return formattedJobId, tonumber(placeId)
 end
 
+-- Orbit Control
+local function OrbitPlayer(TargetUsername, Speed, orbitRadius)
+	orbitRadius = orbitRadius or 7.5
+	local Target = GetPlayerFromNameSnippet(TargetUsername)
+	if not Target then return end
+	local targetChar = GetCharacter(Target)
+	local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+	if not targetRoot then return end
+	local playerRoot = GetRoot(Player)
+	if not playerRoot then return end
+
+	if Player:FindFirstChild("StopOrbit") then
+		Player.StopOrbit:Destroy()
+	end
+
+	local orbitPart = workspace:FindFirstChild("OrbitPart")
+	if not orbitPart then
+		orbitPart = Instance.new("Part")
+		orbitPart.Name = "OrbitPart"
+		orbitPart.Anchored = true
+		orbitPart.Transparency = 1
+		orbitPart.CanCollide = false
+		orbitPart.Size = Vector3.new(1,1,1)
+		orbitPart.Parent = workspace
+	end
+
+	local orbitAttachment = orbitPart:FindFirstChild("OrbitAttachment")
+	if not orbitAttachment then
+		orbitAttachment = Instance.new("Attachment")
+		orbitAttachment.Name = "OrbitAttachment"
+		orbitAttachment.Parent = orbitPart
+	end
+
+	local alignOrientation = playerRoot:FindFirstChild("AlignOrientation")
+	if not alignOrientation then
+		alignOrientation = Instance.new("AlignOrientation")
+		alignOrientation.Name = "AlignOrientation"
+
+		alignOrientation.MaxAngularVelocity = math.huge
+		alignOrientation.MaxTorque = math.huge
+		alignOrientation.Responsiveness = 100
+		alignOrientation.Parent = playerRoot
+	else
+		alignOrientation.MaxAngularVelocity = math.huge
+		alignOrientation.MaxTorque = math.huge
+		alignOrientation.Responsiveness = 100
+	end
+
+	local orientationAttachment = playerRoot:FindFirstChild("OrientationAttachment")
+	if not orientationAttachment then
+		orientationAttachment = Instance.new("Attachment")
+		orientationAttachment.Name = "OrientationAttachment"
+		orientationAttachment.Parent = playerRoot
+	end
+
+	alignOrientation.Attachment0 = orientationAttachment
+	alignOrientation.Attachment1 = orbitAttachment
+
+	local randomX = math.random() - 0.5
+	local randomY = math.random() - 0.5
+	local randomZ = math.random() - 0.5
+	local rotationAxis = Vector3.new(randomX, randomY, randomZ).Unit
+	local rotationSpeed = 1.5  
+
+	local orbitSpeed
+	if Speed == "Slow" then
+		orbitSpeed = math.rad(30)
+	elseif Speed == "Medium" then
+		orbitSpeed = math.rad(60)
+	elseif Speed == "Fast" then
+		orbitSpeed = math.rad(120)
+	else
+		orbitSpeed = math.rad(60)
+	end
+	orbitSpeed = orbitSpeed * 0.01
+
+	local orbitAngle = 0
+	local stopLoop = false
+
+	repeat
+		pcall(function()
+			if not Target then
+				Target = GetPlayerFromNameSnippet(TargetUsername)
+			end
+			if not playerRoot then
+				playerRoot = GetRoot(Player)
+			end
+			if not targetChar then
+				targetChar = GetCharacter(Target)
+			end
+
+			orbitAngle = orbitAngle + orbitSpeed
+			local newX = orbitRadius * math.cos(orbitAngle)
+			local newZ = orbitRadius * math.sin(orbitAngle)
+			orbitPart.Position = targetRoot.Position + Vector3.new(newX, 4, newZ)
+
+			local Magnet = playerRoot:FindFirstChild("MagnetForce")
+			if not Magnet then
+				Magnet = Instance.new("AlignPosition")
+				Magnet.Name = "MagnetForce"
+				Magnet.MaxForce = 2850
+				Magnet.MaxVelocity = math.huge
+				Magnet.Responsiveness = 12
+				Magnet.Parent = playerRoot
+			end
+
+			local Attachment0 = playerRoot:FindFirstChild("MagnetA1")
+			if not Attachment0 then
+				Attachment0 = Instance.new("Attachment", playerRoot)
+				Attachment0.Name = "MagnetA1"
+			end
+
+			Magnet.Attachment0 = Attachment0
+			Magnet.Attachment1 = orbitAttachment
+
+			orientationAttachment.Orientation = orientationAttachment.Orientation + (rotationAxis * rotationSpeed)
+
+			local Humanoid = GetHumanoid(Player)
+			if Humanoid and not Humanoid.Sit then
+				Humanoid.Sit = false
+				task.wait(0.01)
+				Humanoid.Sit = true
+			end
+		end)
+		task.wait()
+	until stopLoop or Player:FindFirstChild("StopOrbit")
+
+	if Player:FindFirstChild("StopOrbit") then
+		Player.StopOrbit:Destroy()
+	end
+	if playerRoot and playerRoot:FindFirstChild("MagnetForce") then
+		playerRoot.MagnetForce:Destroy()
+	end
+	if playerRoot and playerRoot:FindFirstChild("AlignOrientation") then
+		playerRoot.AlignOrientation:Destroy()
+	end
+end
+
+function StopOrbit()
+	if not Player:FindFirstChild("StopOrbit") then
+		local Bool = Instance.new("BoolValue", Player)
+		Bool.Name = "StopOrbit"
+	end
+end
 
 
 
@@ -3751,6 +3895,14 @@ local function SetupCommands()
 			EraseSpawnPoint()
 		end
 	)
+	CreateCommand("Orbit", "Orbits around another player with variable speeds.", "Name..", {"Slow", "Medium", "Fast"}, "Character",
+		function(Username, Speed)
+			OrbitPlayer(Username, Speed)
+		end,
+		function()
+			StopOrbit()
+		end
+	)
 end
 
 local function SetupSettings()
@@ -3866,6 +4018,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 		end))
 	end
 	StopCarMode()
+	StopOrbit()
 	wait(0.005)
 	TeleportIndicator = nil
 	PhaseEnabled = false
