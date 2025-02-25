@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.2.8"
-local ChangeLog = "• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu\n• Added 'Spawnpoint' command\n• Added 'Car' command (now with animations)" 
+local VersionString = "v1.2.9"
+local ChangeLog = "• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu\n• Added 'Spawnpoint' command" 
 
 -- Variables
 
@@ -91,19 +91,21 @@ local DefaultAnimations = {
 local LogsOpen = false
 local Log
 
--- Sound Handling
+-- Third Party Variables
 
-local ClickSoundID = 6895079853
+local ThirdPartyLoadstrings = 
+	{
+		["InfiniteYield"] = 
+		function()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+		end,
+		["CMDX"] = 
+		function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source",true))()
+		end 
+	}
 
-local function PlaySoundFromID(ID, Data)
-	local Sound = Instance.new("Sound", game:GetService("SoundService"))
-	Sound.Name = "SoundInstance"
-	Sound.SoundId = "rbxassetid://" .. ID
-	Sound.Volume = Data.Volume
-	Sound:Play()
-	Sound.Ended:Wait()
-	Sound:Destroy()
-end
+
 
 -- Create UI Method
 
@@ -937,6 +939,12 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		table.insert(CommandCategories, FilterTag)
 	end
 	Command:SetAttribute("Category", FilterTag)
+	
+	local isThirdParty = false
+	if InputText == "THIRDPARTY" then
+		isThirdParty = true
+		InputText = nil
+	end
 
 	local SelectedEnum
 	if EnumTable ~= nil then
@@ -965,6 +973,7 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 	Title.TextSize = 14.000
 	Title.TextWrapped = true
 	Title.TextXAlignment = Enum.TextXAlignment.Left
+	
 
 	TipView(Title, TitleText, Info)
 
@@ -1013,6 +1022,13 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 			CallbackRun()
 		end
 	end)
+	
+	if isThirdParty then
+		Command.BackgroundColor3 = Color3.fromRGB(79, 55, 55)
+		Run.ImageColor3 = Color3.fromRGB(255, 129, 129)
+		Title.Text = Title.Text .. " [Third-Party]"
+		Title.Size = UDim2.new(0.623765904, 0, 0.823529363, 0)
+	end
 
 	UICorner_2.CornerRadius = UDim.new(0.189999998, 0)
 	UICorner_2.Parent = Run
@@ -1076,6 +1092,16 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 
 	table.insert(CommandFrames, Command)
 	Command.Parent = Contents:WaitForChild("Commands")
+	
+	if isThirdParty then
+		return Command
+	end
+end
+
+local function RemoveCommand(CommandFrame)
+	table.remove(CommandFrames, table.find(CommandFrames, CommandFrame))
+	task.wait()
+	CommandFrame:Destroy()
 end
 
 local function SetOptionChecked(OptionButton, Value)
@@ -3520,9 +3546,10 @@ local function Setup()
 		OuterFrame.InputChanged:Connect(dragInputChanged)
 		userInputService.InputChanged:Connect(userInputChanged)
 	end))
-
-
 end
+
+
+
 
 local function SetupCommands()
 	if not MainUI then return end
@@ -3905,6 +3932,32 @@ local function SetupCommands()
 	)
 end
 
+local ThirdPartyCommands = {}
+local ThirdPartiesEnabled = false
+
+local function SetupThirdPartyCommands(Enabled)
+	if Enabled then
+		local InfYield = CreateCommand("Infinite Yield", "Execute the infinite yield script", "THIRDPARTY", nil, "Game",
+			function()
+				ThirdPartyLoadstrings.InfiniteYield()
+			end,
+			nil
+		)
+		local CMDX = CreateCommand("CMD-X", "Execute the CMD-X script", "THIRDPARTY", nil, "Game",
+			function()
+				ThirdPartyLoadstrings.CMDX()
+			end,
+			nil
+		)
+		
+		ThirdPartyCommands = {InfYield, CMDX}
+	else
+		for i,v in pairs(ThirdPartyCommands) do
+			RemoveCommand(v)
+		end
+	end
+end
+
 local function SetupSettings()
 	if not MainUI then return end
 	CreateSettingsOption("Tips", "Enable command tips when hovering over the titles", "Boolean", true, 
@@ -3919,18 +3972,28 @@ local function SetupSettings()
 			SetOptionChecked(CheckBox, AlertsEnabled)
 		end
 	)
+	CreateSettingsOption("Third Party Scripts", "Enable commands for third parties like Infinite Yield, CMD-X, etc.", "Boolean", false, 
+		function(CheckBox)
+			ThirdPartiesEnabled = not ThirdPartiesEnabled
+			SetupThirdPartyCommands(ThirdPartiesEnabled)
+			SetOptionChecked(CheckBox, ThirdPartiesEnabled)
+		end
+	)
 	CreateSettingsOption("Teleport Indicator", "Enable green teleport indicator for point teleport", "Boolean", true, 
 		function(CheckBox)
 			PointTeleportIndicatorEnabled = not PointTeleportIndicatorEnabled
 			SetOptionChecked(CheckBox, PointTeleportIndicatorEnabled)
 		end
 	)
+
 end
 
 Setup()
 
 SetupCommands()
 SetupSettings()
+
+
 
 -- Mouse Handling
 
