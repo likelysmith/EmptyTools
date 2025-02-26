@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.3"
-local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
+local VersionString = "v1.3.1"
+local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Fixed rejoin region-lock" 
 
 -- Variables
 
@@ -2854,6 +2854,7 @@ function MagnetPlayer(TargetUsername)
 	end
 end
 
+
 -- Flight Control
 
 local userinput = game:GetService("UserInputService")
@@ -3647,18 +3648,23 @@ local function SetupCommands()
 				local Request = game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=10")
 				local RequestBody = HttpService:JSONDecode(Request)
 				if RequestBody and RequestBody.data then
-					for _,Server in next, RequestBody.data do
-						if type(Server) == "table" 
-							and tonumber(Server.playing) 
-							and tonumber(Server.maxPlayers) 
-							and Server.playing < Server.maxPlayers 
-							and Server.id ~= game.JobId then
-							table.insert(ServerList, 1, Server.id)
+					for _, Server in next, RequestBody.data do
+						if type(Server) == "table"
+							and tonumber(Server.playing)
+							and tonumber(Server.maxPlayers)
+							and Server.playing < Server.maxPlayers
+							and Server.id ~= game.JobId
+							and Server.ping then 
+							table.insert(ServerList, Server)
 						end
 					end
 				end
 				if #ServerList > 0 then
-					TeleportService:TeleportToPlaceInstance(game.PlaceId, ServerList[math.random(1,#ServerList)], Player)
+					table.sort(ServerList, function(a, b)
+						return a.ping < b.ping
+					end)
+
+					TeleportService:TeleportToPlaceInstance(game.PlaceId, ServerList[1].id, Player)
 				end
 			end
 		end,
@@ -3678,8 +3684,8 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "World",
-		function()
+	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, {"Default", "Show Invis"}, "World",
+		function(Type)
 			PhaseEnabled = true
 			TeleportEnabled = false
 			for _, phaseObj in pairs(PhaseObjects) do
@@ -3688,7 +3694,9 @@ local function SetupCommands()
 					phaseObj.CanCollide = true
 				end
 			end
-			EnablePhaseForInvisibleParts()
+			if Type == "Show Invis" then
+				EnablePhaseForInvisibleParts()
+			end
 		end,
 		function()
 			PhaseEnabled = false
