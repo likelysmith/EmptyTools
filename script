@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.2.9"
-local ChangeLog = "• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu\n• Added 'Spawnpoint' command" 
+local VersionString = "v1.3"
+local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
 
 -- Variables
 
@@ -1023,11 +1023,14 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		end
 	end)
 	
+	if isThirdParty or (EnumTable == nil and InputText == nil) then
+		Title.Size = UDim2.new(0.623765904, 0, 0.823529363, 0)
+	end
+	
 	if isThirdParty then
 		Command.BackgroundColor3 = Color3.fromRGB(79, 55, 55)
 		Run.ImageColor3 = Color3.fromRGB(255, 129, 129)
 		Title.Text = Title.Text .. " [Third-Party]"
-		Title.Size = UDim2.new(0.623765904, 0, 0.823529363, 0)
 	end
 
 	UICorner_2.CornerRadius = UDim.new(0.189999998, 0)
@@ -3929,6 +3932,12 @@ local function SetupCommands()
 		function()
 			StopOrbit()
 		end
+	)
+	CreateCommand("Voice Chat Unban", "Unban yourself from a voice chat penalty. Not compatable with all injectors.", nil, nil, "Game",
+		function()
+			game:GetService("VoiceChatService"):joinVoice()
+		end,
+		nil
 	)
 end
 
