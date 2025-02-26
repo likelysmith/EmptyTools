@@ -1204,8 +1204,8 @@ end
 local currentlyFocusedMarker = nil
 
 local function tweenMarker(marker, targetOffset)
-	local tween = TweenService:Create(marker, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {StudsOffset = targetOffset})
-	tween:Play()
+	--local tween = TweenService:Create(marker, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {StudsOffset = targetOffset})
+	--tween:Play()
 end
 
 local function tweenStroke(stroke, targetThickness)
