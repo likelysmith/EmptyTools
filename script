@@ -11,7 +11,7 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.3"
+local VersionString = "v1.3.1"
 local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
 
 -- Variables
@@ -2900,7 +2900,8 @@ end
 local StopCFrameBoost
 
 local function SetCFrameBoost(Boost)
-	local MaxBoost = 15
+	Boost *= 0.35
+	local MaxBoost = 20
 	if Boost > MaxBoost then
 		Boost = MaxBoost
 	end
@@ -3649,7 +3650,7 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Emote", "Equip any emote from the marketplace by pasting the ID. Will clear existing emotes, and go in order until filled.", "Emote ID..", {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6", "Slot 7", "Slot 8"}, "Character", 
+	CreateCommand("Emote", "Equip any emote from the marketplace by pasting the ID. Will clear existing emotes, and go fill the wheel in order when empty.", "Emote ID..", {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6", "Slot 7", "Slot 8"}, "Character", 
 		function(ID, Slot)
 			PlayEmote(ID, Slot)
 		end,
@@ -3825,7 +3826,7 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("CFrame Speed", "Boost your character's CFrame speed. Capped at 15", "Boost..", nil, "Character",
+	CreateCommand("CFrame Speed", "Boost your character's CFrame speed. Capped at 20", "Boost..", nil, "Character",
 		function(Value)
 			StopCFrameBoosting()
 			repeat wait() until StopCFrameBoost == true
