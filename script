@@ -95,14 +95,19 @@ local Log
 
 local ThirdPartyLoadstrings = 
 	{
-		["InfiniteYield"] = 
+		["Infinite Yield"] = 
 		function()
 			loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
 		end,
-		["CMDX"] = 
+		["CMD-X"] = 
 		function()
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source",true))()
-		end 
+		end,
+		["Sky Hub"] = 
+		function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/yofriendfromschool1/Sky-Hub/main/SkyHub.txt"))()
+		end,
+
 	}
 
 
@@ -3999,21 +4004,17 @@ local ThirdPartyCommands = {}
 local ThirdPartiesEnabled = false
 
 local function SetupThirdPartyCommands(Enabled)
-	if Enabled then
-		local InfYield = CreateCommand("Infinite Yield", "Execute the infinite yield script", "THIRDPARTY", nil, "Game",
-			function()
-				ThirdPartyLoadstrings.InfiniteYield()
-			end,
-			nil
-		)
-		local CMDX = CreateCommand("CMD-X", "Execute the CMD-X script", "THIRDPARTY", nil, "Game",
-			function()
-				ThirdPartyLoadstrings.CMDX()
-			end,
-			nil
-		)
+	if Enabled then		
 		
-		ThirdPartyCommands = {InfYield, CMDX}
+		for i,v in pairs(ThirdPartyLoadstrings) do
+			local Command = CreateCommand(i, "Execute the third-party " .. i .. " script", "THIRDPARTY", nil, "Game",
+				function()
+					v()
+				end,
+				nil
+			)
+			table.insert(ThirdPartyCommands, Command)
+		end
 	else
 		for i,v in pairs(ThirdPartyCommands) do
 			RemoveCommand(v)
