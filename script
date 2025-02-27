@@ -2053,21 +2053,35 @@ function PlayEmote(ID, slotStr)
 		return
 	end
 
-	local slotNumber = slotStr:match("Slot%s*(%d+)")
-	slotNumber = tonumber(slotNumber)
-	if not slotNumber or slotNumber < 1 or slotNumber > 8 then
+
+	local requestedSlot = slotStr:match("Slot%s*(%d+)")
+	requestedSlot = tonumber(requestedSlot)
+	if not requestedSlot or requestedSlot < 1 or requestedSlot > 8 then
 		warn("Invalid slot specified. Use 'Slot 1' through 'Slot 8'.")
 		return
 	end
 
-	local key = "Emote" .. slotNumber
 	
+	if equippedEmotes[requestedSlot] == nil then
+		local openSlot = nil
+		for i = 1, 8 do
+			if equippedEmotes[i] == nil then
+				openSlot = i
+				break
+			end
+		end
+		if not openSlot then
+			warn("No available emote slots.")
+			return
+		end
+		requestedSlot = openSlot
+	end
+
+
 	local Info = game:GetService("MarketplaceService"):GetProductInfo(numID)
-	key = Info.Name
+	local key = Info.Name
 
-	equippedEmotes[slotNumber] = key
-
-
+	equippedEmotes[requestedSlot] = key
 	emoteTable[key] = { numID }
 
 	local Humanoid = GetHumanoid(Player)
@@ -3635,7 +3649,7 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Emote", "Equip any emote from the marketplace by pasting the ID. Will clear existing emotes.", "Emote ID..", {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6", "Slot 7", "Slot 8"}, "Character", 
+	CreateCommand("Emote", "Equip any emote from the marketplace by pasting the ID. Will clear existing emotes, and go in order until filled.", "Emote ID..", {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6", "Slot 7", "Slot 8"}, "Character", 
 		function(ID, Slot)
 			PlayEmote(ID, Slot)
 		end,
@@ -4136,6 +4150,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 	if Player.PlayerGui:FindFirstChild("LinkScreen") then
 		Player.PlayerGui.LinkScreen:Destroy()
 	end
+	StopCFrameBoosting()
 	TeleportEnabled = false
 	if TeleportIndicator then
 		TeleportIndicator:Destroy()
@@ -4155,6 +4170,8 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 	MarkersActive = false
 	MarkerUI:Destroy()
 	MainUI:Destroy()
+	script.Disabled = true
+	script.Parent = nil
 	script:Destroy()
 end)
 
