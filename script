@@ -3813,6 +3813,8 @@ local function SetupCommands()
 	)
 	CreateCommand("CFrame Speed", "Boost your character's CFrame speed. Capped at 15", "Boost..", nil, "Character",
 		function(Value)
+			StopCFrameBoosting()
+			repeat wait() until StopCFrameBoost == true
 			SetCFrameBoost(tonumber(Value))
 		end,
 		function()
@@ -4129,6 +4131,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 	end
 	workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
 	SetGameShaders("None")
+	SetCameraTarget("None", nil)
 	SetPlayerAnimations("None")
 	if Player.PlayerGui:FindFirstChild("LinkScreen") then
 		Player.PlayerGui.LinkScreen:Destroy()
