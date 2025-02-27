@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.3.1"
-local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Fixed rejoin region-lock" 
+local VersionString = "v1.3"
+local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
 
 -- Variables
 
@@ -2031,19 +2031,43 @@ local function StopPlayerAnimation()
 	end
 end
 
-local function PlayEmote(ID)
-	ID = tonumber(ID)
-	local Humanoid = GetHumanoid(Player)
-	local EmoteArray =
-		{
-			["NEW_EMOTE"] = {ID}
-		}
-	Humanoid.HumanoidDescription:SetEmotes(EmoteArray)
-	wait()
-	Humanoid:PlayEmote("NEW_EMOTE")
+
+local emoteTable = {} 
+local equippedEmotes = {nil, nil, nil, nil, nil, nil, nil, nil}
+
+local function updateEmoteSettings(Humanoid)
+	local humanoidDescription = Humanoid.HumanoidDescription
+	humanoidDescription:SetEmotes(emoteTable)
+	humanoidDescription:SetEquippedEmotes(equippedEmotes)
 end
 
+function PlayEmote(ID, slotStr)
+	local numID = tonumber(ID)
+	if not numID then
+		warn("Invalid emote ID")
+		return
+	end
 
+	local slotNumber = slotStr:match("Slot%s*(%d+)")
+	slotNumber = tonumber(slotNumber)
+	if not slotNumber or slotNumber < 1 or slotNumber > 8 then
+		warn("Invalid slot specified. Use 'Slot 1' through 'Slot 8'.")
+		return
+	end
+
+	local key = "Emote" .. slotNumber
+	
+	local Info = game:GetService("MarketplaceService"):GetProductInfo(numID)
+	key = Info.Name
+
+	equippedEmotes[slotNumber] = key
+
+
+	emoteTable[key] = { numID }
+
+	local Humanoid = GetHumanoid(Player)
+	updateEmoteSettings(Humanoid)
+end
 
 -- Animation Control
 
@@ -2854,6 +2878,27 @@ function MagnetPlayer(TargetUsername)
 	end
 end
 
+local StopCFrameBoost
+
+local function SetCFrameBoost(Boost)
+	local MaxBoost = 15
+	if Boost > MaxBoost then
+		Boost = MaxBoost
+	end
+	
+	StopCFrameBoost = false
+	
+	local Root = GetRoot(Player)
+	
+	repeat
+		Root.CFrame = Root.CFrame + GetHumanoid(Player).MoveDirection * Boost
+		game:GetService("RunService").Stepped:Wait()
+	until Root == nil or StopCFrameBoost
+end
+
+local function StopCFrameBoosting()
+	StopCFrameBoost = true
+end
 
 -- Flight Control
 
@@ -3585,9 +3630,9 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Emote", "Play any emote from the marketplace by pasting the ID found in the URL.", "Emote ID..", nil, "Character", 
-		function(ID)
-			PlayEmote(ID)
+	CreateCommand("Emote", "Equip any emote from the marketplace by pasting the ID. Will clear existing emotes.", "Emote ID..", {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6", "Slot 7", "Slot 8"}, "Character", 
+		function(ID, Slot)
+			PlayEmote(ID, Slot)
 		end,
 		nil
 	)
@@ -3648,23 +3693,18 @@ local function SetupCommands()
 				local Request = game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=10")
 				local RequestBody = HttpService:JSONDecode(Request)
 				if RequestBody and RequestBody.data then
-					for _, Server in next, RequestBody.data do
-						if type(Server) == "table"
-							and tonumber(Server.playing)
-							and tonumber(Server.maxPlayers)
-							and Server.playing < Server.maxPlayers
-							and Server.id ~= game.JobId
-							and Server.ping then 
-							table.insert(ServerList, Server)
+					for _,Server in next, RequestBody.data do
+						if type(Server) == "table" 
+							and tonumber(Server.playing) 
+							and tonumber(Server.maxPlayers) 
+							and Server.playing < Server.maxPlayers 
+							and Server.id ~= game.JobId then
+							table.insert(ServerList, 1, Server.id)
 						end
 					end
 				end
 				if #ServerList > 0 then
-					table.sort(ServerList, function(a, b)
-						return a.ping < b.ping
-					end)
-
-					TeleportService:TeleportToPlaceInstance(game.PlaceId, ServerList[1].id, Player)
+					TeleportService:TeleportToPlaceInstance(game.PlaceId, ServerList[math.random(1,#ServerList)], Player)
 				end
 			end
 		end,
@@ -3684,8 +3724,8 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, {"Default", "Show Invis"}, "World",
-		function(Type)
+	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "World",
+		function()
 			PhaseEnabled = true
 			TeleportEnabled = false
 			for _, phaseObj in pairs(PhaseObjects) do
@@ -3694,9 +3734,7 @@ local function SetupCommands()
 					phaseObj.CanCollide = true
 				end
 			end
-			if Type == "Show Invis" then
-				EnablePhaseForInvisibleParts()
-			end
+			EnablePhaseForInvisibleParts()
 		end,
 		function()
 			PhaseEnabled = false
@@ -3767,6 +3805,14 @@ local function SetupCommands()
 			end
 		end,
 		nil
+	)
+	CreateCommand("CFrame Speed", "Boost your character's CFrame speed. Capped at 15", "Boost..", nil, "Character",
+		function(Value)
+			SetCFrameBoost(tonumber(Value))
+		end,
+		function()
+			StopCFrameBoosting()
+		end
 	)
 	CreateCommand("Fling", "Flings your character in the direction of your camera with adjustable power, capped at 300.", "Power..", nil,"Character",
 		function(Power)
@@ -3917,7 +3963,7 @@ local function SetupCommands()
 			end
 		end
 	)	
-	CreateCommand("Car", "Drivable floating car. Controls: WASD, Q & E.", "Max Speed..", nil, "Character",
+	CreateCommand("Car", "Drivable floating car. Controls: WASD, Q & E. B to Break", "Max Speed..", nil, "Character",
 		function(input)
 			StartCarMode(input)
 		end,
