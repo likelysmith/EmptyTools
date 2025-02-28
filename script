@@ -2700,6 +2700,9 @@ local function OrbitPlayer(TargetUsername, Speed, orbitRadius)
 	if Player:FindFirstChild("StopOrbit") then
 		Player.StopOrbit:Destroy()
 	end
+	
+	StopOrbit()
+	wait(0.1)
 
 	local orbitPart = workspace:FindFirstChild("OrbitPart")
 	if not orbitPart then
