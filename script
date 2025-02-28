@@ -1228,96 +1228,6 @@ local function isMouseOver(button)
 		and mousePos.Y >= pos.Y and mousePos.Y <= pos.Y + size.Y
 end
 
-local function CreateMarker(TargetPlayer, Type)
-	local Marker = Instance.new("BillboardGui")
-	local Frame = Instance.new("Frame")
-	local User = Instance.new("TextLabel")
-	local UICorner = Instance.new("UICorner")
-	local Display = Instance.new("TextLabel")
-	local Button = Instance.new("ImageButton")
-	local Stroke = Instance.new("UIStroke")
-
-	--Properties:
-
-	Marker.Name = TargetPlayer.Name
-	Marker.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	Marker.Active = true
-	Marker.Adornee = TargetPlayer.Character.HumanoidRootPart
-	Marker.AlwaysOnTop = true
-	Marker.LightInfluence = 1.000
-	Marker.Size = UDim2.new(0, 150, 0, 60)
-
-	Frame.Parent = Marker
-	Frame.AnchorPoint = Vector2.new(0.5, 0.5)
-	Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Frame.BackgroundTransparency = 0.2
-	Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Frame.BorderSizePixel = 0
-	Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-	Frame.Size = UDim2.new(0.800000012, 0, 0.600000024, 0)
-
-	User.Name = "User"
-	User.Parent = Frame
-	User.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	User.BackgroundTransparency = 1.000
-	User.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	User.BorderSizePixel = 0
-	User.Size = UDim2.new(1, 0, 0.5, 0)
-	User.Font = Enum.Font.GothamBold
-	User.Text = TargetPlayer.DisplayName
-	User.TextColor3 = Color3.fromRGB(255, 255, 255)
-	User.TextScaled = true
-	User.TextSize = 14.000
-	User.TextWrapped = true
-
-	UICorner.Parent = Frame
-
-	Display.Name = "Display"
-	Display.Parent = Frame
-	Display.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Display.BackgroundTransparency = 1.000
-	Display.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Display.BorderSizePixel = 0
-	Display.Position = UDim2.new(0, 0, 0.5, 0)
-	Display.Size = UDim2.new(1, 0, 0.449999988, 0)
-	Display.Font = Enum.Font.Gotham
-	Display.Text = "@" .. TargetPlayer.Name
-	Display.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Display.TextScaled = true
-	Display.TextSize = 14.000
-	Display.TextWrapped = true
-
-	Button.Name = "Button"
-	Button.Parent = Marker
-	Button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Button.BackgroundTransparency = 1.000
-	Button.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Button.BorderSizePixel = 0
-	Button.Size = UDim2.new(1, 0, 1, 0)
-	Button.ZIndex = 3
-	Button.Image = "http://www.roblox.com/asset/?id=1415236683"
-
-	Stroke.Name = "Select"
-	Stroke.Color = Color3.fromRGB(255,255,255)
-	Stroke.Thickness = 0
-	Stroke.Parent = Frame
-	
-	local defaultOffset = Marker.StudsOffset
-	local hoverOffset = defaultOffset + Vector3.new(0, 5, 0)
-
-	if Type == "Teleport" then
-		Button.MouseEnter:Connect(function()
-			Stroke.Thickness = 0
-			TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 2}):Play()
-		end)
-
-		Button.MouseLeave:Connect(function()
-			TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 0}):Play()
-		end)
-	end
-
-	return Marker, Button
-end
 
 -- Freecam Setup (Long)
 
@@ -1723,6 +1633,100 @@ local function CreateTeleportIndicator()
 	Indicator.Parent = Model
 	return Model
 end
+
+local function CreateMarker(TargetPlayer, Type)
+	local Marker = Instance.new("BillboardGui")
+	local Frame = Instance.new("Frame")
+	local User = Instance.new("TextLabel")
+	local UICorner = Instance.new("UICorner")
+	local Display = Instance.new("TextLabel")
+	local Button = Instance.new("ImageButton")
+	local Stroke = Instance.new("UIStroke")
+
+	--Properties:
+
+	Marker.Name = TargetPlayer.Name
+	Marker.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	Marker.Active = true
+	Marker.Adornee = GetRoot(TargetPlayer)
+	Marker.AlwaysOnTop = true
+	Marker.LightInfluence = 1.000
+	Marker.Size = UDim2.new(0, 150, 0, 60)
+
+	Frame.Parent = Marker
+	Frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Frame.BackgroundTransparency = 0.2
+	Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Frame.BorderSizePixel = 0
+	Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	Frame.Size = UDim2.new(0.800000012, 0, 0.600000024, 0)
+
+	User.Name = "User"
+	User.Parent = Frame
+	User.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	User.BackgroundTransparency = 1.000
+	User.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	User.BorderSizePixel = 0
+	User.Size = UDim2.new(1, 0, 0.5, 0)
+	User.Font = Enum.Font.GothamBold
+	User.Text = TargetPlayer.DisplayName
+	User.TextColor3 = Color3.fromRGB(255, 255, 255)
+	User.TextScaled = true
+	User.TextSize = 14.000
+	User.TextWrapped = true
+
+	UICorner.Parent = Frame
+
+	Display.Name = "Display"
+	Display.Parent = Frame
+	Display.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Display.BackgroundTransparency = 1.000
+	Display.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Display.BorderSizePixel = 0
+	Display.Position = UDim2.new(0, 0, 0.5, 0)
+	Display.Size = UDim2.new(1, 0, 0.449999988, 0)
+	Display.Font = Enum.Font.Gotham
+	Display.Text = "@" .. TargetPlayer.Name
+	Display.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Display.TextScaled = true
+	Display.TextSize = 14.000
+	Display.TextWrapped = true
+
+	Button.Name = "Button"
+	Button.Parent = Marker
+	Button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Button.BackgroundTransparency = 1.000
+	Button.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Button.BorderSizePixel = 0
+	Button.Size = UDim2.new(1, 0, 1, 0)
+	Button.ZIndex = 3
+	Button.Image = "http://www.roblox.com/asset/?id=1415236683"
+
+	Stroke.Name = "Select"
+	Stroke.Color = Color3.fromRGB(255,255,255)
+	Stroke.Thickness = 0
+	Stroke.Parent = Frame
+
+	local defaultOffset = Marker.StudsOffset
+	local hoverOffset = defaultOffset + Vector3.new(0, 5, 0)
+
+	if Type == "Teleport" then
+		Button.MouseEnter:Connect(function()
+			Stroke.Thickness = 0
+			TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 2}):Play()
+		end)
+
+		Button.MouseLeave:Connect(function()
+			TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 0}):Play()
+		end)
+	else
+		Button.Visible = false
+	end
+
+	return Marker, Button
+end
+
 
 local function TogglePlayerCharacter(Target, Value)
 	local Character = GetCharacter(Target)
@@ -3842,7 +3846,7 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, {"Teleport", "Nothing"}, "World",
+	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Option to enable clicking their name to teleport to them.", nil, {"Teleport", "Nothing"}, "World",
 		function(Type)
 			SetupMarkers(Type)
 		end,
