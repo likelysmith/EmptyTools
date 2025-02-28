@@ -2686,6 +2686,8 @@ local function RecieveLinkKey(linkKey)
 	return formattedJobId, tonumber(placeId)
 end
 
+local orbitActive = false
+
 -- Orbit Control
 local function OrbitPlayer(TargetUsername, Speed, orbitRadius)
 	orbitRadius = orbitRadius or 7.5
@@ -2700,9 +2702,11 @@ local function OrbitPlayer(TargetUsername, Speed, orbitRadius)
 	if Player:FindFirstChild("StopOrbit") then
 		Player.StopOrbit:Destroy()
 	end
+	if orbitActive then
+		StopOrbit()
+	end
 	
-	StopOrbit()
-	wait(0.1)
+	orbitActive = true
 
 	local orbitPart = workspace:FindFirstChild("OrbitPart")
 	if not orbitPart then
@@ -2815,6 +2819,7 @@ local function OrbitPlayer(TargetUsername, Speed, orbitRadius)
 		end)
 		task.wait()
 	until stopLoop or Player:FindFirstChild("StopOrbit")
+	orbitActive = false
 
 	if Player:FindFirstChild("StopOrbit") then
 		Player.StopOrbit:Destroy()
