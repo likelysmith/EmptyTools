@@ -1228,7 +1228,7 @@ local function isMouseOver(button)
 		and mousePos.Y >= pos.Y and mousePos.Y <= pos.Y + size.Y
 end
 
-local function CreateMarker(TargetPlayer)
+local function CreateMarker(TargetPlayer, Type)
 	local Marker = Instance.new("BillboardGui")
 	local Frame = Instance.new("Frame")
 	local User = Instance.new("TextLabel")
@@ -1305,18 +1305,16 @@ local function CreateMarker(TargetPlayer)
 	local defaultOffset = Marker.StudsOffset
 	local hoverOffset = defaultOffset + Vector3.new(0, 5, 0)
 
-	Button.MouseEnter:Connect(function()
-		Stroke.Thickness = 0
-		TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 2}):Play()
-		local tween = TweenService:Create(Marker, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {StudsOffset = hoverOffset})
-		tween:Play()
-	end)
+	if Type == "Teleport" then
+		Button.MouseEnter:Connect(function()
+			Stroke.Thickness = 0
+			TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 2}):Play()
+		end)
 
-	Button.MouseLeave:Connect(function()
-		local tween = TweenService:Create(Marker, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {StudsOffset = defaultOffset})
-		tween:Play()
-		TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 0}):Play()
-	end)
+		Button.MouseLeave:Connect(function()
+			TweenService:Create(Stroke, FadeTweenInfo, {Thickness = 0}):Play()
+		end)
+	end
 
 	return Marker, Button
 end
@@ -3038,7 +3036,7 @@ local function ToggleFlight(Value, FlySpeedValue)
 	end
 end
 
-local function SetupMarkers()
+local function SetupMarkers(Type)
 	if MarkerUI ~= nil then
 		MarkerUI:Destroy()
 	end
@@ -3060,12 +3058,14 @@ local function SetupMarkers()
 			if MarkerUI:FindFirstChild(Target.Name) then
 				continue
 			end
-			local Marker, Button = CreateMarker(Target)
+			local Marker, Button = CreateMarker(Target, Type)
 			if Marker then
 				Marker.Parent = MarkerUI
-				Button.MouseButton1Click:Connect(function()
-					TeleportToPlayer(Target)
-				end)
+				if Type == "Teleport" then
+					Button.MouseButton1Click:Connect(function()
+						TeleportToPlayer(Target)
+					end)
+				end
 			end
 		end
 		for _,Marker in pairs(MarkerUI:GetChildren()) do
@@ -3842,9 +3842,9 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, nil, "World",
-		function()
-			SetupMarkers()
+	CreateCommand("Markers", "Shows the location of all players currently loaded on the client. Click their name to teleport to them.", nil, {"Teleport", "Nothing"}, "World",
+		function(Type)
+			SetupMarkers(Type)
 		end,
 		function()
 			MarkersActive = false
