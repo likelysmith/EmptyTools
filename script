@@ -202,6 +202,12 @@ function CreateUI()
 	Title.TextSize = 14.000
 	Title.TextWrapped = true
 	Title.TextXAlignment = Enum.TextXAlignment.Left
+	
+	if Player:GetAttribute("EmptyToolz") then
+		Title.Size = UDim2.new(0.599,0,0.126,0)
+		Title.RichText = true
+		Title.Text = [[Empty Tools <font size="13" color="rgb(201,0,0)">++</font> ]]
+	end
 
 	UICorner_2.CornerRadius = UDim.new(0.0500000007, 0)
 	UICorner_2.Parent = Contents
