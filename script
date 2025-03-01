@@ -3158,6 +3158,7 @@ end
 
 local function SetCameraTarget(Type, Target)
 	if Player:FindFirstChild("RemoveViewPlayer") then
+		Player:FindFirstChild("RemoveViewPlayer"):Destroy()
 		return
 	end
 	if Type == "None" then
