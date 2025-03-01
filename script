@@ -4299,7 +4299,7 @@ end
 OuterFrame.Close.MouseButton1Click:Connect(function()
 	if MinimizeOnClose == true then
 		OuterFrame.Visible = false
-		MainUI:SetAttriute("Minimized", true)
+		MainUI:SetAttribute("Minimized", true)
 		Toast('Press " = " to re-open Empty Tools', 2.5)
 		return
 	end
