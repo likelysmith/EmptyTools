@@ -166,7 +166,7 @@ function CreateUI()
 	EmptyTools.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	EmptyTools.ResetOnSpawn = false
 	EmptyTools.IgnoreGuiInset = true
-	EmptyTools.DisplayOrder = 0
+	EmptyTools.DisplayOrder = 100
 
 	OuterFrame.Name = "OuterFrame"
 	OuterFrame.Parent = EmptyTools
