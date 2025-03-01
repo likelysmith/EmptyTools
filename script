@@ -3156,28 +3156,34 @@ local function ExplodePlayer(Power)
 	ExplosionInProcess = false
 end
 
+local viewActive = false
+
 local function SetCameraTarget(Type, Target)
 	if Player:FindFirstChild("RemoveViewPlayer") then
 		Player:FindFirstChild("RemoveViewPlayer"):Destroy()
-		return
 	end
 	if Type == "None" then
 		local Value = Instance.new("BoolValue", Player)
 		Value.Name = "RemoveViewPlayer"
 		Camera.CameraType = Enum.CameraType.Custom
 		Camera.CameraSubject = GetHumanoid(Player)
+		viewActive = false
 	elseif Type == "View" then
+		if viewActive then return end 
 		for i,v in pairs(Player:GetChildren()) do
 			if v.Name == "RemoveViewPlayer" then
 				v:Destroy()
 			end
 		end
+		viewActive = true
 		repeat
 			pcall(function()
+				Camera.CameraType = Enum.CameraType.Custom
 				Camera.CameraSubject = GetHumanoid(Target)
 			end)
 			task.wait()
 		until Player:FindFirstChild("RemoveViewPlayer")
+		viewActive = false
 		Player:FindFirstChild("RemoveViewPlayer"):Destroy()
 		Camera.CameraType = Enum.CameraType.Custom
 		Camera.CameraSubject = GetHumanoid(Player)
