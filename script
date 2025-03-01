@@ -206,7 +206,7 @@ function CreateUI()
 	if Player:GetAttribute("EmptyToolz") then
 		Title.Size = UDim2.new(0.599,0,0.126,0)
 		Title.RichText = true
-		Title.Text = [[Empty Tools <font size="13" color="rgb(201,0,0)">++</font> ]]
+		Title.Text = [[Empty Tools <font size="13" color="rgb(255, 69, 32)">++</font> ]]
 	end
 
 	UICorner_2.CornerRadius = UDim.new(0.0500000007, 0)
@@ -1795,6 +1795,35 @@ local function DisablePhaseForInvisibleParts()
 			obj.Transparency = obj:GetAttribute("OriginalTransparency")
 			obj:SetAttribute("OriginalTransparency", nil)
 		end
+	end
+end
+
+
+-- Selection Control 
+
+
+local modeEnabled = false
+local originalTransparency = {} 
+local selectionBox = Instance.new("SelectionBox")
+selectionBox.Name = "HighlightSelectionBox"
+selectionBox.Color3 = Color3.new(0, 1, 0) 
+selectionBox.Transparency = 0 
+selectionBox.Visible = false
+local currentSelection = nil
+
+
+local function updateSelection(newPart)
+	if currentSelection == newPart then
+		selectionBox.Adornee = nil
+		selectionBox.Visible = false
+		currentSelection = nil
+	else
+		currentSelection = newPart
+		if newPart ~= nil then
+			selectionBox.Parent = newPart
+		end
+		selectionBox.Adornee = newPart
+		selectionBox.Visible = true
 	end
 end
 
@@ -3711,6 +3740,7 @@ local function SetupCommands()
 	)
 	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Character",
 		function()
+			if modeEnabled then return end
 			TeleportEnabled = true
 			PhaseEnabled = false
 			for _,PhaseObj in pairs(PhaseObjects) do
@@ -4080,6 +4110,38 @@ local function SetupThirdPartyCommands(Enabled)
 	end
 end
 
+local function SetupPlusCommands()
+	CreateCommand("Regions", "Toggle invisible regions. Makes near-invisible parts partially visible for selection. Backspace to delete.", nil, nil, "World",
+		function() 
+			if PhaseEnabled then return end
+			modeEnabled = true
+			for _, obj in ipairs(workspace:GetDescendants()) do
+				if obj:IsA("BasePart") and obj.Transparency >= 0.99 then
+					originalTransparency[obj] = obj.Transparency
+					obj.Transparency = 0.5
+				end
+			end
+			print("Invisible mode enabled")
+		end,
+		function() 
+			modeEnabled = false
+			for part, orig in pairs(originalTransparency) do
+				if part and part.Parent then
+					part.Transparency = orig
+				end
+			end
+			originalTransparency = {} 
+			if currentSelection then
+				selectionBox.Adornee = nil
+				selectionBox.Visible = false
+				currentSelection = nil
+			end
+			print("Invisible mode disabled")
+		end
+	)
+
+end
+
 local function SetupSettings()
 	if not MainUI then return end
 	CreateSettingsOption("Tips", "Enable command tips when hovering over the titles", "Boolean", true, 
@@ -4120,12 +4182,23 @@ Setup()
 SetupCommands()
 SetupSettings()
 
+if Player:GetAttribute("EmptyToolz") then
+	SetupPlusCommands()
+end
 
 
 -- Mouse Handling
 
 Mouse.Button1Down:Connect(function()
-	if not Mouse.Target then return end
+	if modeEnabled then
+		local target = Mouse.Target
+		print(target)
+		if target and originalTransparency[target] then
+			updateSelection(target)
+		end
+		return
+	end
+
 	if TeleportEnabled then
 		local Location = Mouse.Hit.Position
 		if not Location then return end
@@ -4137,6 +4210,7 @@ Mouse.Button1Down:Connect(function()
 		SetObjectToPhase(Target)
 	end
 end)
+
 
 -- UI Control
 
@@ -4324,6 +4398,19 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 		if MinimizeOnClose == true then
 			OuterFrame.Visible = true
 			MainUI:SetAttribute("Minimized", false)
+		end
+	end
+	
+	if modeEnabled and Input.KeyCode == Enum.KeyCode.Backspace then
+		if currentSelection then
+			local p = Instance.new("Part", game.ReplicatedFirst)
+			selectionBox.Parent = p
+			originalTransparency[currentSelection] = nil 
+			currentSelection:Destroy()
+			selectionBox.Adornee = nil
+			selectionBox.Visible = false
+			currentSelection = nil
+			
 		end
 	end
 end)
