@@ -3166,6 +3166,11 @@ local function SetCameraTarget(Type, Target)
 		Camera.CameraType = Enum.CameraType.Custom
 		Camera.CameraSubject = GetHumanoid(Player)
 	elseif Type == "View" then
+		for i,v in pairs(Player:GetChildren()) do
+			if v.Name == "RemoveViewPlayer" then
+				v:Destroy()
+			end
+		end
 		repeat
 			pcall(function()
 				Camera.CameraSubject = GetHumanoid(Target)
