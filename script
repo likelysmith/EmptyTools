@@ -4169,7 +4169,7 @@ local function SetupSettings()
 			SetOptionChecked(CheckBox, PointTeleportIndicatorEnabled)
 		end
 	)
-	CreateSettingsOption("Minimize on Close", 'When Empty Tools is closed, it can be re-opened with the semicolon key', "Boolean", true, 
+	CreateSettingsOption("Minimize on Close", 'When Empty Tools is closed, it can be re-opened with the equals key', "Boolean", true, 
 		function(CheckBox)
 			MinimizeOnClose = not MinimizeOnClose
 			SetOptionChecked(CheckBox, MinimizeOnClose)
@@ -4246,13 +4246,7 @@ OuterFrame.Info.MouseButton1Click:Connect(function()
 	Log = nil
 end)
 
-OuterFrame.Close.MouseButton1Click:Connect(function()
-	if MinimizeOnClose == true then
-		OuterFrame.Visible = false
-		MainUI:SetAttribute("Minimized", true)
-		Toast('Press " ; " to re-open Empty Tools', 2.5)
-		return
-	end
+local function Close()
 	Player:SetAttribute("EmptyToolsInstance", false)
 	if LogsOpen then 
 		if Log then
@@ -4300,6 +4294,20 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 	script.Disabled = true
 	script.Parent = nil
 	script:Destroy()
+end
+
+OuterFrame.Close.MouseButton1Click:Connect(function()
+	if MinimizeOnClose == true then
+		OuterFrame.Visible = false
+		MainUI:SetAttriute("Minimized", true)
+		Toast('Press " = " to re-open Empty Tools', 2.5)
+		return
+	end
+	Close()
+end)
+
+OuterFrame.Close.MouseButton2Click:Connect(function()
+	Close()
 end)
 
 Contents.Category.MouseButton1Click:Connect(function()
@@ -4394,7 +4402,7 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 			end
 		end
 	end
-	if Input.KeyCode == Enum.KeyCode.Semicolon then
+	if Input.KeyCode == Enum.KeyCode.Equals then
 		if MinimizeOnClose == true then
 			OuterFrame.Visible = true
 			MainUI:SetAttribute("Minimized", false)
