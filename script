@@ -58,6 +58,9 @@ local UIOpen = true
 local TipsEnabled = true
 local PointTeleportIndicatorEnabled = true
 local AlertsEnabled = true
+local MinimizeOnClose = true
+
+
 
 local MarkersActive = false
 
@@ -3484,6 +3487,13 @@ local currentDraggableObject = OuterFrame
 
 local function Setup()
 	if Player:GetAttribute("EmptyToolsInstance") == true then
+		if Player.PlayerGui:FindFirstChild("EmptyTools") then
+			if Player.PlayerGui.EmptyTools:GetAttribute("Minimized") == true then
+				Player.PlayerGui.EmptyTools.OuterFrame.Visible = true
+				Player.PlayerGui.EmptyTools:SetAttribute("Minimized", false)
+				return
+			end
+		end
 		CreateAlert(
 			"Instance Already Found", 
 			"An instance of Empty Tools is already running. Please close all instances before executing again." ,
@@ -4079,7 +4089,12 @@ local function SetupSettings()
 			SetOptionChecked(CheckBox, PointTeleportIndicatorEnabled)
 		end
 	)
-
+	CreateSettingsOption("Minimize on Close", 'When Empty Tools is closed, it can be re-opened with the semicolon key', "Boolean", true, 
+		function(CheckBox)
+			MinimizeOnClose = not MinimizeOnClose
+			SetOptionChecked(CheckBox, MinimizeOnClose)
+		end
+	)
 end
 
 Setup()
@@ -4140,6 +4155,12 @@ OuterFrame.Info.MouseButton1Click:Connect(function()
 end)
 
 OuterFrame.Close.MouseButton1Click:Connect(function()
+	if MinimizeOnClose == true then
+		OuterFrame.Visible = false
+		MainUI:SetAttribute("Minimized", true)
+		Toast('Press " ; " to re-open Empty Tools', 2.5)
+		return
+	end
 	Player:SetAttribute("EmptyToolsInstance", false)
 	if LogsOpen then 
 		if Log then
@@ -4279,6 +4300,12 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 					end)
 				end
 			end
+		end
+	end
+	if Input.KeyCode == Enum.KeyCode.Semicolon then
+		if MinimizeOnClose == true then
+			OuterFrame.Visible = true
+			MainUI:SetAttribute("Minimized", false)
 		end
 	end
 end)
