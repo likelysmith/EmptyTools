@@ -3718,7 +3718,7 @@ local function SetupCommands()
 			Platform.Color = Color3.fromRGB(152, 67, 255)
 			Platform.CastShadow = false
 			
-			if not Adjustment then
+			if Adjustment == nil or not tonumber(Adjustment) then
 				Adjustment = 0
 			end
 
