@@ -11,8 +11,8 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-VersionString = "v1.3.1"
-ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
+local VersionString = "v1.3.1"
+local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
 
 -- Variables
 
