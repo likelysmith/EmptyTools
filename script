@@ -3693,15 +3693,16 @@ local function Setup()
 	end))
 end
 
-local PlatformInput = nil
-if PlusEnabled then
-	PlatformInput = "Adjust.."
-end
+
 
 
 
 local function SetupCommands()
 	if not MainUI then return end
+	local PlatformInput = nil
+	if PlusEnabled then
+		PlatformInput = "Adjust.."
+	end
 	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", PlatformInput, nil, "World",
 		function(Adjustment)
 			local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
