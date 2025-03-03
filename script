@@ -125,7 +125,7 @@ function CreateUI()
 	local OuterFrame = Instance.new("Frame")
 	local UICorner = Instance.new("UICorner")
 	local Contents = Instance.new("Frame")
-	local Title = Instance.new("TextButton")
+	local Title = Instance.new("TextLabel")
 	local UICorner_2 = Instance.new("UICorner")
 	local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
 	local Commands = Instance.new("ScrollingFrame")
@@ -204,16 +204,7 @@ function CreateUI()
 	Title.TextSize = 14.000
 	Title.TextWrapped = true
 	Title.TextXAlignment = Enum.TextXAlignment.Left
-	--Title.MouseEnter:Connect(function()
-	--	TweenService:Create(Title, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(190,190,190) }):Play()
-	--	wait(0.2)
-	--	Title.TextColor3 = Color3.fromRGB(190,190,190)
-	--end)
-	--Title.MouseLeave:Connect(function()
-	--	TweenService:Create(Title, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255) }):Play()
-	--	wait(0.2)
-	--	Title.TextColor3 = Color3.fromRGB(255,255,255)
-	--end)
+
 
 	if PlusEnabled then
 		Title.Size = UDim2.new(0.599,0,0.126,0)
@@ -3582,10 +3573,6 @@ local function Setup()
 
 	ToastFrame = MainUI:WaitForChild("ToastFrame")
 	ToastText = MainUI:WaitForChild("ToastText")
-	
-	Contents.Title.MouseButton2Click:Connect(function()
-		Toast("https://empty.tools/", 2.5)
-	end)
 
 	currentDraggableObject = OuterFrame
 
@@ -4276,6 +4263,10 @@ OuterFrame.Info.MouseButton1Click:Connect(function()
 	repeat wait() until Log.Parent ~= Player.PlayerGui
 	LogsOpen = false
 	Log = nil
+end)
+
+OuterFrame.Info.MouseButton2Click:Connect(function()
+	Toast("https://empty.tools/", 2.5)
 end)
 
 local function Close()
