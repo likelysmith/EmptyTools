@@ -1,5 +1,5 @@
 # Empty Tools v1.2.4
-## Clean and Compact UI with fun and useful commands
+## Universal Command Menu for Roblox
 ```
 loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
 ```
