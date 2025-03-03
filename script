@@ -11,57 +11,57 @@ local Players = game:GetService("Players")
 
 -- Changelog
 
-local VersionString = "v1.3.1"
-local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
+VersionString = "v1.3.1"
+ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
 
 -- Variables
 
-local Player = Players.LocalPlayer
-local Mouse = Player:GetMouse()
+Player = Players.LocalPlayer
+Mouse = Player:GetMouse()
 
-local Camera = workspace.CurrentCamera
+Camera = workspace.CurrentCamera
 
-local MainUI
-local MarkerUI
+MainUI = nil
+MarkerUI = nil
 
-local OuterFrame
-local Contents
-local ContentShrunken
-local InfoFrame
+OuterFrame = nil
+Contents = nil
+ContentShrunken = nil
+InfoFrame = nil
 
-local ToastFrame
-local ToastText = nil
-local TextInc = 45
-local ToastQueue = {}
-local IsShowing = false
+ToastFrame = nil
+ToastText = nil
+TextInc = 45
+ToastQueue = {}
+IsShowing = false
 
-local function GetFrameSize()
+function GetFrameSize()
 	if ToastText == nil then return end
 	local b = ToastText.TextBounds
 	return UDim2.new(0, b.X + TextInc, 0, b.Y + TextInc * 0.6)
 end
 
-local CommandFrames = {}
-local SettingsFrames = {}
-local DefaultLighting = {}
-local AttachmentLocations = {"Back","Head","Front","Left","Right"}
+CommandFrames = {}
+SettingsFrames = {}
+DefaultLighting = {}
+AttachmentLocations = {"Back","Head","Front","Left","Right"}
 
-local CommandCategories = {"None"}
-local CurrentCategory = "None"
+CommandCategories = {"None"}
+CurrentCategory = "None"
 
-local FadeTweenInfo = TweenInfo.new(
+FadeTweenInfo = TweenInfo.new(
 	0.25, 
 	Enum.EasingStyle.Quint
 )
 
-local PlusEnabled = false
+PlusEnabled = false
 
 
-local UIOpen = true
-local TipsEnabled = true
-local PointTeleportIndicatorEnabled = true
-local AlertsEnabled = true
-local MinimizeOnClose = true
+UIOpen = true
+TipsEnabled = true
+PointTeleportIndicatorEnabled = true
+AlertsEnabled = true
+MinimizeOnClose = true
 
 
 local MarkersActive = false
@@ -3757,7 +3757,7 @@ local function SetupCommands()
 	)
 	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Character",
 		function()
-			if modeEnabled then return end
+			if modeEnabled or TeleportEnabled then return end
 			TeleportEnabled = true
 			PhaseEnabled = false
 			for _,PhaseObj in pairs(PhaseObjects) do
