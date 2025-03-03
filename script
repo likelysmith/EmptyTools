@@ -204,16 +204,16 @@ function CreateUI()
 	Title.TextSize = 14.000
 	Title.TextWrapped = true
 	Title.TextXAlignment = Enum.TextXAlignment.Left
-	Title.MouseEnter:Connect(function()
-		TweenService:Create(Title, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(190,190,190) }):Play()
-		wait(0.2)
-		Title.TextColor3 = Color3.fromRGB(190,190,190)
-	end)
-	Title.MouseLeave:Connect(function()
-		TweenService:Create(Title, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255) }):Play()
-		wait(0.2)
-		Title.TextColor3 = Color3.fromRGB(255,255,255)
-	end)
+	--Title.MouseEnter:Connect(function()
+	--	TweenService:Create(Title, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(190,190,190) }):Play()
+	--	wait(0.2)
+	--	Title.TextColor3 = Color3.fromRGB(190,190,190)
+	--end)
+	--Title.MouseLeave:Connect(function()
+	--	TweenService:Create(Title, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+	--	wait(0.2)
+	--	Title.TextColor3 = Color3.fromRGB(255,255,255)
+	--end)
 
 	if PlusEnabled then
 		Title.Size = UDim2.new(0.599,0,0.126,0)
@@ -3583,7 +3583,7 @@ local function Setup()
 	ToastFrame = MainUI:WaitForChild("ToastFrame")
 	ToastText = MainUI:WaitForChild("ToastText")
 	
-	Contents.Title.MouseButton1Click:Connect(function()
+	Contents.Title.MouseButton2Click:Connect(function()
 		Toast("https://empty.tools/", 2.5)
 	end)
 
