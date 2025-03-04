@@ -326,13 +326,13 @@ function CreateUI()
 
 	Search.Name = "Search"
 	Search.Parent = Contents
-	Search.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Search.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
 	Search.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Search.BorderSizePixel = 0
 	Search.Position = UDim2.new(0.064338237, 0, 0.194508016, 0)
 	Search.Size = UDim2.new(0.286764711, 0, 0.080091536, 0)
 	Search.Font = Enum.Font.Gotham
-	Search.PlaceholderColor3 = Color3.fromRGB(126, 126, 126)
+	Search.PlaceholderColor3 = Color3.fromRGB(149, 149, 149)
 	Search.PlaceholderText = "Search.."
 	Search.Text = ""
 	Search.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -348,7 +348,7 @@ function CreateUI()
 
 	Category.Name = "Category"
 	Category.Parent = Contents
-	Category.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Category.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
 	Category.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Category.BorderSizePixel = 0
 	Category.Position = UDim2.new(0.370332718, 0, 0.192686558, 0)
@@ -413,7 +413,7 @@ function CreateUI()
 
 	Settings.Name = "Settings"
 	Settings.Parent = Contents
-	Settings.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Settings.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
 	Settings.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Settings.BorderSizePixel = 0
 	Settings.Position = UDim2.new(0.663670063, 0, 0.192686558, 0)
@@ -450,7 +450,7 @@ function CreateUI()
 
 	Info_3.Name = "Info"
 	Info_3.Parent = OuterFrame
-	Info_3.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Info_3.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
 	Info_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Info_3.BorderSizePixel = 0
 	Info_3.Position = UDim2.new(0.701061368, 0, 0.0343248919, 0)
@@ -507,7 +507,7 @@ function CreateUI()
 
 	Toggle.Name = "Toggle"
 	Toggle.Parent = OuterFrame
-	Toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Toggle.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
 	Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Toggle.BorderSizePixel = 0
 	Toggle.Position = UDim2.new(0.798575521, 0, 0.0343248919, 0)
@@ -1238,9 +1238,10 @@ end
 
 function SetKeyMode(KeyButton, Value)
 	if Value == "Enabled" then
-		KeyButton.BackgroundColor3 = Color3.fromRGB(95, 95, 95)
+		KeyButton.Text = ""
+		KeyButton.BackgroundColor3 = Color3.fromRGB(117, 117, 117)
 	else
-		KeyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		KeyButton.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
 		KeyButton.Text = UserInputService:GetStringForKeyCode(Value)
 	end
 end
@@ -1301,7 +1302,7 @@ function CreateSettingsOption(TitleText, Info, Type, Variable, CallbackClicked)
 
 	Check.Name = "Check"
 	Check.Parent = SettingsOption
-	Check.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Check.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
 	Check.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Check.BorderSizePixel = 0
 	Check.Position = UDim2.new(0.842000008, 0, 0.0930000022, 0)
