@@ -1,18 +1,26 @@
+if not game:IsLoaded() then
+	game.Loaded:Wait()
+end
+
 -- Services
-local UserInputService = game:GetService("UserInputService")
-local TextChatService = game:GetService("TextChatService")
-local TeleportService = game:GetService("TeleportService")
-local PhysicsService = game:GetService("PhysicsService")
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
-local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
-local Players = game:GetService("Players")
+UserInputService = game:GetService("UserInputService")
+TextChatService = game:GetService("TextChatService")
+TeleportService = game:GetService("TeleportService")
+PhysicsService = game:GetService("PhysicsService")
+TweenService = game:GetService("TweenService")
+HttpService = game:GetService("HttpService")
+RunService = game:GetService("RunService")
+Lighting = game:GetService("Lighting")
+Players = game:GetService("Players")
+COREGUI = game:GetService("CoreGui")
+
+queueTeleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
+httpRequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 
 -- Changelog
 
-local VersionString = "v1.3.1"
-local ChangeLog = "• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Orbit' command\n• Added alerts/toasts to some commands\n• Created a settings menu" 
+local VersionString = "v1.3.2"
+local ChangeLog = "• Settings save across instances\n• Added cross-game persistance\n• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Gravity' and 'FOV' to stats" 
 
 -- Variables
 
@@ -41,6 +49,17 @@ function GetFrameSize()
 	return UDim2.new(0, b.X + TextInc, 0, b.Y + TextInc * 0.6)
 end
 
+function hasProperty(object, propertyName)
+	local success, _ = pcall(function() 
+		object[propertyName] = object[propertyName]
+	end)
+	return success
+end
+
+local function ETLOG(Details)
+	print("[EMPTY TOOLS ] " .. Details )
+end
+
 CommandFrames = {}
 SettingsFrames = {}
 DefaultLighting = {}
@@ -55,33 +74,32 @@ FadeTweenInfo = TweenInfo.new(
 )
 
 PlusEnabled = false
-
-
+KeySelected = false
+KeyButton = nil
 UIOpen = true
-TipsEnabled = true
-PointTeleportIndicatorEnabled = true
-AlertsEnabled = true
-MinimizeOnClose = true
 
+MarkersActive = false
 
-local MarkersActive = false
+PhaseEnabled = false
+PhaseObjects = {}
 
-local PhaseEnabled = false
-local PhaseObjects = {}
+TeleportIndicator = nil
+TeleportEnabled = false
+ReturnOnFall = false
 
-local TeleportIndicator = nil
-local TeleportEnabled = false
-local ReturnOnFall = false
+DoubleJump = false
+JumpInstances = 1
 
-local DoubleJump = false
-local JumpInstances = 1
+FlySpeed = 30
 
-local FlySpeed = 30
-
-local DefaultDestroyHeight
-local DefaultMinZoomDistance
-local DefaultMaxZoomDistance
-local DefaultAnimations = {
+DefaultWalkSpeed = 16
+DefaultJumpPower = 50
+DefaultGravity = 196.2
+DefaultFOV = 70
+DefaultDestroyHeight = nil
+DefaultMinZoomDistance = nil
+DefaultMaxZoomDistance = nil
+DefaultAnimations = {
 	Idle1 = nil,
 	Idle2 = nil,
 	Walk = nil,
@@ -93,12 +111,14 @@ local DefaultAnimations = {
 	SwimIdle = nil
 }
 
-local LogsOpen = false
-local Log
+LogsOpen = false
+Log = nil
 
--- Third Party Variables
+ThirdPartyCommands = {}
 
-local ThirdPartyLoadstrings = 
+-- Loadstring Variables
+
+ThirdPartyLoadstrings = 
 	{
 		["Infinite Yield"] = 
 		function()
@@ -114,6 +134,77 @@ local ThirdPartyLoadstrings =
 		end,
 
 	}
+
+EmptyToolsLoadstrings =
+	{
+		["Default"] = 
+		[[
+		game:GetService("Players").LocalPlayer:SetAttribute("NoChangeLogs", true)
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
+		]],
+		["Beta"] = [[
+			game:GetService("Players").LocalPlayer:SetAttribute("NoChangeLogs", true)
+			game:GetService("Players").LocalPlayer:SetAttribute("EmptyToolz", true)
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
+		]],
+		["Legacy"] = 
+		'loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()',
+	}
+
+-- Settings Control
+
+settingsFile = "ETCONFIG.json"
+
+defaultSettings = {
+	TipsEnabled = true,
+	AlertsEnabled = true,
+	ThirdPartiesEnabled = false,
+	PointTeleportIndicatorEnabled = true,
+	MinimizeOnClose = true,
+	Persist = true,
+	ShowChangeLogs = true,
+	ToggleKey = Enum.KeyCode.Equals
+}
+
+function loadSettings()
+	if not RunService:IsStudio() then
+		if isfile(settingsFile) then
+			local content = readfile(settingsFile)
+			local success, data = pcall(function() 
+				return HttpService:JSONDecode(content) 
+			end)
+			if success and data then
+				return data
+			end
+		end
+	end
+	return defaultSettings
+end
+
+function saveSettings(settings)
+	if not RunService:IsStudio() then
+		local json = HttpService:JSONEncode(settings)
+		writefile(settingsFile, json)
+	end
+end
+
+
+userSettings = loadSettings()
+
+if userSettings.ToggleKey == nil then
+	userSettings.ToggleKey = defaultSettings.ToggleKey
+	saveSettings(userSettings)
+end
+
+
+TipsEnabled = userSettings.TipsEnabled
+AlertsEnabled = userSettings.AlertsEnabled
+ThirdPartiesEnabled = userSettings.ThirdPartiesEnabled
+PointTeleportIndicatorEnabled = userSettings.PointTeleportIndicatorEnabled
+MinimizeOnClose = userSettings.MinimizeOnClose
+Persist = userSettings.Persist
+ShowChangeLogs = userSettings.ShowChangeLogs
+ToggleKey = Enum.KeyCode[userSettings.ToggleKey]
 
 
 
@@ -168,7 +259,7 @@ function CreateUI()
 	EmptyTools.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	EmptyTools.ResetOnSpawn = false
 	EmptyTools.IgnoreGuiInset = true
-	EmptyTools.DisplayOrder = 100
+	EmptyTools.DisplayOrder = 85
 
 	OuterFrame.Name = "OuterFrame"
 	OuterFrame.Parent = EmptyTools
@@ -512,12 +603,22 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	if not Title_Text then
 		Title_Text = "Alert"
 	end
+	local Parent
+	
+	if RunService:IsStudio() then
+		Parent = Player.PlayerGui
+	else 
+		Parent = COREGUI.RobloxGui
+		syn.protect_gui(AlertScreen)
+		ETLOG("Gui Protected")
+	end
+	
 
 	AlertScreen.Name = "AlertScreen"
-	AlertScreen.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+	AlertScreen.Parent = Parent
 	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	AlertScreen.IgnoreGuiInset = true
-	AlertScreen.DisplayOrder = 100
+	AlertScreen.DisplayOrder = 150
 
 
 	Overlay.Name = "Overlay"
@@ -816,6 +917,12 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	end
 
 	coroutine.wrap(Hover)()
+	
+	--for i,v in pairs(AlertScreen:GetDescendants()) do
+	--	if hasProperty(v, "ZIndex") then
+	--		v.ZIndex = 100
+	--	end
+	--end
 
 	return AlertScreen
 end
@@ -902,9 +1009,9 @@ end
 
 
 
-local FadeOutTween 
-local FadeOutTween2
-local FadeOutTween3
+FadeOutTween = nil
+FadeOutTween2 = nil
+FadeOutTween3 = nil
 
 local function TipView(LabelObject, Title, Text)
 	local function FadeIn()
@@ -1119,18 +1226,26 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 	end
 end
 
-local function RemoveCommand(CommandFrame)
+function RemoveCommand(CommandFrame)
 	table.remove(CommandFrames, table.find(CommandFrames, CommandFrame))
 	task.wait()
 	CommandFrame:Destroy()
 end
 
-local function SetOptionChecked(OptionButton, Value)
+function SetOptionChecked(OptionButton, Value)
 	OptionButton.Text = Value and "✓" or ""
 end
 
+function SetKeyMode(KeyButton, Value)
+	if Value == "Enabled" then
+		KeyButton.BackgroundColor3 = Color3.fromRGB(95, 95, 95)
+	else
+		KeyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		KeyButton.Text = UserInputService:GetStringForKeyCode(Value)
+	end
+end
 
-function CreateSettingsOption(TitleText, Info, Type, Default, CallbackClicked)
+function CreateSettingsOption(TitleText, Info, Type, Variable, CallbackClicked)
 
 	local SettingsOption = Instance.new("Frame")
 	local Title = Instance.new("TextLabel")
@@ -1199,11 +1314,13 @@ function CreateSettingsOption(TitleText, Info, Type, Default, CallbackClicked)
 	Check.TextWrapped = true
 
 	if Type == "Boolean" then
-		if Default == true then
+		if Variable == true then
 			Check.Text = "✓"
 		else
 			Check.Text = ""
 		end
+	elseif Type == "Key" then
+		Check.Text = UserInputService:GetStringForKeyCode(Variable)
 	end
 
 	Check.MouseButton1Click:Connect(function()
@@ -1335,13 +1452,13 @@ end
 
 ------------------------------------------------------------------------
 
-local cameraPos = Vector3.new()
-local cameraRot = Vector2.new()
-local cameraFov = 0
+cameraPos = Vector3.new()
+cameraRot = Vector2.new()
+cameraFov = 0
 
-local velSpring = Spring.new(VEL_STIFFNESS, Vector3.new())
-local panSpring = Spring.new(PAN_STIFFNESS, Vector2.new())
-local fovSpring = Spring.new(FOV_STIFFNESS, 0)
+velSpring = Spring.new(VEL_STIFFNESS, Vector3.new())
+panSpring = Spring.new(PAN_STIFFNESS, Vector2.new())
+fovSpring = Spring.new(FOV_STIFFNESS, 0)
 
 ------------------------------------------------------------------------
 
@@ -1518,7 +1635,7 @@ end
 
 ------------------------------------------------------------------------
 
-local function GetFocusDistance(cameraFrame)
+function GetFocusDistance(cameraFrame)
 	local znear = 0.1
 	local viewport = Camera.ViewportSize
 	local projy = 2*tan(cameraFov/2)
@@ -1548,7 +1665,7 @@ local function GetFocusDistance(cameraFrame)
 	return fz:Dot(minVect)*minDist
 end
 
-local function StepFreecam(dt)
+function StepFreecam(dt)
 	local vel = velSpring:Update(dt, Input.Vel(dt))
 	local pan = panSpring:Update(dt, Input.Pan(dt))
 	local fov = fovSpring:Update(dt, Input.Fov(dt))
@@ -1569,7 +1686,7 @@ end
 
 ------------------------------------------------------------------------
 
-local function StartFreecam()
+function StartFreecam()
 	local cameraCFrame = Camera.CFrame
 	local pitch, yaw, roll = cameraCFrame:ToEulerAnglesYXZ()
 
@@ -1585,14 +1702,14 @@ local function StartFreecam()
 	RunService:BindToRenderStep("Freecam", Enum.RenderPriority.Camera.Value, StepFreecam)
 end
 
-local function StopFreecam()
+function StopFreecam()
 	Input.StopCapture()
 	RunService:UnbindFromRenderStep("Freecam")
 end
 
 -- Misc Methods
 
-local function GetCharacter(Target)
+function GetCharacter(Target)
 	local Character = Target.Character
 	if not Character then
 		Target.CharacterAdded:Wait()
@@ -1602,7 +1719,7 @@ local function GetCharacter(Target)
 	return Character
 end
 
-local function GetRoot(Target)
+function GetRoot(Target)
 	local Character = GetCharacter(Target)
 	if Character then
 		local Root = Character:FindFirstChild("HumanoidRootPart")
@@ -1610,7 +1727,7 @@ local function GetRoot(Target)
 	end
 end
 
-local function GetHumanoid(Target)
+function GetHumanoid(Target)
 	local Character = GetCharacter(Target)
 	if Character then
 		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
@@ -1618,7 +1735,7 @@ local function GetHumanoid(Target)
 	end
 end
 
-local function GetPlayerFromNameSnippet(Snippet)
+function GetPlayerFromNameSnippet(Snippet)
 	Snippet = string.lower(Snippet)
 	for _,User in pairs(Players:GetPlayers()) do
 		if User == Player then continue end
@@ -1631,7 +1748,7 @@ local function GetPlayerFromNameSnippet(Snippet)
 	end
 end
 
-local function CreateTeleportIndicator()
+function CreateTeleportIndicator()
 	local Indicator = Instance.new("Part")
 	Indicator.Shape = Enum.PartType.Cylinder
 	Indicator.Anchored = true
@@ -1648,7 +1765,7 @@ local function CreateTeleportIndicator()
 	return Model
 end
 
-local function CreateMarker(TargetPlayer, Type)
+function CreateMarker(TargetPlayer, Type)
 	local Marker = Instance.new("BillboardGui")
 	local Frame = Instance.new("Frame")
 	local User = Instance.new("TextLabel")
@@ -1742,7 +1859,7 @@ local function CreateMarker(TargetPlayer, Type)
 end
 
 
-local function TogglePlayerCharacter(Target, Value)
+function TogglePlayerCharacter(Target, Value)
 	local Character = GetCharacter(Target)
 
 	if Value then
@@ -1782,7 +1899,7 @@ local function TogglePlayerCharacter(Target, Value)
 	end
 end
 
-local function EnablePhaseForInvisibleParts()
+function EnablePhaseForInvisibleParts()
 	for _, obj in pairs(workspace:GetDescendants()) do
 		if obj:IsA("BasePart") and obj.CanCollide and obj.Transparency >= 1 then
 			if obj:GetAttribute("OriginalTransparency") == nil then
@@ -1793,7 +1910,7 @@ local function EnablePhaseForInvisibleParts()
 	end
 end
 
-local function DisablePhaseForInvisibleParts()
+function DisablePhaseForInvisibleParts()
 	for _, obj in pairs(workspace:GetDescendants()) do
 		if obj:IsA("BasePart") and obj:GetAttribute("OriginalTransparency") ~= nil then
 			obj.Transparency = obj:GetAttribute("OriginalTransparency")
@@ -2068,6 +2185,8 @@ local function ShowChangeLogs(DSA, ClickCallback)
 		function()
 			ClickCallback()
 			Player:SetAttribute("NoChangeLogs", true)
+			userSettings.ShowChangeLogs = false
+			saveSettings(userSettings)
 		end
 	)
 end
@@ -2412,9 +2531,20 @@ local function CreateLinkAlert(ID)
 	local margin_9 = Instance.new("UIPadding")
 
 	--Properties:
-
+	
+	
+	local Parent
+	if RunService:IsStudio() then
+		Parent = Player.PlayerGui
+	else
+		Parent = COREGUI.RobloxGui
+		syn.protect_gui(AlertScreen)
+		ETLOG("Gui Protected")
+	end
+	
+	
 	AlertScreen.Name = "LinkScreen"
-	AlertScreen.Parent = Player:WaitForChild("PlayerGui")
+	AlertScreen.Parent = Parent
 	AlertScreen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	AlertScreen.DisplayOrder = 100
 
@@ -2615,14 +2745,14 @@ local function CreateLinkAlert(ID)
 
 	TextBox.Parent = Content_2
 	TextBox.AnchorPoint = Vector2.new(0.5, 0.5)
-	TextBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	TextBox.BackgroundTransparency = 1.000
-	TextBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	TextBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	TextBox.BackgroundTransparency = 0
+	TextBox.BorderColor3 = Color3.fromRGB(26, 26, 26)
 	TextBox.BorderSizePixel = 0
-	TextBox.Position = UDim2.new(0.431250006, 0, 0.669518828, 0)
-	TextBox.Size = UDim2.new(0.9375, 0, 1.33903766, 0)
+	TextBox.Position = UDim2.new(0.231250006, 0, 0.769518828, 0)
+	TextBox.Size = UDim2.new(0.9275, 0, 1.43903766, 0)
 	TextBox.ClearTextOnFocus = false
-	TextBox.Font = Enum.Font.Unknown
+	TextBox.Font = Enum.Font.Montserrat
 	TextBox.TextEditable = false
 	TextBox.PlaceholderColor3 = Color3.fromRGB(255, 255, 255)
 	TextBox.Text = ID
@@ -3553,7 +3683,9 @@ local function Setup()
 			nil,
 			Enum.TextXAlignment.Center,
 			function()
-				script:Destroy()
+				coroutine.resume(coroutine.create(function()
+					script:Destroy()
+				end))
 			end
 		)
 		return
@@ -3563,9 +3695,25 @@ local function Setup()
 	if Player:GetAttribute("EmptyToolz") then
 		PlusEnabled = true
 	end
-
+	
 	MainUI = CreateUI()
-	MainUI.Parent = Player.PlayerGui
+	
+	local PARENT = nil
+	if RunService:IsStudio() then
+		PARENT = Player.PlayerGui
+	else
+		if (not is_sirhurt_closure) and (syn and syn.protect_gui) then
+			PARENT = COREGUI.RobloxGui
+			syn.protect_gui(MainUI)
+			ETLOG("Gui Protected - MAINUI")
+		elseif COREGUI:FindFirstChild('RobloxGui') then
+			PARENT = COREGUI.RobloxGui
+		else
+			PARENT = COREGUI.RobloxGui
+		end
+	end
+
+	MainUI.Parent = PARENT
 	OuterFrame = MainUI:WaitForChild("OuterFrame")
 	Contents = OuterFrame:WaitForChild("Contents")
 	ContentShrunken = OuterFrame:WaitForChild("ContentShrunken")
@@ -3575,6 +3723,8 @@ local function Setup()
 	ToastText = MainUI:WaitForChild("ToastText")
 
 	currentDraggableObject = OuterFrame
+	
+	
 
 	MarkerUI = Instance.new("ScreenGui")
 	MarkerUI.ResetOnSpawn = false
@@ -3610,6 +3760,13 @@ local function Setup()
 				DefaultAnimations.Swim = Animate.swim.Swim.AnimationId
 				DefaultAnimations.SwimIdle = Animate.swimidle.SwimIdle.AnimationId
 			end
+			DefaultFOV = Camera.FieldOfView
+			local Humanoid = GetHumanoid(Player)
+			if Humanoid then
+				DefaultWalkSpeed = Humanoid.WalkSpeed
+				DefaultJumpPower = Humanoid.JumpPower
+				DefaultGravity = workspace.Gravity
+			end
 		end
 	end))
 
@@ -3618,7 +3775,7 @@ local function Setup()
 		table.insert(DefaultLighting, Shader:Clone())
 	end
 
-	if not Player:GetAttribute("NoChangeLogs") then
+	if userSettings.ShowChangeLogs then
 		LogsOpen = true
 		Log = ShowChangeLogs(true, function()
 			LogsOpen = false
@@ -3832,8 +3989,8 @@ local function SetupCommands()
 		end,
 		nil
 	)
-	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it.", nil, nil, "World",
-		function()
+	CreateCommand("Phase", "When enabled, allows you to click on any object and disable collisions allowing you to walk through it. Option to show/hide invis parts.", nil, {"Hide Invis", "Show Invis"}, "World",
+		function(ShowInvis)
 			PhaseEnabled = true
 			TeleportEnabled = false
 			for _, phaseObj in pairs(PhaseObjects) do
@@ -3842,7 +3999,9 @@ local function SetupCommands()
 					phaseObj.CanCollide = true
 				end
 			end
-			EnablePhaseForInvisibleParts()
+			if ShowInvis == "Show Invis" then
+				EnablePhaseForInvisibleParts()
+			end
 		end,
 		function()
 			PhaseEnabled = false
@@ -3901,7 +4060,7 @@ local function SetupCommands()
 			SetCameraTarget("None", nil)
 		end
 	)
-	CreateCommand("Stats", "Allows the customization of player stats such as speed and jump height. Does not save on respawn.", "Value..", {"Speed","Jump"}, "Character",
+	CreateCommand("Stats", "Allows the customization of player stats such as speed and jump height. Does not save on respawn.", "Value..", {"Speed","Jump", "FOV", "Gravity"}, "Character",
 		function(Value, Type)
 			local Character = GetCharacter(Player)
 			local Humanoid = GetHumanoid(Player)
@@ -3910,9 +4069,21 @@ local function SetupCommands()
 			elseif Type == "Jump" then
 				Humanoid.UseJumpPower = true
 				Humanoid.JumpPower = Value
+			elseif Type == "FOV" then
+				Camera.FieldOfView = Value
+			elseif Type == "Gravity" then
+				workspace.Gravity = Value
 			end
 		end,
-		nil
+		function()
+			local Humanoid = GetHumanoid(Player) 
+			Camera.FieldOfView = DefaultFOV
+			if Humanoid then
+				Humanoid.WalkSpeed = DefaultWalkSpeed
+				Humanoid.JumpPower = DefaultJumpPower
+				workspace.Gravity = DefaultGravity
+			end
+		end
 		)
 	CreateCommand("CFrame Speed", "Boost your character's CFrame speed. Capped at 20", "Boost..", nil, "Character",
 		function(Value)
@@ -4105,8 +4276,7 @@ local function SetupCommands()
 	)
 end
 
-local ThirdPartyCommands = {}
-local ThirdPartiesEnabled = false
+
 
 local function SetupThirdPartyCommands(Enabled)
 	if Enabled then		
@@ -4161,37 +4331,67 @@ end
 
 local function SetupSettings()
 	if not MainUI then return end
-	CreateSettingsOption("Tips", "Enable command tips when hovering over the titles", "Boolean", true, 
+	CreateSettingsOption("Tips", "Enable command tips when hovering over the titles", "Boolean", userSettings.TipsEnabled,   
 		function(CheckBox)
 			TipsEnabled = not TipsEnabled
+			userSettings.TipsEnabled = TipsEnabled
+			saveSettings(userSettings)
 			SetOptionChecked(CheckBox, TipsEnabled)
 		end
 	)
-	CreateSettingsOption("Alerts", "Enable top screen alerts/toasts for certain commands", "Boolean", true, 
+	CreateSettingsOption("Alerts", "Enable top screen alerts/toasts for certain commands", "Boolean", userSettings.AlertsEnabled, 
 		function(CheckBox)
 			AlertsEnabled = not AlertsEnabled
+			userSettings.AlertsEnabled = AlertsEnabled
+			saveSettings(userSettings)
 			SetOptionChecked(CheckBox, AlertsEnabled)
 		end
 	)
-	CreateSettingsOption("Third Party Scripts", "Enable commands for third parties like Infinite Yield, CMD-X, etc.", "Boolean", false, 
+	CreateSettingsOption("Third Party Scripts", "Enable commands for third parties like Infinite Yield, CMD-X, etc.", "Boolean", userSettings.ThirdPartiesEnabled, 
 		function(CheckBox)
 			ThirdPartiesEnabled = not ThirdPartiesEnabled
+			userSettings.ThirdPartiesEnabled = ThirdPartiesEnabled
+			saveSettings(userSettings)
 			SetupThirdPartyCommands(ThirdPartiesEnabled)
 			SetOptionChecked(CheckBox, ThirdPartiesEnabled)
 		end
 	)
-	CreateSettingsOption("Teleport Indicator", "Enable green teleport indicator for point teleport", "Boolean", true, 
+	CreateSettingsOption("Teleport Indicator", "Enable green teleport indicator for point teleport", "Boolean", userSettings.PointTeleportIndicatorEnabled, 
 		function(CheckBox)
 			PointTeleportIndicatorEnabled = not PointTeleportIndicatorEnabled
+			userSettings.PointTeleportIndicatorEnabled = PointTeleportIndicatorEnabled
+			saveSettings(userSettings)
 			SetOptionChecked(CheckBox, PointTeleportIndicatorEnabled)
 		end
 	)
-	CreateSettingsOption("Minimize on Close", 'When Empty Tools is closed, it can be re-opened with the equals key', "Boolean", true, 
+	CreateSettingsOption("Minimize On Close", 'When Empty Tools is closed, it will be hidden can be re-opened with the toggle key', "Boolean", userSettings.MinimizeOnClose, 
 		function(CheckBox)
 			MinimizeOnClose = not MinimizeOnClose
+			userSettings.MinimizeOnClose = MinimizeOnClose
+			saveSettings(userSettings)
 			SetOptionChecked(CheckBox, MinimizeOnClose)
 		end
 	)
+	CreateSettingsOption("Open Key", 'The key used to re-oepn Empty Tools, behaves differently when Minimize On Close is enabled.', "Key", userSettings.ToggleKey , 
+		function(KeyButtonL)
+			if KeySelected then return end
+			KeySelected = true
+			KeyButton = KeyButtonL
+			SetKeyMode(KeyButtonL, "Enabled")
+		end
+	)
+	CreateSettingsOption("Persist on Teleport", 'When enabled, Empty Tools will remain opened upon teleporting to a new game.', "Boolean", userSettings.Persist, 
+		function(CheckBox)
+			Persist = not Persist
+			userSettings.Persist = Persist
+			saveSettings(userSettings)
+			SetOptionChecked(CheckBox, Persist)
+		end
+	)
+	
+	-- Settings Config
+	
+	SetupThirdPartyCommands(userSettings.ThirdPartiesEnabled)
 end
 
 Setup()
@@ -4235,9 +4435,9 @@ end)
 
 if not MainUI then return end
 
-local ToggleTween
+ToggleTween = nil
 
-OuterFrame.Toggle.MouseButton1Click:Connect(function()
+function Toggle()
 	UIOpen = not UIOpen
 	ContentShrunken.Visible = not UIOpen
 	OuterFrame.Toggle.Text = UIOpen and "-" or "+"
@@ -4248,6 +4448,10 @@ OuterFrame.Toggle.MouseButton1Click:Connect(function()
 	Contents.Visible = UIOpen
 	ToggleTween = TweenService:Create(OuterFrame, FadeTweenInfo, {BackgroundTransparency = Transparency})
 	ToggleTween:Play()
+end
+
+OuterFrame.Toggle.MouseButton1Click:Connect(function()
+	Toggle()
 end)
 
 OuterFrame.Info.MouseButton1Click:Connect(function()
@@ -4266,64 +4470,78 @@ OuterFrame.Info.MouseButton1Click:Connect(function()
 end)
 
 OuterFrame.Info.MouseButton2Click:Connect(function()
-	Toast("https://empty.tools/", 2.5)
+	Toast("https://empty.tools/", 2)
 end)
 
 local function Close()
 	Player:SetAttribute("EmptyToolsInstance", false)
-	if LogsOpen then 
-		if Log then
-			Log:Destroy()
-			LogsOpen = false
-		end 
-	end
-	local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
-	if PltInstance then
-		PltInstance:Destroy()
-	end
-	for _,PhaseObj in pairs(PhaseObjects) do
-		if PhaseObj:FindFirstChild("PhaseHighlight") then
-			PhaseObj.PhaseHighlight:Destroy()
-			PhaseObj.CanCollide = true
+	coroutine.resume(coroutine.create(function()
+		saveSettings(userSettings)
+		if LogsOpen then 
+			if Log then
+				Log:Destroy()
+				LogsOpen = false
+			end 
 		end
-	end
-	workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
-	SetGameShaders("None")
-	SetCameraTarget("None", nil)
-	SetPlayerAnimations("None")
-	if Player.PlayerGui:FindFirstChild("LinkScreen") then
-		Player.PlayerGui.LinkScreen:Destroy()
-	end
-	StopCFrameBoosting()
-	TeleportEnabled = false
-	if TeleportIndicator then
-		TeleportIndicator:Destroy()
-	end
-	for i,v in pairs(Players:GetPlayers()) do
-		coroutine.resume(coroutine.create(function()
-			v:SetAttribute("Blocked", false)
-			task.wait()
-			TogglePlayerCharacter(v, true)
-		end))
-	end
-	StopCarMode()
-	StopOrbit()
+		local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
+		if PltInstance then
+			PltInstance:Destroy()
+		end
+		for _,PhaseObj in pairs(PhaseObjects) do
+			if PhaseObj:FindFirstChild("PhaseHighlight") then
+				PhaseObj.PhaseHighlight:Destroy()
+				PhaseObj.CanCollide = true
+			end
+		end
+		workspace.FallenPartsDestroyHeight = DefaultDestroyHeight
+		SetGameShaders("None")
+		SetCameraTarget("None", nil)
+		SetPlayerAnimations("None")
+		if Player.PlayerGui:FindFirstChild("LinkScreen") then
+			Player.PlayerGui.LinkScreen:Destroy()
+		end
+		StopCFrameBoosting()
+		TeleportEnabled = false
+		if TeleportIndicator then
+			TeleportIndicator:Destroy()
+		end
+		for i,v in pairs(Players:GetPlayers()) do
+			coroutine.resume(coroutine.create(function()
+				v:SetAttribute("Blocked", false)
+				task.wait()
+				TogglePlayerCharacter(v, true)
+			end))
+		end
+		StopCarMode()
+		StopOrbit()
+		Camera.FieldOfView = DefaultFOV
+		local Humanoid = GetHumanoid(Player) 
+		if Humanoid then
+			Humanoid.WalkSpeed = DefaultWalkSpeed
+			Humanoid.JumpPower = DefaultJumpPower
+			workspace.Gravity = DefaultGravity
+		end
+	end))
 	wait(0.005)
 	TeleportIndicator = nil
 	PhaseEnabled = false
 	MarkersActive = false
 	MarkerUI:Destroy()
 	MainUI:Destroy()
-	script.Disabled = true
-	script.Parent = nil
-	script:Destroy()
+	coroutine.resume(coroutine.create(function()
+		script:Destroy()
+	end))
+end
+
+function MinimizeClose()
+	OuterFrame.Visible = false
+	MainUI:SetAttribute("Minimized", true)
+	Toast('Press " ' .. UserInputService:GetStringForKeyCode(userSettings.ToggleKey) .. ' " to re-open Empty Tools', 1.5)
 end
 
 OuterFrame.Close.MouseButton1Click:Connect(function()
 	if MinimizeOnClose == true then
-		OuterFrame.Visible = false
-		MainUI:SetAttribute("Minimized", true)
-		Toast('Press " = " to re-open Empty Tools', 2.5)
+		MinimizeClose()
 		return
 	end
 	Close()
@@ -4390,7 +4608,7 @@ Contents.Settings.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Character Added
+-- Player Specific 
 
 Players.LocalPlayer.CharacterAdded:Connect(function(character)
 
@@ -4401,12 +4619,39 @@ Players.LocalPlayer.CharacterAdded:Connect(function(character)
 	end
 end)
 
+
+
+local TeleportCheck = false
+Players.LocalPlayer.OnTeleport:Connect(function(State)
+	if (not TeleportCheck) and queueTeleport and Persist then
+		TeleportCheck = true
+		if PlusEnabled then
+			queueTeleport(EmptyToolsLoadstrings.Beta)
+		else
+			queueTeleport(EmptyToolsLoadstrings.Default)
+		end
+	end
+end)
+
 -- Input
 
 local LocalJumpInstances = JumpInstances
 
 UserInputService.InputBegan:Connect(function(Input, GPE) 
 	if GPE then return end
+	ETLOG(tostring(Input.KeyCode) .. "  " .. Input.KeyCode.Name)
+	if KeySelected and KeyButton then
+		KeySelected = false
+		if Input.KeyCode == Enum.KeyCode.Unknown then
+			return
+		end
+		userSettings.ToggleKey = Input.KeyCode.Name
+		ToggleKey = Enum.KeyCode[userSettings.ToggleKey]
+		saveSettings(userSettings)
+		SetKeyMode(KeyButton, Input.KeyCode)
+		KeyButton = nil
+		return
+	end
 	if Input.KeyCode == Enum.KeyCode.Space then
 		if not DoubleJump then return end
 		local Root = GetRoot(Player)
@@ -4425,10 +4670,16 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 			end
 		end
 	end
-	if Input.KeyCode == Enum.KeyCode.Equals then
+	if Input.KeyCode == ToggleKey then
 		if MinimizeOnClose == true then
-			OuterFrame.Visible = true
-			MainUI:SetAttribute("Minimized", false)
+			if OuterFrame.Visible == true then
+				MinimizeClose()
+			else
+				OuterFrame.Visible = true
+				MainUI:SetAttribute("Minimized", true)
+			end
+		else
+			Toggle()
 		end
 	end
 
@@ -4441,7 +4692,6 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 			selectionBox.Adornee = nil
 			selectionBox.Visible = false
 			currentSelection = nil
-
 		end
 	end
 end)
@@ -4498,5 +4748,9 @@ RunService.RenderStepped:Connect(function()
 				TogglePlayerCharacter(v, true)
 			end
 		end
+	end
+	
+	if Camera == nil then
+		Camera = workspace.CurrentCamera
 	end
 end)
