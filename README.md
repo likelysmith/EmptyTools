@@ -1,4 +1,4 @@
-# Empty Tools v1.2.4
+# Empty Tools v1.3.2
 ## Universal Command Menu for Roblox
 ```
 loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
