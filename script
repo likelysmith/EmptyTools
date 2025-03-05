@@ -3671,10 +3671,10 @@ local currentDraggableObject = OuterFrame
 
 local function Setup()
 	if Player:GetAttribute("EmptyToolsInstance") == true then
-		if Player.PlayerGui:FindFirstChild("EmptyTools") then
-			if Player.PlayerGui.EmptyTools:GetAttribute("Minimized") == true then
-				Player.PlayerGui.EmptyTools.OuterFrame.Visible = true
-				Player.PlayerGui.EmptyTools:SetAttribute("Minimized", false)
+		if COREGUI.RobloxGui:FindFirstChild("EmptyTools") then
+			if COREGUI.RobloxGui.EmptyTools:GetAttribute("Minimized") == true then
+				COREGUI.RobloxGui.EmptyTools.OuterFrame.Visible = true
+				COREGUI.RobloxGui.EmptyTools:SetAttribute("Minimized", false)
 				return
 			end
 		end
