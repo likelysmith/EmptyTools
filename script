@@ -149,6 +149,10 @@ EmptyToolsLoadstrings =
 		]],
 		["Legacy"] = 
 		'loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()',
+		["UNC"] = 
+		function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/unctest"))()
+		end,
 	}
 
 -- Settings Control
@@ -4340,7 +4344,12 @@ local function SetupPlusCommands()
 			print("Invisible mode disabled")
 		end
 	)
-
+	CreateCommand("UNC Test", "Unified Naming Convention test, logs to console.", nil, nil, "Game",
+		function()
+			EmptyToolsLoadstrings.UNC()
+		end,
+		nil
+	)
 end
 
 local function SetupSettings()
