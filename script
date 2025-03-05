@@ -611,7 +611,9 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 		Parent = Player.PlayerGui
 	else 
 		Parent = COREGUI.RobloxGui
-		syn.protect_gui(AlertScreen)
+		if syn and syn.protect_gui then
+			syn.protect_gui(AlertScreen)
+		end
 		ETLOG("Gui Protected")
 	end
 	
@@ -2541,7 +2543,9 @@ local function CreateLinkAlert(ID)
 		Parent = Player.PlayerGui
 	else
 		Parent = COREGUI.RobloxGui
-		syn.protect_gui(AlertScreen)
+		if syn and syn.protect_gui then
+			syn.protect_gui(AlertScreen)
+		end
 		ETLOG("Gui Protected")
 	end
 	
@@ -3707,7 +3711,9 @@ local function Setup()
 	else
 		if (not is_sirhurt_closure) and (syn and syn.protect_gui) then
 			PARENT = COREGUI.RobloxGui
-			syn.protect_gui(MainUI)
+			if syn and syn.protect_gui then
+				syn.protect_gui(MainUI)
+			end
 			ETLOG("Gui Protected - MAINUI")
 		elseif COREGUI:FindFirstChild('RobloxGui') then
 			PARENT = COREGUI.RobloxGui
