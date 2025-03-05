@@ -163,7 +163,8 @@ defaultSettings = {
 	MinimizeOnClose = true,
 	Persist = true,
 	ShowChangeLogs = true,
-	ToggleKey = "Equals"
+	ToggleKey = "Equals",
+	Topmost = true,
 }
 
 function loadSettings()
@@ -205,6 +206,7 @@ MinimizeOnClose = userSettings.MinimizeOnClose
 Persist = userSettings.Persist
 ShowChangeLogs = userSettings.ShowChangeLogs
 ToggleKey = Enum.KeyCode[userSettings.ToggleKey]
+Topmost = userSettings.Topmost
 
 
 
@@ -259,7 +261,7 @@ function CreateUI()
 	EmptyTools.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	EmptyTools.ResetOnSpawn = false
 	EmptyTools.IgnoreGuiInset = true
-	EmptyTools.DisplayOrder = 85
+
 
 	OuterFrame.Name = "OuterFrame"
 	OuterFrame.Parent = EmptyTools
@@ -3725,7 +3727,12 @@ local function Setup()
 
 	currentDraggableObject = OuterFrame
 	
-	
+	local DisplayOrder = -5
+	if Topmost == true then
+		DisplayOrder = 85
+	end
+
+	MainUI.DisplayOrder = DisplayOrder
 
 	MarkerUI = Instance.new("ScreenGui")
 	MarkerUI.ResetOnSpawn = false
@@ -4387,6 +4394,19 @@ local function SetupSettings()
 			userSettings.Persist = Persist
 			saveSettings(userSettings)
 			SetOptionChecked(CheckBox, Persist)
+		end
+	)
+	CreateSettingsOption("Topmost", 'Empty Tools appears on top of all other UI, including Core UI.', "Boolean", userSettings.Topmost, 
+		function(CheckBox)
+			Topmost = not Topmost
+			userSettings.Topmost = Topmost
+			saveSettings(userSettings)
+			local DisplayOrder = -5
+			if Topmost == true then
+				DisplayOrder = 85
+			end
+			MainUI.DisplayOrder = DisplayOrder
+			SetOptionChecked(CheckBox, Topmost)
 		end
 	)
 	
