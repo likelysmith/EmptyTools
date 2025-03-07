@@ -1,4 +1,7 @@
+DontShowDuplicateUI = false
+
 if not game:IsLoaded() then
+	DontShowDuplicateUI = true
 	game.Loaded:Wait()
 end
 
@@ -174,6 +177,7 @@ defaultSettings = {
 	changelogHiddenVersion = "",
 	ToggleKey = "Equals",
 	Topmost = true,
+	AlertOfDuplicate = true,
 }
 
 function loadSettings()
@@ -216,6 +220,7 @@ Persist = userSettings.Persist
 ShowChangeLogs = userSettings.ShowChangeLogs
 ToggleKey = Enum.KeyCode[userSettings.ToggleKey]
 Topmost = userSettings.Topmost
+AlertOfDuplicate = userSettings.AlertOfDuplicate
 
 
 
@@ -3696,19 +3701,21 @@ local function Setup()
 				return
 			end
 		end
-		CreateAlert(
-			"Instance Already Found", 
-			"An instance of Empty Tools is already running. Please close all instances before executing again." ,
-			nil, 
-			"Ok", 
-			nil,
-			Enum.TextXAlignment.Center,
-			function()
-				coroutine.resume(coroutine.create(function()
-					script:Destroy()
-				end))
-			end
-		)
+		if DontShowDuplicateUI == false then
+			CreateAlert(
+				"Instance Already Found", 
+				"An instance of Empty Tools is already running. Please close all instances before executing again." ,
+				nil, 
+				"Ok", 
+				nil,
+				Enum.TextXAlignment.Center,
+				function()
+					coroutine.resume(coroutine.create(function()
+						script:Destroy()
+					end))
+				end
+			)
+		end
 		return
 	end
 	Player:SetAttribute("EmptyToolsInstance", true)
@@ -4436,6 +4443,14 @@ local function SetupSettings()
 			end
 			MainUI.DisplayOrder = DisplayOrder
 			SetOptionChecked(CheckBox, Topmost)
+		end
+	)
+	CreateSettingsOption("Alert Of Duplicate", 'Empty Tools will alert you if a duplicate instance is found on setup.', "Boolean", userSettings.AlertOfDuplicate, 
+		function(CheckBox)
+			AlertOfDuplicate = not AlertOfDuplicate
+			userSettings.AlertOfDuplicate = AlertOfDuplicate
+			saveSettings(userSettings)
+			SetOptionChecked(CheckBox, AlertOfDuplicate)
 		end
 	)
 	
