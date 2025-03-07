@@ -1,7 +1,6 @@
 DontShowDuplicateUI = false
 
 if not game:IsLoaded() then
-	DontShowDuplicateUI = true
 	game.Loaded:Wait()
 end
 
@@ -3702,19 +3701,24 @@ local function Setup()
 			end
 		end
 		if DontShowDuplicateUI == false then
-			CreateAlert(
-				"Instance Already Found", 
-				"An instance of Empty Tools is already running. Please close all instances before executing again." ,
-				nil, 
-				"Ok", 
-				nil,
-				Enum.TextXAlignment.Center,
-				function()
-					coroutine.resume(coroutine.create(function()
-						script:Destroy()
-					end))
-				end
-			)
+			if AlertOfDuplicate == true then
+				CreateAlert(
+					"Instance Already Found", 
+					"An instance of Empty Tools is already running. Please close all instances before executing again." ,
+					nil, 
+					"Ok", 
+					nil,
+					Enum.TextXAlignment.Center,
+					function()
+						coroutine.resume(coroutine.create(function()
+							script:Destroy()
+						end))
+					end
+				)
+			end
+			
+		else
+			DontShowDuplicateUI = true
 		end
 		return
 	end
@@ -4695,6 +4699,7 @@ Players.LocalPlayer.OnTeleport:Connect(function(State)
 		else
 			queueTeleport(EmptyToolsLoadstrings.Default)
 		end
+		Close()
 	end
 end)
 
