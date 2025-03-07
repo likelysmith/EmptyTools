@@ -19,8 +19,8 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.2"
-local ChangeLog = "• Settings save across instances\n• Added cross-game persistance\n• Added a Voice Chat Unban command\n• Created an option in settings to enable third-party commands\n• Added 'Gravity' and 'FOV' to stats" 
+local VersionString = "v1.3.3"
+local ChangeLog = "• Updated VC Unban with advanced capability\n• Added cross-game persistance\n• Added a Voice Chat Unban command\n• Added 'Gravity' and 'FOV' to stats" 
 
 -- Variables
 
@@ -153,6 +153,10 @@ EmptyToolsLoadstrings =
 		function()
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/unctest"))()
 		end,
+		["VCBypass"] =
+		function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/vc"))()
+		end,
 	}
 
 -- Settings Control
@@ -167,6 +171,7 @@ defaultSettings = {
 	MinimizeOnClose = true,
 	Persist = true,
 	ShowChangeLogs = true,
+	changelogHiddenVersion = "",
 	ToggleKey = "Equals",
 	Topmost = true,
 }
@@ -1109,14 +1114,14 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 
 
 	TipView(Title, TitleText, Info)
-
+	
+	Input.Position = UDim2.new(0.549000025, 0, 0.074000001, 0)
 	if InputText ~= nil then
 		Input.Name = "Input"
 		Input.Parent = Command
 		Input.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 		Input.BorderColor3 = Color3.fromRGB(0, 0, 0)
 		Input.BorderSizePixel = 0
-		Input.Position = UDim2.new(0.549000025, 0, 0.074000001, 0)
 		Input.Size = UDim2.new(0.263412803, 0, 0.805496335, 0)
 		Input.ClearTextOnFocus = false
 		Input.Font = Enum.Font.Gotham
@@ -1206,6 +1211,10 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		EnumButton.TextScaled = true
 		EnumButton.TextSize = 25.000
 		EnumButton.TextWrapped = true
+		
+		if InputText == nil then
+			EnumButton.Position = Input.Position
+		end
 
 
 		EnumButton.MouseButton1Click:Connect(function()
@@ -2194,6 +2203,7 @@ local function ShowChangeLogs(DSA, ClickCallback)
 		function()
 			ClickCallback()
 			Player:SetAttribute("NoChangeLogs", true)
+			userSettings.changelogHiddenVersion = VersionString
 			userSettings.ShowChangeLogs = false
 			saveSettings(userSettings)
 		end
@@ -3793,7 +3803,7 @@ local function Setup()
 		table.insert(DefaultLighting, Shader:Clone())
 	end
 
-	if userSettings.ShowChangeLogs then
+	if not userSettings.changelogHiddenVersion or userSettings.changelogHiddenVersion ~= VersionString then
 		LogsOpen = true
 		Log = ShowChangeLogs(true, function()
 			LogsOpen = false
@@ -4286,9 +4296,13 @@ local function SetupCommands()
 			StopOrbit()
 		end
 	)
-	CreateCommand("Voice Chat Unban", "Unban yourself from a voice chat penalty. Not compatable with all injectors.", nil, nil, "Game",
-		function()
-			game:GetService("VoiceChatService"):joinVoice()
+	CreateCommand("VC Bypass", "Pardon yourself from a voice chat penalty; Bypass a voice chat ban. Not compatable with all injectors.", nil, {"Simple","Advanced"}, "Game",
+		function(Type)
+			if Type == "Simple" then
+				game:GetService("VoiceChatService"):joinVoice()
+			elseif Type == "Advanced" then
+				EmptyToolsLoadstrings.VCBypass()
+			end
 		end,
 		nil
 	)
