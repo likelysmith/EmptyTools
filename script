@@ -223,8 +223,16 @@ AlertOfDuplicate = userSettings.AlertOfDuplicate
 
 
 
--- Create UI Method
+-- Protect UI
 
+function ProtectUI(UI)
+	if syn and syn.protect_gui then
+		syn.protect_gui(UI)
+	end
+	ETLOG("Gui Protected - " .. UI.Name)
+end
+
+-- Create UI Method
 
 function CreateUI()
 	local EmptyTools = Instance.new("ScreenGui")
@@ -283,6 +291,10 @@ function CreateUI()
 	OuterFrame.BorderSizePixel = 0
 	OuterFrame.Position = UDim2.new(0.65821141, 0, 0.429824561, 0)
 	OuterFrame.Size = UDim2.new(0.329648048, 0, 0.492894381, 0)
+	if UserInputService.TouchEnabled then 
+		OuterFrame.Size = UDim2.new(0.514648048, 0, 0.551894381, 0)
+		OuterFrame.Position = UDim2.new(0.588, 0, 0.429824561, 0)
+	end
 
 	UICorner.CornerRadius = UDim.new(0.0500000007, 0)
 	UICorner.Parent = OuterFrame
@@ -334,6 +346,7 @@ function CreateUI()
 	Commands.Size = UDim2.new(0.880514681, 0, 0.645308912, 0)
 	Commands.CanvasSize = UDim2.new(0, 0, 3.5, 0)
 	Commands.ScrollBarThickness = 13
+
 
 	UIListLayout.Parent = Commands
 	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -624,10 +637,7 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 		Parent = Player.PlayerGui
 	else 
 		Parent = COREGUI.RobloxGui
-		if syn and syn.protect_gui then
-			syn.protect_gui(AlertScreen)
-		end
-		ETLOG("Gui Protected")
+		ProtectUI(AlertScreen)
 	end
 	
 
@@ -2192,6 +2202,7 @@ local function TeleportToPlayer(PlayerTarget)
 end
 
 local function ShowChangeLogs(DSA, ClickCallback)
+	if UserInputService.TouchEnabled then return end
 	local SubText = "Don't show again"
 	if not DSA then
 		SubText = nil
@@ -2561,10 +2572,7 @@ local function CreateLinkAlert(ID)
 		Parent = Player.PlayerGui
 	else
 		Parent = COREGUI.RobloxGui
-		if syn and syn.protect_gui then
-			syn.protect_gui(AlertScreen)
-		end
-		ETLOG("Gui Protected")
+		ProtectUI(AlertScreen)
 	end
 	
 	
@@ -3130,41 +3138,199 @@ end
 
 -- Flight Control
 
-local userinput = game:GetService("UserInputService")
-local cam = workspace.CurrentCamera
+userinput = game:GetService("UserInputService")
+cam = workspace.CurrentCamera
+isMobile = userinput.TouchEnabled
+FlySpeed = 30
+selected = false
+flyForce = nil
+bodyGyro = nil
+flightUI = nil
+mobileFlightInput = Vector3.new(0,0,0)
 
+function createFlightUI()
+	flightUI = Instance.new("ScreenGui")
+	flightUI.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+	Frame = Instance.new("Frame")
+	Frame.Parent = flightUI
+	Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Frame.BorderSizePixel = 0
+	Frame.Position = UDim2.new(0,20,1,-220)
+	Frame.Size = UDim2.new(0,150,0,150)
+
+	Right = Instance.new("TextButton")
+	Right.Name = "Right"
+	Right.Parent = Frame
+	Right.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Right.BorderSizePixel = 0
+	Right.Position = UDim2.new(0.62,0,0.42,0)
+	Right.Size = UDim2.new(0,40,0,40)
+	Right.Font = Enum.Font.SourceSans
+	Right.Text = ">"
+	Right.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Right.TextScaled = true
+	aspectRight = Instance.new("UIAspectRatioConstraint", Right)
+	aspectRight.AspectRatio = 1
+	uicornerRight = Instance.new("UICorner", Right)
+	uicornerRight.CornerRadius = UDim.new(0.15,0)
+
+	Left = Instance.new("TextButton")
+	Left.Name = "Left"
+	Left.Parent = Frame
+	Left.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Left.BorderSizePixel = 0
+	Left.Position = UDim2.new(0.05,0,0.42,0)
+	Left.Size = UDim2.new(0,40,0,40)
+	Left.Font = Enum.Font.SourceSans
+	Left.Text = "<"
+	Left.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Left.TextScaled = true
+	aspectLeft = Instance.new("UIAspectRatioConstraint", Left)
+	aspectLeft.AspectRatio = 1
+	uicornerLeft = Instance.new("UICorner", Left)
+	uicornerLeft.CornerRadius = UDim.new(0.15,0)
+
+	Fwd = Instance.new("TextButton")
+	Fwd.Name = "Fwd"
+	Fwd.Parent = Frame
+	Fwd.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Fwd.BorderSizePixel = 0
+	Fwd.Position = UDim2.new(0.35,0,0.05,0)
+	Fwd.Size = UDim2.new(0,40,0,40)
+	Fwd.Font = Enum.Font.SourceSans
+	Fwd.Text = "∧"
+	Fwd.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Fwd.TextScaled = true
+	aspectFwd = Instance.new("UIAspectRatioConstraint", Fwd)
+	aspectFwd.AspectRatio = 1
+	uicornerFwd = Instance.new("UICorner", Fwd)
+	uicornerFwd.CornerRadius = UDim.new(0.15,0)
+
+	Back = Instance.new("TextButton")
+	Back.Name = "Back"
+	Back.Parent = Frame
+	Back.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Back.BorderSizePixel = 0
+	Back.Position = UDim2.new(0.35,0,0.55,0)
+	Back.Size = UDim2.new(0,40,0,40)
+	Back.Font = Enum.Font.SourceSans
+	Back.Text = "∨"
+	Back.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Back.TextScaled = true
+	aspectBack = Instance.new("UIAspectRatioConstraint", Back)
+	aspectBack.AspectRatio = 1
+	uicornerBack = Instance.new("UICorner", Back)
+	uicornerBack.CornerRadius = UDim.new(0.15,0)
+
+	Up = Instance.new("TextButton")
+	Up.Name = "Up"
+	Up.Parent = Frame
+	Up.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Up.BorderSizePixel = 0
+	Up.Position = UDim2.new(0.85,0,0.15,0)
+	Up.Size = UDim2.new(0,40,0,60)
+	Up.Font = Enum.Font.SourceSans
+	Up.Text = "Up"
+	Up.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Up.TextScaled = true
+	aspectUp = Instance.new("UIAspectRatioConstraint", Up)
+	aspectUp.AspectRatio = 0.66
+	uicornerUp = Instance.new("UICorner", Up)
+	uicornerUp.CornerRadius = UDim.new(0.15,0)
+
+	Down = Instance.new("TextButton")
+	Down.Name = "Down"
+	Down.Parent = Frame
+	Down.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Down.BorderSizePixel = 0
+	Down.Position = UDim2.new(0.85,0,0.55,0)
+	Down.Size = UDim2.new(0,40,0,60)
+	Down.Font = Enum.Font.SourceSans
+	Down.Text = "Down"
+	Down.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Down.TextScaled = true
+	aspectDown = Instance.new("UIAspectRatioConstraint", Down)
+	aspectDown.AspectRatio = 0.66
+	uicornerDown = Instance.new("UICorner", Down)
+	uicornerDown.CornerRadius = UDim.new(0.15,0)
+
+	Fwd.MouseButton1Down:Connect(function()
+		mobileFlightInput = Vector3.new(mobileFlightInput.X, mobileFlightInput.Y, -1)
+	end)
+	Fwd.MouseButton1Up:Connect(function()
+		mobileFlightInput = Vector3.new(mobileFlightInput.X, mobileFlightInput.Y, 0)
+	end)
+	Back.MouseButton1Down:Connect(function()
+		mobileFlightInput = Vector3.new(mobileFlightInput.X, mobileFlightInput.Y, 1)
+	end)
+	Back.MouseButton1Up:Connect(function()
+		mobileFlightInput = Vector3.new(mobileFlightInput.X, mobileFlightInput.Y, 0)
+	end)
+	Left.MouseButton1Down:Connect(function()
+		mobileFlightInput = Vector3.new(-1, mobileFlightInput.Y, mobileFlightInput.Z)
+	end)
+	Left.MouseButton1Up:Connect(function()
+		mobileFlightInput = Vector3.new(0, mobileFlightInput.Y, mobileFlightInput.Z)
+	end)
+	Right.MouseButton1Down:Connect(function()
+		mobileFlightInput = Vector3.new(1, mobileFlightInput.Y, mobileFlightInput.Z)
+	end)
+	Right.MouseButton1Up:Connect(function()
+		mobileFlightInput = Vector3.new(0, mobileFlightInput.Y, mobileFlightInput.Z)
+	end)
+	Up.MouseButton1Down:Connect(function()
+		mobileFlightInput = Vector3.new(mobileFlightInput.X, 1, mobileFlightInput.Z)
+	end)
+	Up.MouseButton1Up:Connect(function()
+		mobileFlightInput = Vector3.new(mobileFlightInput.X, 0, mobileFlightInput.Z)
+	end)
+	Down.MouseButton1Down:Connect(function()
+		mobileFlightInput = Vector3.new(mobileFlightInput.X, -1, mobileFlightInput.Z)
+	end)
+	Down.MouseButton1Up:Connect(function()
+		mobileFlightInput = Vector3.new(mobileFlightInput.X, 0, mobileFlightInput.Z)
+	end)
+end
+
+function destroyFlightUI()
+	if flightUI then
+		flightUI:Destroy()
+		flightUI = nil
+		mobileFlightInput = Vector3.new(0,0,0)
+	end
+end
 
 function getNextMovement()
-	local nextMove = Vector3.new(0,0,0)
-	if userinput:IsKeyDown("W") then
-		nextMove = nextMove + Vector3.new(0,0,-1)
-	end
-	if userinput:IsKeyDown("S") then
-		nextMove = nextMove + Vector3.new(0,0,1)
-	end
-	if userinput:IsKeyDown("A") then
-		nextMove = nextMove + Vector3.new(-1,0,0)
-	end
-	if userinput:IsKeyDown("D") then
-		nextMove = nextMove + Vector3.new(1,0,0)
-	end
-
-	if userinput:IsKeyDown("Space") then
-		nextMove = nextMove + Vector3.new(0,1,0)
-	elseif userinput:IsKeyDown("LeftControl") then
-		nextMove = nextMove + Vector3.new(0,-1,0)
+	local nextMove = Vector3.new(0, 0, 0)
+	if isMobile then
+		nextMove = mobileFlightInput
+	else
+		if userinput:IsKeyDown("W") then
+			nextMove = nextMove + Vector3.new(0, 0, -1)
+		end
+		if userinput:IsKeyDown("S") then
+			nextMove = nextMove + Vector3.new(0, 0, 1)
+		end
+		if userinput:IsKeyDown("A") then
+			nextMove = nextMove + Vector3.new(-1, 0, 0)
+		end
+		if userinput:IsKeyDown("D") then
+			nextMove = nextMove + Vector3.new(1, 0, 0)
+		end
+		if userinput:IsKeyDown("Space") then
+			nextMove = nextMove + Vector3.new(0, 1, 0)
+		elseif userinput:IsKeyDown("LeftControl") then
+			nextMove = nextMove + Vector3.new(0, -1, 0)
+		end
 	end
 	return nextMove * FlySpeed/2.5
 end
 
-local selected = false
-local flyForce, bodyGyro
-
-local function ToggleFlight(Value, FlySpeedValue)
+function ToggleFlight(Value, FlySpeedValue)
 	local Character = GetCharacter(Player)
 	local Humanoid = GetHumanoid(Player)
 	local HumanoidRootPart = GetRoot(Player)
-
 	if tonumber(FlySpeedValue) then
 		FlySpeed = tonumber(FlySpeedValue)
 		if FlySpeed > 100 then
@@ -3173,19 +3339,16 @@ local function ToggleFlight(Value, FlySpeedValue)
 	else
 		FlySpeed = 30
 	end
-
 	if Value then
 		Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 		wait(0.1)
 		Humanoid.PlatformStand = true
-
 		flyForce = Instance.new("BodyPosition")
 		flyForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-		flyForce.Position = HumanoidRootPart.Position + Vector3.new(0,4,0)
-		flyForce.D = 1000 + (FlySpeed * 0.2)  -- Adjust damping based on FlySpeed
+		flyForce.Position = HumanoidRootPart.Position + Vector3.new(0, 4, 0)
+		flyForce.D = 1000 + (FlySpeed * 0.2)
 		flyForce.Name = "GYRO"
 		flyForce.Parent = HumanoidRootPart
-
 		bodyGyro = Instance.new("BodyGyro")
 		bodyGyro.D = 50
 		bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
@@ -3193,15 +3356,15 @@ local function ToggleFlight(Value, FlySpeedValue)
 		bodyGyro.Name = "GYRO"
 		bodyGyro.CFrame = HumanoidRootPart.CFrame
 		bodyGyro.Parent = HumanoidRootPart
-
+		if isMobile then
+			createFlightUI()
+		end
 		local tiltMax = 3
 		local tiltAmount = 0
 		local tiltInc = 1
 		local static = 0
-
 		local lastUpdate = tick()
 		local lastPosition = HumanoidRootPart.Position
-
 		selected = true
 		while selected do
 			wait()
@@ -3210,7 +3373,6 @@ local function ToggleFlight(Value, FlySpeedValue)
 			local pos = HumanoidRootPart.Position
 			local nextMove = getNextMovement()
 			local targetCFrame = CFrame.new(pos, pos + look) * CFrame.new(nextMove)
-
 			if nextMove.Magnitude > 0 then
 				static = 0
 				flyForce.Position = targetCFrame.Position
@@ -3224,17 +3386,10 @@ local function ToggleFlight(Value, FlySpeedValue)
 					flyForce.Position = HumanoidRootPart.Position
 				end
 			end
-
-			if math.abs(tiltAmount) > tiltMax then
-				tiltAmount = tiltMax
-			end
-			-- Clamp tiltAmount to max tilt
 			tiltAmount = math.clamp(tiltAmount, -tiltMax, tiltMax)
-
 			local tiltX = tiltAmount * nextMove.X * -0.5
 			local tiltZ = tiltAmount * nextMove.Z
 			bodyGyro.CFrame = targetCFrame * CFrame.Angles(math.rad(tiltZ), 0, math.rad(tiltX))
-
 			lastUpdate = tick()
 			lastPosition = HumanoidRootPart.Position
 		end
@@ -3243,8 +3398,13 @@ local function ToggleFlight(Value, FlySpeedValue)
 		if flyForce then flyForce:Destroy() end
 		if bodyGyro then bodyGyro:Destroy() end
 		Humanoid.PlatformStand = false
+		if isMobile then
+			destroyFlightUI()
+		end
 	end
 end
+
+
 
 local function SetupMarkers(Type)
 	if MarkerUI ~= nil then
@@ -3736,10 +3896,7 @@ local function Setup()
 	else
 		if (not is_sirhurt_closure) and (syn and syn.protect_gui) then
 			PARENT = COREGUI.RobloxGui
-			if syn and syn.protect_gui then
-				syn.protect_gui(MainUI)
-			end
-			ETLOG("Gui Protected - MAINUI")
+			ProtectUI(MainUI)
 		elseif COREGUI:FindFirstChild('RobloxGui') then
 			PARENT = COREGUI.RobloxGui
 		else
@@ -3772,6 +3929,10 @@ local function Setup()
 
 	if PlusEnabled then
 		table.insert(AttachmentLocations, "???")
+	end
+	
+	if UserInputService.TouchEnabled then
+		Contents.Commands.ScrollBarThickness = 0
 	end
 
 	for i,v in pairs(AnimationPacks) do
@@ -4609,7 +4770,7 @@ function MinimizeClose()
 end
 
 OuterFrame.Close.MouseButton1Click:Connect(function()
-	if MinimizeOnClose == true then
+	if MinimizeOnClose == true and not UserInputService.TouchEnabled then
 		MinimizeClose()
 		return
 	end
@@ -4707,6 +4868,29 @@ end)
 
 local LocalJumpInstances = JumpInstances
 
+function JumpReq()
+	if not DoubleJump then return end
+	local Root = GetRoot(Player)
+	local Humanoid = GetHumanoid(Player)
+	if Root and Humanoid then
+		if Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+			if LocalJumpInstances >= 1 then
+				LocalJumpInstances -= 1
+				Humanoid:ChangeState(Enum.HumanoidStateType.Jumping, true)
+				Humanoid.StateChanged:Connect(function(old, new)
+					if new == Enum.HumanoidStateType.Landed then
+						LocalJumpInstances = JumpInstances
+					end
+				end)
+			end
+		end
+	end
+end
+
+UserInputService.JumpRequest:Connect(function()
+	JumpReq()
+end)
+
 UserInputService.InputBegan:Connect(function(Input, GPE) 
 	if GPE then return end
 	if KeySelected and KeyButton then
@@ -4722,22 +4906,7 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 		return
 	end
 	if Input.KeyCode == Enum.KeyCode.Space then
-		if not DoubleJump then return end
-		local Root = GetRoot(Player)
-		local Humanoid = GetHumanoid(Player)
-		if Root and Humanoid then
-			if Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
-				if LocalJumpInstances >= 1 then
-					LocalJumpInstances -= 1
-					Humanoid:ChangeState(Enum.HumanoidStateType.Jumping, true)
-					Humanoid.StateChanged:Connect(function(old, new)
-						if new == Enum.HumanoidStateType.Landed then
-							LocalJumpInstances = JumpInstances
-						end
-					end)
-				end
-			end
-		end
+		JumpReq()
 	end
 	if Input.KeyCode == ToggleKey then
 		if MinimizeOnClose == true then
