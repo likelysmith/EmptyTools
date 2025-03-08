@@ -4523,11 +4523,11 @@ local function SetupThirdPartyCommands(Enabled)
 end
 
 local function SetupPlusCommands()
-	CreateCommand("Regions", "Toggle invisible regions. Makes near-invisible parts partially visible for selection. Backspace to delete.", nil, {"Destroy","Re-parent"}, "World",
+	CreateCommand("Regions", "Toggle invisible regions. Makes near-invisible parts partially visible for selection. Backspace to delete.", nil, {"Destroy","Parent", "Re-parent"}, "World",
 		function(Type) 
 			if PhaseEnabled then return end
 			modeEnabled = true
-			reparent = (Type == "Re-parent")
+			reparent = (Type == "Parent")
 			for _, obj in ipairs(workspace:GetDescendants()) do
 				if obj:IsA("BasePart") and obj.Transparency >= 0.99 then
 					originalTransparency[obj] = obj.Transparency
@@ -4535,6 +4535,25 @@ local function SetupPlusCommands()
 				end
 			end
 			print("Invisible mode enabled")
+			if Type == "Re-parent" then
+				for i,v in pairs(reparentLocation:GetChildren()) do
+					v.Parent = v.OG.Value
+					v.OG:Destroy()
+					modeEnabled = false
+					if currentSelection then
+						selectionBox.Adornee = nil
+						selectionBox.Visible = false
+						currentSelection = nil
+					end
+					for part, orig in pairs(originalTransparency) do
+						if part and part.Parent then
+							part.Transparency = orig
+						end
+					end
+					originalTransparency = {} 
+					print("Invisible mode disabled")
+				end
+			end
 		end,
 		function() 
 			modeEnabled = false
@@ -4542,10 +4561,6 @@ local function SetupPlusCommands()
 				selectionBox.Adornee = nil
 				selectionBox.Visible = false
 				currentSelection = nil
-			end
-			for i,v in pairs(reparentLocation:GetChildren()) do
-				v.Parent = v.OG.Value
-				v.OG:Destroy()
 			end
 			for part, orig in pairs(originalTransparency) do
 				if part and part.Parent then
