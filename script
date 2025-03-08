@@ -19,6 +19,7 @@ COREGUI = game:GetService("CoreGui")
 queueTeleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
 httpRequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 
+
 -- Changelog
 
 local VersionString = "v1.3.3"
@@ -1955,14 +1956,16 @@ end
 -- Selection Control 
 
 
-local modeEnabled = false
-local originalTransparency = {} 
-local selectionBox = Instance.new("SelectionBox")
+modeEnabled = false
+originalTransparency = {} 
+selectionBox = Instance.new("SelectionBox")
 selectionBox.Name = "HighlightSelectionBox"
 selectionBox.Color3 = Color3.new(0, 1, 0) 
 selectionBox.Transparency = 0 
 selectionBox.Visible = false
 local currentSelection = nil
+reparent = false
+local reparentLocation
 
 
 local function updateSelection(newPart)
@@ -3938,6 +3941,9 @@ local function Setup()
 	for i,v in pairs(AnimationPacks) do
 		table.insert(AnimationPackEnums, i)
 	end
+	
+	reparentLocation = Instance.new("Folder", game.ReplicatedStorage)
+	reparentLocation.Name = "REPARENT_INST_" .. Player.UserId
 
 	--Defaults
 	DefaultDestroyHeight = workspace.FallenPartsDestroyHeight
@@ -3987,23 +3993,31 @@ local function Setup()
 	-- Drag Handler
 
 	coroutine.resume(coroutine.create(function()
-		local userInputService: UserInputService = game:GetService("UserInputService") -- UserInputService
-		local tweenService: TweenService = game:GetService("TweenService") -- Tweenservice
-		local dragToggle: boolean = nil -- Toggle?
-		local dragObject: GuiObject = OuterFrame -- Object Being Dragged
-		local dragInput: InputObject = nil -- Input On The Drag Object
-		local dragStart: Vector2 = nil -- Starting Position
-		local dragInfo: TweenInfo = TweenInfo.new(0.075, Enum.EasingStyle.Quad) -- Drag Speed
-		local dragPos: UDim2 = nil -- Drag Pos
+		local userInputService = game:GetService("UserInputService")
+		local tweenService = game:GetService("TweenService")
+		local dragToggle = false
+		local dragObject = OuterFrame  -- The UI object to be dragged
+		local dragInput = nil
+		local dragStart = nil
+		local dragInfo = TweenInfo.new(0.075, Enum.EasingStyle.Quad)
+		local dragPos = nil
+		local originalCameraType = nil
 
-		local function updateInput(input) -- Updates Input
-			local delta: Vector2 = input.Position - dragStart
-			local position: UDim2 = UDim2.new(dragPos.X.Scale, dragPos.X.Offset + delta.X, dragPos.Y.Scale, dragPos.Y.Offset + delta.Y)
-			tweenService:Create(dragObject, dragInfo, {Position = position}):Play()
+		local function updateInput(input)
+			local delta = input.Position - dragStart
+			local newPos = UDim2.new(dragPos.X.Scale, dragPos.X.Offset + delta.X, dragPos.Y.Scale, dragPos.Y.Offset + delta.Y)
+			tweenService:Create(dragObject, dragInfo, {Position = newPos}):Play()
 		end
 
-		local function dragInputBegan(input: InputObject)
-			if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and userInputService:GetFocusedTextBox() == nil then
+		local function dragInputBegan(input)
+			if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) 
+				and userInputService:GetFocusedTextBox() == nil then
+				-- For mobile users, "freeze" the camera movement during the drag.
+				if userInputService.TouchEnabled then
+					originalCameraType = Camera.CameraType
+					Camera.CameraType = Enum.CameraType.Scriptable
+				end
+
 				if UIOpen then
 					dragToggle = true
 					dragStart = input.Position
@@ -4011,22 +4025,29 @@ local function Setup()
 					input.Changed:Connect(function()
 						if input.UserInputState == Enum.UserInputState.End then
 							dragToggle = false
+							-- Restore camera control when drag ends
+							if userInputService.TouchEnabled and originalCameraType then
+								Camera.CameraType = originalCameraType
+							end
 						end
 					end)
 				elseif not UIOpen and ContentShrunken then
-					-- Check if input started within ContentShrunken boundaries
-					local mousePosition = input.Position
-					local contentPosition = ContentShrunken.AbsolutePosition
+					-- Check if the drag started within the boundaries of the shrunken content
+					local mousePos = input.Position
+					local contentPos = ContentShrunken.AbsolutePosition
 					local contentSize = ContentShrunken.AbsoluteSize
 
-					if mousePosition.X >= contentPosition.X and mousePosition.X <= contentPosition.X + contentSize.X and
-						mousePosition.Y >= contentPosition.Y and mousePosition.Y <= contentPosition.Y + contentSize.Y then
+					if mousePos.X >= contentPos.X and mousePos.X <= contentPos.X + contentSize.X and
+						mousePos.Y >= contentPos.Y and mousePos.Y <= contentPos.Y + contentSize.Y then
 						dragToggle = true
 						dragStart = input.Position
 						dragPos = dragObject.Position
 						input.Changed:Connect(function()
 							if input.UserInputState == Enum.UserInputState.End then
 								dragToggle = false
+								if userInputService.TouchEnabled and originalCameraType then
+									Camera.CameraType = originalCameraType
+								end
 							end
 						end)
 					end
@@ -4034,15 +4055,15 @@ local function Setup()
 			end
 		end
 
-		local function dragInputChanged(input: InputObject)
+		local function dragInputChanged(input)
 			if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 				dragInput = input
 			end
 		end
 
-		local function userInputChanged(input: InputObject, gameProcessedEvent: boolean)
+		local function userInputChanged(input, gameProcessedEvent)
 			if input == dragInput and dragToggle then
-				updateInput(input) -- Calls The Update Input Function With The Provided Input Object
+				updateInput(input)
 			end
 		end
 
@@ -4502,10 +4523,11 @@ local function SetupThirdPartyCommands(Enabled)
 end
 
 local function SetupPlusCommands()
-	CreateCommand("Regions", "Toggle invisible regions. Makes near-invisible parts partially visible for selection. Backspace to delete.", nil, nil, "World",
-		function() 
+	CreateCommand("Regions", "Toggle invisible regions. Makes near-invisible parts partially visible for selection. Backspace to delete.", nil, {"Destroy","Re-parent"}, "World",
+		function(Type) 
 			if PhaseEnabled then return end
 			modeEnabled = true
+			reparent = (Type == "Re-parent")
 			for _, obj in ipairs(workspace:GetDescendants()) do
 				if obj:IsA("BasePart") and obj.Transparency >= 0.99 then
 					originalTransparency[obj] = obj.Transparency
@@ -4516,17 +4538,21 @@ local function SetupPlusCommands()
 		end,
 		function() 
 			modeEnabled = false
+			if currentSelection then
+				selectionBox.Adornee = nil
+				selectionBox.Visible = false
+				currentSelection = nil
+			end
+			for i,v in pairs(reparentLocation:GetChildren()) do
+				v.Parent = v.OG.Value
+				v.OG:Destroy()
+			end
 			for part, orig in pairs(originalTransparency) do
 				if part and part.Parent then
 					part.Transparency = orig
 				end
 			end
 			originalTransparency = {} 
-			if currentSelection then
-				selectionBox.Adornee = nil
-				selectionBox.Visible = false
-				currentSelection = nil
-			end
 			print("Invisible mode disabled")
 		end
 	)
@@ -4855,6 +4881,7 @@ local TeleportCheck = false
 Players.LocalPlayer.OnTeleport:Connect(function(State)
 	if (not TeleportCheck) and queueTeleport and Persist then
 		TeleportCheck = true
+		Player:SetAttribute("EmptyToolsInstance", false)
 		if PlusEnabled then
 			queueTeleport(EmptyToolsLoadstrings.Beta)
 		else
@@ -4925,8 +4952,15 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 		if currentSelection then
 			local p = Instance.new("Part", game.ReplicatedFirst)
 			selectionBox.Parent = p
-			originalTransparency[currentSelection] = nil 
-			currentSelection:Destroy()
+			if reparent then
+				local OrigParent = Instance.new("ObjectValue", currentSelection)
+				OrigParent.Name = "OG"
+				OrigParent.Value = currentSelection.Parent
+				currentSelection.Parent = reparentLocation
+			else
+				originalTransparency[currentSelection] = nil 
+				currentSelection:Destroy()
+			end
 			selectionBox.Adornee = nil
 			selectionBox.Visible = false
 			currentSelection = nil
