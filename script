@@ -4072,6 +4072,7 @@ local function Setup()
 			OuterFrame.InputBegan:Connect(dragInputBegan)
 			OuterFrame.InputChanged:Connect(dragInputChanged)
 			userInputService.InputChanged:Connect(userInputChanged)
+		end))
 	end))
 end
 
