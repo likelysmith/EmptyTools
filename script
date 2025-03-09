@@ -4009,67 +4009,69 @@ local function Setup()
 			tweenService:Create(dragObject, dragInfo, {Position = newPos}):Play()
 		end
 
-		local function dragInputBegan(input)
-			if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) 
-				and userInputService:GetFocusedTextBox() == nil then
-				-- For mobile users, "freeze" the camera movement during the drag.
-				if userInputService.TouchEnabled then
-					originalCameraType = Camera.CameraType
-					Camera.CameraType = Enum.CameraType.Scriptable
-				end
+		coroutine.resume(coroutine.create(function()
+			local userInputService: UserInputService = game:GetService("UserInputService") -- UserInputService
+			local tweenService: TweenService = game:GetService("TweenService") -- Tweenservice
+			local dragToggle: boolean = nil -- Toggle?
+			local dragObject: GuiObject = OuterFrame -- Object Being Dragged
+			local dragInput: InputObject = nil -- Input On The Drag Object
+			local dragStart: Vector2 = nil -- Starting Position
+			local dragInfo: TweenInfo = TweenInfo.new(0.075, Enum.EasingStyle.Quad) -- Drag Speed
+			local dragPos: UDim2 = nil -- Drag Pos
 
-				if UIOpen then
-					dragToggle = true
-					dragStart = input.Position
-					dragPos = dragObject.Position
-					input.Changed:Connect(function()
-						if input.UserInputState == Enum.UserInputState.End then
-							dragToggle = false
-							-- Restore camera control when drag ends
-							if userInputService.TouchEnabled and originalCameraType then
-								Camera.CameraType = originalCameraType
-							end
-						end
-					end)
-				elseif not UIOpen and ContentShrunken then
-					-- Check if the drag started within the boundaries of the shrunken content
-					local mousePos = input.Position
-					local contentPos = ContentShrunken.AbsolutePosition
-					local contentSize = ContentShrunken.AbsoluteSize
+			local function updateInput(input) -- Updates Input
+				local delta: Vector2 = input.Position - dragStart
+				local position: UDim2 = UDim2.new(dragPos.X.Scale, dragPos.X.Offset + delta.X, dragPos.Y.Scale, dragPos.Y.Offset + delta.Y)
+				tweenService:Create(dragObject, dragInfo, {Position = position}):Play()
+			end
 
-					if mousePos.X >= contentPos.X and mousePos.X <= contentPos.X + contentSize.X and
-						mousePos.Y >= contentPos.Y and mousePos.Y <= contentPos.Y + contentSize.Y then
+			local function dragInputBegan(input: InputObject)
+				if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and userInputService:GetFocusedTextBox() == nil then
+					if UIOpen then
 						dragToggle = true
 						dragStart = input.Position
 						dragPos = dragObject.Position
 						input.Changed:Connect(function()
 							if input.UserInputState == Enum.UserInputState.End then
 								dragToggle = false
-								if userInputService.TouchEnabled and originalCameraType then
-									Camera.CameraType = originalCameraType
-								end
 							end
 						end)
+					elseif not UIOpen and ContentShrunken then
+						-- Check if input started within ContentShrunken boundaries
+						local mousePosition = input.Position
+						local contentPosition = ContentShrunken.AbsolutePosition
+						local contentSize = ContentShrunken.AbsoluteSize
+
+						if mousePosition.X >= contentPosition.X and mousePosition.X <= contentPosition.X + contentSize.X and
+							mousePosition.Y >= contentPosition.Y and mousePosition.Y <= contentPosition.Y + contentSize.Y then
+							dragToggle = true
+							dragStart = input.Position
+							dragPos = dragObject.Position
+							input.Changed:Connect(function()
+								if input.UserInputState == Enum.UserInputState.End then
+									dragToggle = false
+								end
+							end)
+						end
 					end
 				end
 			end
-		end
 
-		local function dragInputChanged(input)
-			if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-				dragInput = input
+			local function dragInputChanged(input: InputObject)
+				if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+					dragInput = input
+				end
 			end
-		end
 
-		local function userInputChanged(input, gameProcessedEvent)
-			if input == dragInput and dragToggle then
-				updateInput(input)
+			local function userInputChanged(input: InputObject, gameProcessedEvent: boolean)
+				if input == dragInput and dragToggle then
+					updateInput(input)
+				end
 			end
-		end
 
-		OuterFrame.InputBegan:Connect(dragInputBegan)
-		OuterFrame.InputChanged:Connect(dragInputChanged)
-		userInputService.InputChanged:Connect(userInputChanged)
+			OuterFrame.InputBegan:Connect(dragInputBegan)
+			OuterFrame.InputChanged:Connect(dragInputChanged)
+			userInputService.InputChanged:Connect(userInputChanged)
 	end))
 end
 
