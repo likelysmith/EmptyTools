@@ -486,7 +486,7 @@ function CreateUI()
 	Info_3.Size = UDim2.new(0.0790441632, 0, 0.125858128, 0)
 	Info_3.ZIndex = 4
 	Info_3.Font = Enum.Font.Roboto
-	Info_3.Text = "?"
+	Info_3.Text = "i"
 	Info_3.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Info_3.TextScaled = true
 	Info_3.TextSize = 14.000
@@ -1769,6 +1769,7 @@ function GetHumanoid(Target)
 end
 
 function GetPlayerFromNameSnippet(Snippet)
+	if Snippet == "" then return end
 	Snippet = string.lower(Snippet)
 	for _,User in pairs(Players:GetPlayers()) do
 		if User == Player then continue end
@@ -2016,33 +2017,218 @@ local function EraseSpawnPoint()
 	playerSpawnPoint = nil
 end
 
-local carActive = false
-local carInputBeganConn, carInputEndedConn, carHeartbeatConn
-local carCurrentVelocity = Vector3.new(0, 0, 0)
-local carAcceleration = 50
-local carBrakeDeceleration = 150
-local carHorizontalVelocity = Vector3.new(0, 0, 0)
-local carVerticalVelocity = 0
-local carKeysPressed = {}
-local carLastHeading = nil
-local carMaxSpeed = 100
-local carLockedY = nil
+carActive = false
+carInputBeganConn, carInputEndedConn, carHeartbeatConn = nil
+carCurrentVelocity = Vector3.new(0, 0, 0)
+carAcceleration = 50
+carBrakeDeceleration = 150
+carHorizontalVelocity = Vector3.new(0, 0, 0)
+carVerticalVelocity = 0
+carKeysPressed = {}
+carLastHeading = nil
+carMaxSpeed = 100
+carLockedY = nil
 
-local driveAnimId = "http://www.roblox.com/asset/?id=17360699557"
-local carAnimation = nil
-local driveAnimDirection = 1
-local driveAnimTime = 3
-local animSpeed = 0.5
-local minAnimSpeed = 0.2
-local maxAnimSpeed = 0.8
-local sittingSet = false
+driveAnimId = "http://www.roblox.com/asset/?id=17360699557"
+carAnimation = nil
+driveAnimDirection = 1
+driveAnimTime = 3
+animSpeed = 0.5
+minAnimSpeed = 0.2
+maxAnimSpeed = 0.8
+sittingSet = false
 
-local smoothFactor = 0.1
-local bodyVel, bodyGyro
+smoothFactor = 0.1
+bodyVel, bodyGyro = nil
 
-local function StartCarMode(maxSpeedInput)
+mobileCarInput = Vector3.new(0, 0, 0)
+mobileCarBreak = false
+local carUI
+function createCarUI()
+	carUI = Instance.new("ScreenGui")
+	carUI.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+	local Frame = Instance.new("Frame")
+	Frame.Parent = carUI
+	Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	Frame.BorderSizePixel = 0
+	Frame.Position = UDim2.new(0,20,1,-220)
+	Frame.Size = UDim2.new(0,170,0,150)
+
+	local Right = Instance.new("TextButton")
+	Right.Name = "Right"
+	Right.Parent = Frame
+	Right.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Right.BorderSizePixel = 0
+	Right.Position = UDim2.new(0.60,0,0.4,0)
+	Right.Size = UDim2.new(0,40,0,40)
+	Right.Font = Enum.Font.SourceSans
+	Right.Text = ">"
+	Right.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Right.TextScaled = true
+	local aspectRight = Instance.new("UIAspectRatioConstraint", Right)
+	aspectRight.AspectRatio = 1
+	local uicornerRight = Instance.new("UICorner", Right)
+	uicornerRight.CornerRadius = UDim.new(0.15,0)
+
+	local Left = Instance.new("TextButton")
+	Left.Name = "Left"
+	Left.Parent = Frame
+	Left.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Left.BorderSizePixel = 0
+	Left.Position = UDim2.new(0.1,0,0.4,0)
+	Left.Size = UDim2.new(0,40,0,40)
+	Left.Font = Enum.Font.SourceSans
+	Left.Text = "<"
+	Left.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Left.TextScaled = true
+	local aspectLeft = Instance.new("UIAspectRatioConstraint", Left)aspectLeft = Instance.new("UIAspectRatioConstraint", Left)
+	aspectLeft.AspectRatio = 1
+	local uicornerLeft = Instance.new("UICorner", Left)
+	uicornerLeft.CornerRadius = UDim.new(0.15,0)
+
+	local Fwd = Instance.new("TextButton")
+	Fwd.Name = "Fwd"
+	Fwd.Parent = Frame
+	Fwd.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Fwd.BorderSizePixel = 0
+	Fwd.Position = UDim2.new(0.35,0,0.05,0)
+	Fwd.Size = UDim2.new(0,40,0,40)
+	Fwd.Font = Enum.Font.SourceSans
+	Fwd.Text = "∧"
+	Fwd.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Fwd.TextScaled = true
+	local aspectFwd = Instance.new("UIAspectRatioConstraint", Fwd)
+	aspectFwd.AspectRatio = 1
+	local uicornerFwd = Instance.new("UICorner", Fwd)
+	uicornerFwd.CornerRadius = UDim.new(0.15,0)
+
+	local Back = Instance.new("TextButton")
+	Back.Name = "Back"
+	Back.Parent = Frame
+	Back.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Back.BorderSizePixel = 0
+	Back.Position = UDim2.new(0.35,0,0.65,0)
+	Back.Size = UDim2.new(0,40,0,40)
+	Back.Font = Enum.Font.SourceSans
+	Back.Text = "∨"
+	Back.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Back.TextScaled = true
+	local aspectBack = Instance.new("UIAspectRatioConstraint", Back)
+	aspectBack.AspectRatio = 1
+	local uicornerBack = Instance.new("UICorner", Back)
+	uicornerBack.CornerRadius = UDim.new(0.15,0)
+
+	local Up = Instance.new("TextButton")
+	Up.Name = "Up"
+	Up.Parent = Frame
+	Up.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Up.BorderSizePixel = 0
+	Up.Position = UDim2.new(0.95,0,0.15,0)
+	Up.Size = UDim2.new(0,40,0,60)
+	Up.Font = Enum.Font.SourceSans
+	Up.Text = "↑"
+	Up.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Up.TextScaled = true
+	local aspectUp = Instance.new("UIAspectRatioConstraint", Up)
+	aspectUp.AspectRatio = 0.66
+	local uicornerUp = Instance.new("UICorner", Up)
+	uicornerUp.CornerRadius = UDim.new(0.15,0)
+
+	local Down = Instance.new("TextButton")
+	Down.Name = "Down"
+	Down.Parent = Frame
+	Down.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Down.BorderSizePixel = 0
+	Down.Position = UDim2.new(0.95,0,0.55,0)
+	Down.Size = UDim2.new(0,40,0,60)
+	Down.Font = Enum.Font.SourceSans
+	Down.Text = "↓"
+	Down.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Down.TextScaled = true
+	local aspectDown = Instance.new("UIAspectRatioConstraint", Down)
+	aspectDown.AspectRatio = 0.66
+	local uicornerDown = Instance.new("UICorner", Down)
+	uicornerDown.CornerRadius = UDim.new(0.15,0)
+	
+	local Break = Instance.new("TextButton")
+	Break.Name = "Break"
+	Break.Parent = Frame
+	Break.BackgroundColor3 = Color3.fromRGB(255, 115, 115)
+	Break.BorderSizePixel = 0
+	Break.Position = UDim2.new(0.75,0,0.05,0)
+	Break.Size = UDim2.new(0,40,0,50)
+	Break.Font = Enum.Font.SourceSans
+	Break.Text = "B"
+	Break.TextColor3 = Color3.fromRGB(0, 0, 0)
+	Break.TextScaled = true
+	local aspectB = Instance.new("UIAspectRatioConstraint", Break)
+	aspectB.AspectRatio = 0.66
+	local uicornerB = Instance.new("UICorner", Break)
+	uicornerB.CornerRadius = UDim.new(0.15,0)
+
+	Fwd.MouseButton1Down:Connect(function()
+		mobileCarInput = Vector3.new(mobileCarInput.X, mobileCarInput.Y, -1)
+	end)
+	Fwd.MouseButton1Up:Connect(function()
+		mobileCarInput = Vector3.new(mobileCarInput.X, mobileCarInput.Y, 0)
+	end)
+	Back.MouseButton1Down:Connect(function()
+		mobileCarInput = Vector3.new(mobileCarInput.X, mobileCarInput.Y, 1)
+	end)
+	Back.MouseButton1Up:Connect(function()
+		mobileCarInput = Vector3.new(mobileCarInput.X, mobileCarInput.Y, 0)
+	end)
+	Left.MouseButton1Down:Connect(function()
+		mobileCarInput = Vector3.new(-1, mobileCarInput.Y, mobileCarInput.Z)
+	end)
+	Left.MouseButton1Up:Connect(function()
+		mobileCarInput = Vector3.new(0, mobileCarInput.Y, mobileCarInput.Z)
+	end)
+	Right.MouseButton1Down:Connect(function()
+		mobileCarInput = Vector3.new(1, mobileCarInput.Y, mobileCarInput.Z)
+	end)
+	Right.MouseButton1Up:Connect(function()
+		mobileCarInput = Vector3.new(0, mobileCarInput.Y, mobileCarInput.Z)
+	end)
+	Up.MouseButton1Down:Connect(function()
+		mobileCarInput = Vector3.new(mobileCarInput.X, 1, mobileCarInput.Z)
+	end)
+	Up.MouseButton1Up:Connect(function()
+		mobileCarInput = Vector3.new(mobileCarInput.X, 0, mobileCarInput.Z)
+	end)
+	Down.MouseButton1Down:Connect(function()
+		mobileCarInput = Vector3.new(mobileCarInput.X, -1, mobileCarInput.Z)
+	end)
+	Down.MouseButton1Up:Connect(function()
+		mobileCarInput = Vector3.new(mobileCarInput.X, 0, mobileCarInput.Z)
+	end)
+	
+	Break.MouseButton1Down:Connect(function()
+		mobileCarBreak = true
+	end)
+	Break.MouseButton1Up:Connect(function()
+		mobileCarBreak = false
+	end)
+end
+
+function destroyCarUI()
+	if carUI then
+		carUI:Destroy()
+		carUI = nil
+		mobileCarInput = Vector3.new(0,0,0)
+		mobileCarBreak = false
+	end
+end
+
+
+function StartCarMode(maxSpeedInput)
 	carMaxSpeed = tonumber(maxSpeedInput) or 100
 	carActive = true
+	
+	if isMobile then
+		createCarUI()
+	end
 
 	local player = Players.LocalPlayer
 	local UserInputService = game:GetService("UserInputService")
@@ -2112,24 +2298,64 @@ local function StartCarMode(maxSpeedInput)
 			carAnimation.TimePosition = driveAnimTime
 		end
 		local horizontalInput = Vector3.new(0, 0, 0)
-		if carKeysPressed[Enum.KeyCode.W] then horizontalInput = horizontalInput + Vector3.new(0, 0, -1) end
-		if carKeysPressed[Enum.KeyCode.S] then horizontalInput = horizontalInput + Vector3.new(0, 0, 1) end
-		if carKeysPressed[Enum.KeyCode.A] then horizontalInput = horizontalInput + Vector3.new(-1, 0, 0) end
-		if carKeysPressed[Enum.KeyCode.D] then horizontalInput = horizontalInput + Vector3.new(1, 0, 0) end
-		local verticalInput = 0
-		if carKeysPressed[Enum.KeyCode.E] then verticalInput = verticalInput + 1 end
-		if carKeysPressed[Enum.KeyCode.Q] then verticalInput = verticalInput - 1 end
+		local verticalInput = 0 
+
+		if isMobile then
+			horizontalInput = mobileCarInput
+			if mobileCarBreak then
+				if carHorizontalVelocity.Magnitude > 0 then
+					local decelAmount = carBrakeDeceleration * deltaTime
+					local newMag = carHorizontalVelocity.Magnitude - decelAmount
+					if newMag < 0 then newMag = 0 end
+					carHorizontalVelocity = carHorizontalVelocity.Unit * newMag
+				end
+				if math.abs(carVerticalVelocity) > 0 then
+					local decelAmount = carBrakeDeceleration * deltaTime
+					if math.abs(carVerticalVelocity) - decelAmount < 0 then
+						carVerticalVelocity = 0
+					else
+						carVerticalVelocity = carVerticalVelocity - (decelAmount * math.sign(carVerticalVelocity))
+					end
+				end
+			end
+			verticalInput = mobileCarInput.Y
+		else
+			if carKeysPressed[Enum.KeyCode.W] then horizontalInput = horizontalInput + Vector3.new(0, 0, -1) end
+			if carKeysPressed[Enum.KeyCode.S] then horizontalInput = horizontalInput + Vector3.new(0, 0, 1) end
+			if carKeysPressed[Enum.KeyCode.A] then horizontalInput = horizontalInput + Vector3.new(-1, 0, 0) end
+			if carKeysPressed[Enum.KeyCode.D] then horizontalInput = horizontalInput + Vector3.new(1, 0, 0) end
+
+			if carKeysPressed[Enum.KeyCode.E] then verticalInput = verticalInput + 1 end
+			if carKeysPressed[Enum.KeyCode.Q] then verticalInput = verticalInput - 1 end
+
+			if carKeysPressed[Enum.KeyCode.B] then
+				if carHorizontalVelocity.Magnitude > 0 then
+					local decelAmount = carBrakeDeceleration * deltaTime
+					local newMag = carHorizontalVelocity.Magnitude - decelAmount
+					if newMag < 0 then newMag = 0 end
+					carHorizontalVelocity = carHorizontalVelocity.Unit * newMag
+				end
+				if math.abs(carVerticalVelocity) > 0 then
+					local decelAmount = carBrakeDeceleration * deltaTime
+					if math.abs(carVerticalVelocity) - decelAmount < 0 then
+						carVerticalVelocity = 0
+					else
+						carVerticalVelocity = carVerticalVelocity - (decelAmount * math.sign(carVerticalVelocity))
+					end
+				end
+			end
+		end
 		if horizontalInput.Magnitude > 0 then
 			horizontalInput = horizontalInput.Unit
 			local camCFrame = camera.CFrame
-			local camLook = camCFrame.LookVector
-			local camRight = camCFrame.RightVector
-			camLook = Vector3.new(camLook.X, 0, camLook.Z).Unit
-			camRight = Vector3.new(camRight.X, 0, camRight.Z).Unit
+			local camLook = Vector3.new(camCFrame.LookVector.X, 0, camCFrame.LookVector.Z).Unit
+			local camRight = Vector3.new(camCFrame.RightVector.X, 0, camCFrame.RightVector.Z).Unit
 			local forwardComponent = horizontalInput.Z
 			local rightComponent = horizontalInput.X
 			local worldHorizontal = (camLook * -forwardComponent) + (camRight * rightComponent)
-			if worldHorizontal.Magnitude > 0 then worldHorizontal = worldHorizontal.Unit end
+			if worldHorizontal.Magnitude > 0 then
+				worldHorizontal = worldHorizontal.Unit
+			end
 			carHorizontalVelocity = carHorizontalVelocity + (worldHorizontal * carAcceleration * deltaTime)
 			if carHorizontalVelocity.Magnitude > carMaxSpeed then
 				carHorizontalVelocity = carHorizontalVelocity.Unit * carMaxSpeed
@@ -2140,22 +2366,8 @@ local function StartCarMode(maxSpeedInput)
 		else
 			carVerticalVelocity = 0
 		end
-		if carKeysPressed[Enum.KeyCode.B] then
-			if carHorizontalVelocity.Magnitude > 0 then
-				local decelAmount = carBrakeDeceleration * deltaTime
-				local newMag = carHorizontalVelocity.Magnitude - decelAmount
-				if newMag < 0 then newMag = 0 end
-				carHorizontalVelocity = carHorizontalVelocity.Unit * newMag
-			end
-			if math.abs(carVerticalVelocity) > 0 then
-				local decelAmount = carBrakeDeceleration * deltaTime
-				if math.abs(carVerticalVelocity) - decelAmount < 0 then
-					carVerticalVelocity = 0
-				else
-					carVerticalVelocity = carVerticalVelocity - (decelAmount * math.sign(carVerticalVelocity))
-				end
-			end
-		end
+
+
 		carCurrentVelocity = carHorizontalVelocity + Vector3.new(0, (verticalInput ~= 0 and carVerticalVelocity or 0), 0)
 		bodyVel.Velocity = bodyVel.Velocity:Lerp(carCurrentVelocity, smoothFactor)
 		local flatVel = Vector3.new(carHorizontalVelocity.X, 0, carHorizontalVelocity.Z)
@@ -2912,6 +3124,7 @@ local function OrbitPlayer(TargetUsername, Speed, orbitRadius)
 	if Player:FindFirstChild("StopOrbit") then
 		Player.StopOrbit:Destroy()
 	end
+	task.wait()
 	if orbitActive then
 		StopOrbit()
 	end
@@ -3157,14 +3370,14 @@ function createFlightUI()
 	flightUI = Instance.new("ScreenGui")
 	flightUI.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-	Frame = Instance.new("Frame")
+	local Frame = Instance.new("Frame")
 	Frame.Parent = flightUI
 	Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	Frame.BorderSizePixel = 0
 	Frame.Position = UDim2.new(0,20,1,-220)
 	Frame.Size = UDim2.new(0,170,0,150)
 
-	Right = Instance.new("TextButton")
+	local Right = Instance.new("TextButton")
 	Right.Name = "Right"
 	Right.Parent = Frame
 	Right.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3175,12 +3388,12 @@ function createFlightUI()
 	Right.Text = ">"
 	Right.TextColor3 = Color3.fromRGB(0, 0, 0)
 	Right.TextScaled = true
-	aspectRight = Instance.new("UIAspectRatioConstraint", Right)
+	local aspectRight = Instance.new("UIAspectRatioConstraint", Right)
 	aspectRight.AspectRatio = 1
-	uicornerRight = Instance.new("UICorner", Right)
+	local uicornerRight = Instance.new("UICorner", Right)
 	uicornerRight.CornerRadius = UDim.new(0.15,0)
 
-	Left = Instance.new("TextButton")
+	local Left = Instance.new("TextButton")
 	Left.Name = "Left"
 	Left.Parent = Frame
 	Left.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3191,12 +3404,12 @@ function createFlightUI()
 	Left.Text = "<"
 	Left.TextColor3 = Color3.fromRGB(0, 0, 0)
 	Left.TextScaled = true
-	aspectLeft = Instance.new("UIAspectRatioConstraint", Left)
+	local aspectLeft = Instance.new("UIAspectRatioConstraint", Left)aspectLeft = Instance.new("UIAspectRatioConstraint", Left)
 	aspectLeft.AspectRatio = 1
-	uicornerLeft = Instance.new("UICorner", Left)
+	local uicornerLeft = Instance.new("UICorner", Left)
 	uicornerLeft.CornerRadius = UDim.new(0.15,0)
 
-	Fwd = Instance.new("TextButton")
+	local Fwd = Instance.new("TextButton")
 	Fwd.Name = "Fwd"
 	Fwd.Parent = Frame
 	Fwd.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3207,12 +3420,12 @@ function createFlightUI()
 	Fwd.Text = "∧"
 	Fwd.TextColor3 = Color3.fromRGB(0, 0, 0)
 	Fwd.TextScaled = true
-	aspectFwd = Instance.new("UIAspectRatioConstraint", Fwd)
+	local aspectFwd = Instance.new("UIAspectRatioConstraint", Fwd)
 	aspectFwd.AspectRatio = 1
-	uicornerFwd = Instance.new("UICorner", Fwd)
+	local uicornerFwd = Instance.new("UICorner", Fwd)
 	uicornerFwd.CornerRadius = UDim.new(0.15,0)
 
-	Back = Instance.new("TextButton")
+	local Back = Instance.new("TextButton")
 	Back.Name = "Back"
 	Back.Parent = Frame
 	Back.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3223,12 +3436,12 @@ function createFlightUI()
 	Back.Text = "∨"
 	Back.TextColor3 = Color3.fromRGB(0, 0, 0)
 	Back.TextScaled = true
-	aspectBack = Instance.new("UIAspectRatioConstraint", Back)
+	local aspectBack = Instance.new("UIAspectRatioConstraint", Back)
 	aspectBack.AspectRatio = 1
-	uicornerBack = Instance.new("UICorner", Back)
+	local uicornerBack = Instance.new("UICorner", Back)
 	uicornerBack.CornerRadius = UDim.new(0.15,0)
 
-	Up = Instance.new("TextButton")
+	local Up = Instance.new("TextButton")
 	Up.Name = "Up"
 	Up.Parent = Frame
 	Up.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3239,12 +3452,12 @@ function createFlightUI()
 	Up.Text = "↑"
 	Up.TextColor3 = Color3.fromRGB(0, 0, 0)
 	Up.TextScaled = true
-	aspectUp = Instance.new("UIAspectRatioConstraint", Up)
+	local aspectUp = Instance.new("UIAspectRatioConstraint", Up)
 	aspectUp.AspectRatio = 0.66
-	uicornerUp = Instance.new("UICorner", Up)
+	local uicornerUp = Instance.new("UICorner", Up)
 	uicornerUp.CornerRadius = UDim.new(0.15,0)
 
-	Down = Instance.new("TextButton")
+	local Down = Instance.new("TextButton")
 	Down.Name = "Down"
 	Down.Parent = Frame
 	Down.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3255,9 +3468,9 @@ function createFlightUI()
 	Down.Text = "↓"
 	Down.TextColor3 = Color3.fromRGB(0, 0, 0)
 	Down.TextScaled = true
-	aspectDown = Instance.new("UIAspectRatioConstraint", Down)
+	local aspectDown = Instance.new("UIAspectRatioConstraint", Down)
 	aspectDown.AspectRatio = 0.66
-	uicornerDown = Instance.new("UICorner", Down)
+	local uicornerDown = Instance.new("UICorner", Down)
 	uicornerDown.CornerRadius = UDim.new(0.15,0)
 
 	Fwd.MouseButton1Down:Connect(function()
@@ -3937,7 +4150,7 @@ local function Setup()
 					"An instance of Empty Tools is already running. Please close all instances before executing again." ,
 					nil, 
 					"Ok", 
-					"nil",
+					nil,
 					Enum.TextXAlignment.Center,
 					function()
 						coroutine.resume(coroutine.create(function()
@@ -4855,6 +5068,7 @@ local function Close()
 		SetGameShaders("None")
 		SetCameraTarget("None", nil)
 		SetPlayerAnimations("None")
+		ToggleFlight(false)
 		if Player.PlayerGui:FindFirstChild("LinkScreen") then
 			Player.PlayerGui.LinkScreen:Destroy()
 		end
@@ -4897,12 +5111,28 @@ function MinimizeClose()
 	Toast('Press " ' .. UserInputService:GetStringForKeyCode(userSettings.ToggleKey) .. ' " to re-open Empty Tools', 1.5)
 end
 
+local confirmClose = false
+
 OuterFrame.Close.MouseButton1Click:Connect(function()
 	if MinimizeOnClose == true and not UserInputService.TouchEnabled then
 		MinimizeClose()
 		return
 	end
-	Close()
+	if UserInputService.TouchEnabled then
+		if confirmClose then
+			Close()
+		else
+			confirmClose = true
+			OuterFrame.Close.Text = "?"
+			coroutine.resume(coroutine.create(function()
+				wait(1.5)
+				confirmClose = false
+				OuterFrame.Close.Text = "X"
+			end))
+		end
+	else
+		Close()
+	end
 end)
 
 OuterFrame.Close.MouseButton2Click:Connect(function()
