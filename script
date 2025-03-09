@@ -3153,7 +3153,7 @@ mobileFlightInput = Vector3.new(0,0,0)
 
 function createFlightUI()
 	flightUI = Instance.new("ScreenGui")
-	flightUI.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+	flightUI.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 	Frame = Instance.new("Frame")
 	Frame.Parent = flightUI
