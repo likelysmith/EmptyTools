@@ -4753,7 +4753,18 @@ end
 
 -- Mouse Handling
 
+local lastTapTime = 0
+local doubleTapThreshold = 0.3 
+
 Mouse.Button1Down:Connect(function()
+	if UserInputService.TouchEnabled then
+		local currentTime = tick()
+		if currentTime - lastTapTime > doubleTapThreshold then
+			lastTapTime = currentTime
+			return 
+		end
+		lastTapTime = 0  
+	end
 	if modeEnabled then
 		local target = Mouse.Target
 		print(target)
