@@ -3942,7 +3942,7 @@ local function Setup()
 		table.insert(AnimationPackEnums, i)
 	end
 	
-	reparentLocation = Instance.new("Folder", game.ReplicatedStorage)
+	reparentLocation = Instance.new("Folder", game:GetService("ReplicatedStorage"))
 	reparentLocation.Name = "REPARENT_INST_" .. Player.UserId
 
 	--Defaults
@@ -4968,7 +4968,7 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 
 	if modeEnabled and Input.KeyCode == Enum.KeyCode.Backspace then
 		if currentSelection then
-			local p = Instance.new("Part", game.ReplicatedFirst)
+			local p = Instance.new("Part", game:GetService("ReplicatedFirst"))
 			selectionBox.Parent = p
 			if reparent then
 				local OrigParent = Instance.new("ObjectValue", currentSelection)
