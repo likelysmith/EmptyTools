@@ -1,0 +1,220 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local localPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local inputGui = Instance.new("ScreenGui")
+inputGui.Name = "MeasureDurationUI"
+inputGui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+local inputFrame = Instance.new("Frame")
+inputFrame.Size = UDim2.new(0, 300, 0, 150)
+inputFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
+inputFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+inputFrame.Parent = inputGui
+
+local prompt = Instance.new("TextLabel")
+prompt.Size = UDim2.new(1, -20, 0, 50)
+prompt.Position = UDim2.new(0, 10, 0, 10)
+prompt.Text = "Enter measure duration (seconds):"
+prompt.BackgroundTransparency = 1
+prompt.TextColor3 = Color3.new(1, 1, 1)
+prompt.TextScaled = true
+prompt.Parent = inputFrame
+
+local durationBox = Instance.new("TextBox")
+durationBox.Size = UDim2.new(1, -20, 0, 50)
+durationBox.Position = UDim2.new(0, 10, 0, 70)
+durationBox.Text = "1"
+durationBox.TextScaled = true
+durationBox.Parent = inputFrame
+
+local confirmButton = Instance.new("TextButton")
+confirmButton.Size = UDim2.new(1, -20, 0, 30)
+confirmButton.Position = UDim2.new(0, 10, 0, 130)
+confirmButton.Text = "Confirm"
+confirmButton.TextScaled = true
+confirmButton.Parent = inputFrame
+
+local measureDuration = 1
+local confirmed = false
+confirmButton.MouseButton1Click:Connect(function()
+	local val = tonumber(durationBox.Text)
+	if val and val > 0 then
+		measureDuration = val
+	end
+	confirmed = true
+	inputGui:Destroy()
+end)
+
+repeat wait() until confirmed
+
+local logGui = Instance.new("ScreenGui")
+logGui.Name = "PerformanceLogUI"
+logGui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(0.8, 0, 0.1, 0)
+titleLabel.Position = UDim2.new(0.5, 0, 0.05, 0)
+titleLabel.AnchorPoint = Vector2.new(0.5, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Analyzing Avatar Performance..."
+titleLabel.TextColor3 = Color3.new(1,1,1)
+titleLabel.TextScaled = true
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Parent = logGui
+
+local resultsContainer = Instance.new("Frame")
+resultsContainer.Size = UDim2.new(0.8, 0, 0.6, 0)
+resultsContainer.Position = UDim2.new(0.5, 0, 0.2, 0)
+resultsContainer.AnchorPoint = Vector2.new(0.5, 0)
+resultsContainer.BackgroundTransparency = 1
+resultsContainer.Parent = logGui
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.FillDirection = Enum.FillDirection.Vertical
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = resultsContainer
+
+local subject = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+if not subject then
+	localPlayer.CharacterAdded:Wait()
+	wait(1)
+	subject = localPlayer.Character:WaitForChild("HumanoidRootPart")
+end
+
+camera.CameraType = Enum.CameraType.Scriptable
+local orbitRadius = 10
+local orbitSpeed = 0.5
+local angle = 0
+local cameraConnection = RunService.RenderStepped:Connect(function(delta)
+	if subject then
+		angle = angle + orbitSpeed * delta
+		local subjectPos = subject.Position
+		local camX = subjectPos.X + orbitRadius * math.cos(angle)
+		local camZ = subjectPos.Z + orbitRadius * math.sin(angle)
+		local camY = subjectPos.Y + 5
+		camera.CFrame = CFrame.new(Vector3.new(camX, camY, camZ), subjectPos)
+	end
+end)
+
+local function measureFPS(duration)
+	local frames = 0
+	local startTime = tick()
+	local connection = RunService.RenderStepped:Connect(function()
+		frames = frames + 1
+	end)
+	while tick() - startTime < duration do
+		wait()
+	end
+	connection:Disconnect()
+	return frames / duration
+end
+
+print("Measuring baseline FPS...")
+local baselineFPS = measureFPS(measureDuration)
+print("Baseline FPS: " .. string.format("%.1f", baselineFPS))
+
+local results = {}
+
+for _, player in ipairs(Players:GetPlayers()) do
+	if player ~= localPlayer and player.Character then
+		print("Testing performance for " .. player.Name .. "...")
+		local originalTrans = {}
+		for _, part in ipairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				originalTrans[part] = part.Transparency
+				part.Transparency = 1
+			end
+		end
+		wait(0.1)
+		local disabledFPS = measureFPS(measureDuration)
+		local diff = disabledFPS - baselineFPS
+		results[#results + 1] = {player = player, disabledFPS = disabledFPS, diff = diff}
+		print(player.Name .. " disabled FPS: " .. string.format("%.1f", disabledFPS) .. " (+" .. string.format("%.1f", diff) .. ")")
+		for part, orig in pairs(originalTrans) do
+			if part then
+				part.Transparency = orig
+			end
+		end
+		wait(0.1)
+	end
+end
+
+table.sort(results, function(a, b)
+	return a.diff > b.diff
+end)
+
+local maxResults = math.min(7, #results)
+local topResults = {}
+for i = 1, maxResults do
+	table.insert(topResults, results[i])
+end
+
+for _, child in ipairs(resultsContainer:GetChildren()) do
+	if not child:IsA("UIListLayout") then
+		child:Destroy()
+	end
+end
+
+local hiddenPlayers = {}
+
+local function hideCharacter(character)
+	for _, part in ipairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Transparency = 1
+		end
+	end
+end
+
+local function hidePlayer(player)
+	if not hiddenPlayers[player] then
+		hiddenPlayers[player] = true
+		if player.Character then
+			hideCharacter(player.Character)
+		end
+		player.CharacterAdded:Connect(function(char)
+			wait(0.1)
+			hideCharacter(char)
+		end)
+	end
+end
+
+for i, data in ipairs(topResults) do
+	local player = data.player
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 40)
+	row.BackgroundTransparency = 0.5
+	row.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+	row.Parent = resultsContainer
+	row.LayoutOrder = i
+	
+	local infoLabel = Instance.new("TextLabel")
+	infoLabel.Size = UDim2.new(0.7, 0, 1, 0)
+	infoLabel.Position = UDim2.new(0, 5, 0, 0)
+	infoLabel.BackgroundTransparency = 1
+	infoLabel.TextColor3 = Color3.new(1,1,1)
+	infoLabel.TextScaled = true
+	infoLabel.Text = string.format("%d. %s : +%.1f FPS improvement", i, player.Name, data.diff)
+	infoLabel.Parent = row
+	
+	local hideButton = Instance.new("TextButton")
+	hideButton.Size = UDim2.new(0.25, 0, 0.8, 0)
+	hideButton.Position = UDim2.new(0.75, -5, 0.1, 0)
+	hideButton.TextScaled = true
+	hideButton.Text = "Hide"
+	hideButton.Parent = row
+	
+	hideButton.MouseButton1Click:Connect(function()
+		hidePlayer(player)
+		hideButton.Text = "Hidden"
+		hideButton.Active = false
+	end)
+end
+
+wait(5)
+if cameraConnection then
+	cameraConnection:Disconnect()
+end
+camera.CameraType = Enum.CameraType.Custom
+logGui:Destroy()
