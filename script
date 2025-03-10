@@ -2390,6 +2390,7 @@ end
 
 local function StopCarMode()
 	carActive = false
+	destroyCarUI()
 	sittingSet = false
 	if carInputBeganConn then carInputBeganConn:Disconnect() end
 	if carInputEndedConn then carInputEndedConn:Disconnect() end
