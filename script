@@ -24,6 +24,7 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 local VersionString = "v1.3.4"
 local ChangeLog = "• Extended & Expanded Platform\n• Updated VC Unban with advanced capability\n• Added cross-game persistance\n• Added a Voice Chat Unban command" 
+local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
 -- Variables
 
@@ -135,17 +136,18 @@ ThirdPartyLoadstrings =
 		function()
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/yofriendfromschool1/Sky-Hub/main/SkyHub.txt"))()
 		end,
-
 	}
 
 EmptyToolsLoadstrings =
 	{
 		["Default"] = 
 		[[
+		getgenv().EmptyTools = false
 		game:GetService("Players").LocalPlayer:SetAttribute("NoChangeLogs", true)
 		loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
 		]],
 		["Beta"] = [[
+			getgenv().EmptyTools = false
 			game:GetService("Players").LocalPlayer:SetAttribute("NoChangeLogs", true)
 			game:GetService("Players").LocalPlayer:SetAttribute("EmptyToolz", true)
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
@@ -159,6 +161,14 @@ EmptyToolsLoadstrings =
 		["VCBypass"] =
 		function()
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/vc"))()
+		end,
+	}
+
+BetaTPLoadstrings = 
+	{
+		["Chatsploit"] =
+		function()
+			loadstring(game:HttpGet("https://pastebin.com/raw/tZJD6QyA"))()
 		end,
 	}
 
@@ -2420,7 +2430,11 @@ local function TeleportToPlayer(PlayerTarget)
 end
 
 local function ShowChangeLogs(DSA, ClickCallback)
-	if UserInputService.TouchEnabled then return end
+	if UserInputService.TouchEnabled then 
+		setclipboard("https://empty.tools")
+		Toast("Website copied to clipboard!", 2)
+		return 
+	end
 	local SubText = "Don't show again"
 	if not DSA then
 		SubText = nil
@@ -2443,6 +2457,31 @@ local function ShowChangeLogs(DSA, ClickCallback)
 	)
 end
 
+
+local function ShowInfo(DSA, ClickCallback)
+	if UserInputService.TouchEnabled then 
+		if UserInputService.TouchEnabled then 
+			setclipboard("https://empty.tools")
+			Toast("Website copied to clipboard!", 2)
+			return 
+		end
+		return 
+	end
+	local SubText = "Copy To Clipboard"
+	return CreateAlert(
+		"Empty Tools " .. VersionString .. " | Info", 
+		Info,
+		"http://www.roblox.com/asset/?id=18941848597", 
+		"Ok", 
+		SubText,
+		Enum.TextXAlignment.Left,
+		ClickCallback,
+		function()
+			setclipboard("https://empty.tools")
+			Toast("Website copied to clipboard!", 2)
+		end
+	)
+end
 local function StopPlayerAnimation()
 	local animator = GetCharacter(Player).Humanoid:FindFirstChildOfClass("Animator")
 	if animator then
@@ -3715,6 +3754,9 @@ function CreatePlatform(Type, Adjustment)
 	local extra = 0.1
 	local yPos = hrp.Position.Y - offset - (3/2) - extra
 	if Adjustment ~= nil then
+		if not tonumber(Adjustment) then
+			Adjustment = 0
+		end
 		yPos += tonumber(Adjustment)
 	end
 	local folder = Instance.new("Folder", workspace)
@@ -4179,7 +4221,7 @@ local DefaultAnimationsInitialized = false
 local currentDraggableObject = OuterFrame
 
 local function Setup()
-	if Player:GetAttribute("EmptyToolsInstance") == true then
+	if getgenv().EmptyTools == true then
 		if COREGUI.RobloxGui:FindFirstChild("EmptyTools") then
 			if COREGUI.RobloxGui.EmptyTools:GetAttribute("Minimized") == true then
 				COREGUI.RobloxGui.EmptyTools.OuterFrame.Visible = true
@@ -4209,7 +4251,7 @@ local function Setup()
 		end
 		return
 	end
-	Player:SetAttribute("EmptyToolsInstance", true)
+	getgenv().EmptyTools = true
 	
 	if Player:GetAttribute("EmptyToolz") then
 		PlusEnabled = true
@@ -4418,7 +4460,11 @@ local function SetupCommands()
 	end
 	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", PlatformInput, {"Translucent", "Transparent", "Opaque"}, "World",
 		function(Type, Adjustment)
-			CreatePlatform(Type, Adjustment)
+			if PlusEnabled then
+				CreatePlatform(Adjustment, Type)
+			else
+				CreatePlatform(Type, Adjustment)
+			end
 		end,
 		function()
 			local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
@@ -4817,7 +4863,6 @@ end
 
 local function SetupThirdPartyCommands(Enabled)
 	if Enabled then		
-
 		for i,v in pairs(ThirdPartyLoadstrings) do
 			local Command = CreateCommand(i, "Execute the third-party " .. i .. " script", "THIRDPARTY", nil, "Game",
 				function()
@@ -4826,6 +4871,17 @@ local function SetupThirdPartyCommands(Enabled)
 				nil
 			)
 			table.insert(ThirdPartyCommands, Command)
+		end
+		if PlusEnabled then
+			for i,v in pairs(BetaTPLoadstrings) do
+				local Command = CreateCommand(i, "Execute the third-party " .. i .. " script", "THIRDPARTY", nil, "Game",
+					function()
+						v()
+					end,
+					nil
+				)
+				table.insert(ThirdPartyCommands, Command)
+			end
 		end
 	else
 		for i,v in pairs(ThirdPartyCommands) do
@@ -4972,9 +5028,6 @@ local function SetupSettings()
 		end
 	)
 	
-	-- Settings Config
-	
-	SetupThirdPartyCommands(userSettings.ThirdPartiesEnabled)
 end
 
 Setup()
@@ -4985,6 +5038,8 @@ SetupSettings()
 if PlusEnabled then
 	SetupPlusCommands()
 end
+
+SetupThirdPartyCommands(userSettings.ThirdPartiesEnabled)
 
 
 -- Mouse Handling
@@ -5049,18 +5104,7 @@ OuterFrame.Toggle.MouseButton1Click:Connect(function()
 end)
 
 OuterFrame.Info.MouseButton1Click:Connect(function()
-	if LogsOpen then 
-		if Log then
-			Log:Destroy()
-			LogsOpen = false
-		end
-		return 
-	end
-	LogsOpen = true
-	Log = ShowChangeLogs(false)
-	repeat wait() until Log.Parent ~= Player.PlayerGui
-	LogsOpen = false
-	Log = nil
+	ShowInfo()
 end)
 
 OuterFrame.Info.MouseButton2Click:Connect(function()
@@ -5068,7 +5112,7 @@ OuterFrame.Info.MouseButton2Click:Connect(function()
 end)
 
 local function Close()
-	Player:SetAttribute("EmptyToolsInstance", false)
+	getgenv().EmptyTools = false
 	coroutine.resume(coroutine.create(function()
 		saveSettings(userSettings)
 		if LogsOpen then 
@@ -5236,7 +5280,7 @@ local TeleportCheck = false
 Players.LocalPlayer.OnTeleport:Connect(function(State)
 	if (not TeleportCheck) and queueTeleport and Persist then
 		TeleportCheck = true
-		Player:SetAttribute("EmptyToolsInstance", false)
+		getgenv().EmptyTools = false
 		if PlusEnabled then
 			queueTeleport(EmptyToolsLoadstrings.Beta)
 		else
