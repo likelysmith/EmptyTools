@@ -22,8 +22,8 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.3"
-local ChangeLog = "• Updated VC Unban with advanced capability\n• Added cross-game persistance\n• Added a Voice Chat Unban command\n• Added 'Gravity' and 'FOV' to stats" 
+local VersionString = "v1.3.4"
+local ChangeLog = "• Extended & Expanded Platform\n• Updated VC Unban with advanced capability\n• Added cross-game persistance\n• Added a Voice Chat Unban command\n" 
 
 -- Variables
 
@@ -3703,7 +3703,50 @@ local function CreateStaircaseUpwards(Stairs)
 	end
 end
 
-local ExplosionInProcess = false
+function CreatePlatform(Type, Adjustment)
+	local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
+	if PltInstance then
+		PltInstance:Destroy()
+	end
+	local character = Player.Character
+	local hrp = character:WaitForChild("HumanoidRootPart")
+	local center, size = character:GetBoundingBox()
+	local offset = hrp.Position.Y - (center.Y - size.Y/2)
+	local extra = 0.1
+	local yPos = hrp.Position.Y - offset - (3/2) - extra
+	if Adjustment ~= nil then
+		yPos += tonumber(Adjustment)
+	end
+	local folder = Instance.new("Folder", workspace)
+	folder.Name = "PlatformFolder_" .. Player.UserId
+	for dx = -1, 1 do
+		for dz = -1, 1 do
+			local p = Instance.new("Part")
+			p.Size = Vector3.new(2048, 3, 2048)
+			p.Anchored = true
+			p.CanCollide = true
+			if Type == "Translucent" then
+				p.Transparency = 0
+				p.Material = Enum.Material.ForceField
+				p.Color = Color3.fromRGB(152, 67, 255)
+			elseif Type == "Transparent" then
+				p.Transparency = 1
+				p.Material = Enum.Material.ForceField
+				p.Color = Color3.fromRGB(152, 67, 255)
+			elseif Type == "Opaque" then
+				p.Transparency = 0
+				p.Material = Enum.Material.Concrete
+				p.Color = Color3.fromRGB(100, 100, 100)
+			end
+			p.CastShadow = false
+			p.Position = Vector3.new(hrp.Position.X + dx * 2048, yPos, hrp.Position.Z + dz * 2048)
+			p.Parent = folder
+		end
+	end
+
+end
+
+ExplosionInProcess = false
 
 local function ExplodePlayer(Power)
 	if not tonumber(Power) then
@@ -4373,30 +4416,9 @@ local function SetupCommands()
 	if PlusEnabled then
 		PlatformInput = "Adjust.."
 	end
-	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", PlatformInput, nil, "World",
-		function(Adjustment)
-			local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
-			if PltInstance then
-				PltInstance:Destroy()
-			end
-			local Platform = Instance.new("Part")
-			Platform.Size = Vector3.new(3050,3,3050)
-			Platform.Anchored = true
-			Platform.CanCollide = true
-			Platform.Transparency = 0
-			Platform.Material = Enum.Material.ForceField
-			Platform.Color = Color3.fromRGB(152, 67, 255)
-			Platform.CastShadow = false
-			
-			if Adjustment == nil or not tonumber(Adjustment) then
-				Adjustment = 0
-			end
-
-			local Root = GetRoot(Player)
-			Platform.Position = Root.Position - Vector3.new(0,4.86 - Adjustment,0)
-			PltInstance = Instance.new("Folder", workspace)
-			PltInstance.Name = "PlatformFolder_" .. Player.UserId
-			Platform.Parent = PltInstance
+	CreateCommand("Platform", "Create a platform beneath your character to walk around on.", PlatformInput, {"Translucent", "Transparent", "Opaque"}, "World",
+		function(Type, Adjustment)
+			CreatePlatform(Type, Adjustment)
 		end,
 		function()
 			local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
