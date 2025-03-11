@@ -23,7 +23,7 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 -- Changelog
 
 local VersionString = "v1.3.4"
-local ChangeLog = "• Extended & Expanded Platform\n• Updated VC Unban with advanced capability\n• Added cross-game persistance\n• Added a Voice Chat Unban command\n" 
+local ChangeLog = "• Extended & Expanded Platform\n• Updated VC Unban with advanced capability\n• Added cross-game persistance\n• Added a Voice Chat Unban command" 
 
 -- Variables
 
