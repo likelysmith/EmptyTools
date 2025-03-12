@@ -2238,7 +2238,7 @@ end
 function StartCarMode(maxSpeedInput)
 	carMaxSpeed = tonumber(maxSpeedInput) or 100
 	carActive = true
-	
+
 	if isMobile then
 		createCarUI()
 	end
@@ -2257,14 +2257,18 @@ function StartCarMode(maxSpeedInput)
 	carVerticalVelocity = 0
 	carKeysPressed = {}
 	carLastHeading = nil
+
 	bodyVel = Instance.new("BodyVelocity")
 	bodyVel.MaxForce = Vector3.new(1e5, 1e5, 1e5)
 	bodyVel.Parent = hrp
-	bodyVel.Velocity = Vector3.new(0,0,0)
+	bodyVel.Velocity = Vector3.new(0, 0, 0)
+
 	bodyGyro = Instance.new("BodyGyro")
 	bodyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
 	bodyGyro.Parent = hrp
 	bodyGyro.CFrame = hrp.CFrame
+
+	-- Set up key connections.
 	carInputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 		if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -2277,12 +2281,16 @@ function StartCarMode(maxSpeedInput)
 			carKeysPressed[input.KeyCode] = false
 		end
 	end)
+
+
+	local carAnimCycleActive = false
+
 	carHeartbeatConn = RunService.Heartbeat:Connect(function(deltaTime)
 		if not carActive then return end
 		if not sittingSet then
-			--humanoid.Sit = true
 			sittingSet = true
 		end
+
 		if not carAnimation then
 			local animator = humanoid:FindFirstChildOfClass("Animator")
 			if not animator then
@@ -2294,22 +2302,26 @@ function StartCarMode(maxSpeedInput)
 			carAnimation = animator:LoadAnimation(anim)
 			carAnimation:Play()
 			carAnimation:AdjustSpeed(0)
-			driveAnimDirection = 1
-			driveAnimTime = 3
-			carAnimation.TimePosition = driveAnimTime
-		else
-			local currentSpeed = carCurrentVelocity.Magnitude
-			animSpeed = math.clamp((currentSpeed / carMaxSpeed) * (maxAnimSpeed - minAnimSpeed) + minAnimSpeed, minAnimSpeed, maxAnimSpeed)
-			driveAnimTime = driveAnimTime + driveAnimDirection * deltaTime * animSpeed
-			if driveAnimTime >= 6 then
-				driveAnimTime = 6
-				driveAnimDirection = -1
-			elseif driveAnimTime <= 3 then
-				driveAnimTime = 3
-				driveAnimDirection = 1
+			carAnimation.TimePosition = 3
+			if not carAnimCycleActive then
+				carAnimCycleActive = true
+				spawn(function()
+					local startTime = 3
+					local endTime = 6
+					local playbackSpeed = 0.4
+					local cycleDuration = (endTime - startTime) / playbackSpeed
+					while carActive and carAnimation do
+						carAnimation:AdjustSpeed(playbackSpeed)
+						wait(cycleDuration)
+						carAnimation:AdjustSpeed(-playbackSpeed)
+						wait(cycleDuration)
+						carAnimation.TimePosition = startTime
+					end
+					carAnimCycleActive = false
+				end)
 			end
-			carAnimation.TimePosition = driveAnimTime
 		end
+
 		local horizontalInput = Vector3.new(0, 0, 0)
 		local verticalInput = 0 
 
@@ -2358,6 +2370,7 @@ function StartCarMode(maxSpeedInput)
 				end
 			end
 		end
+
 		if horizontalInput.Magnitude > 0 then
 			horizontalInput = horizontalInput.Unit
 			local camCFrame = camera.CFrame
@@ -2380,17 +2393,21 @@ function StartCarMode(maxSpeedInput)
 			carVerticalVelocity = 0
 		end
 
-
 		carCurrentVelocity = carHorizontalVelocity + Vector3.new(0, (verticalInput ~= 0 and carVerticalVelocity or 0), 0)
 		bodyVel.Velocity = bodyVel.Velocity:Lerp(carCurrentVelocity, smoothFactor)
+
 		local flatVel = Vector3.new(carHorizontalVelocity.X, 0, carHorizontalVelocity.Z)
-		if flatVel.Magnitude > 0.1 then carLastHeading = flatVel.Unit end
+		if flatVel.Magnitude > 0.1 then 
+			carLastHeading = flatVel.Unit 
+		end
+
 		local currentPos = hrp.Position
 		if verticalInput == 0 then
 			currentPos = Vector3.new(currentPos.X, carLockedY, currentPos.Z)
 		else
 			carLockedY = hrp.Position.Y
 		end
+
 		local desiredCFrame
 		if carLastHeading then
 			desiredCFrame = CFrame.new(hrp.Position, hrp.Position + carLastHeading)
