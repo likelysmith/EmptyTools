@@ -1882,6 +1882,9 @@ function CreateMarker(TargetPlayer, Type)
 	Stroke.Color = Color3.fromRGB(255,255,255)
 	Stroke.Thickness = 0
 	Stroke.Parent = Frame
+	if Player:IsFriendsWith(TargetPlayer.UserId) then
+		Frame.BackgroundColor3 = Color3.fromRGB(71, 113, 177)
+	end
 
 	local defaultOffset = Marker.StudsOffset
 	local hoverOffset = defaultOffset + Vector3.new(0, 5, 0)
@@ -3741,7 +3744,6 @@ local function CreateStaircaseUpwards(Stairs)
 		task.wait(0.01)
 	end
 end
-
 function CreatePlatform(Type, Adjustment)
 	local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
 	if PltInstance then
@@ -3761,6 +3763,7 @@ function CreatePlatform(Type, Adjustment)
 	end
 	local folder = Instance.new("Folder", workspace)
 	folder.Name = "PlatformFolder_" .. Player.UserId
+	local parts = {}
 	for dx = -1, 1 do
 		for dz = -1, 1 do
 			local p = Instance.new("Part")
@@ -3783,10 +3786,26 @@ function CreatePlatform(Type, Adjustment)
 			p.CastShadow = false
 			p.Position = Vector3.new(hrp.Position.X + dx * 2048, yPos, hrp.Position.Z + dz * 2048)
 			p.Parent = folder
+			table.insert(parts, p)
 		end
 	end
-
+	local unioned
+	local success, err = pcall(function()
+		unioned = workspace:UnionAsync(parts)
+	end)
+	if success and unioned then
+		unioned.Name = "PlatformUnion_" .. Player.UserId
+		unioned.Anchored = true
+		unioned.CanCollide = true
+		unioned.Parent = folder
+		for _, part in ipairs(parts) do
+			part:Destroy()
+		end
+	else
+		warn("Union operation failed: " .. tostring(err))
+	end
 end
+
 
 ExplosionInProcess = false
 
