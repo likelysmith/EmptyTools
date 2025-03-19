@@ -2760,6 +2760,16 @@ local AnimationPacks = {
 
 
 
+local function setAnimation(animParent, groupName, animObjName, assetId)
+	local group = animParent:FindFirstChild(groupName)
+	if group then
+		local animObj = group:FindFirstChild(animObjName)
+		if animObj then
+			animObj.AnimationId = "http://www.roblox.com/asset/?id=" .. tostring(assetId)
+		end
+	end
+end
+
 local function SetPlayerAnimations(AnimationPack)
 	local Character = GetCharacter(Player)
 	local AnimationIDs = AnimationPacks[AnimationPack]
@@ -2768,29 +2778,31 @@ local function SetPlayerAnimations(AnimationPack)
 	if not Animate then return end
 	Animate.Disabled = true
 	StopPlayerAnimation()
+
 	if AnimationPack == "None" then
-		Animate.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Idle1
-		Animate.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=" ..DefaultAnimations.Idle2
-		Animate.walk.WalkAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Walk
-		Animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Run
-		Animate.jump.JumpAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Jump
-		Animate.climb.ClimbAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Climb
-		Animate.fall.FallAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Fall
-		Animate.swim.Swim.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.Swim
-		Animate.swimidle.SwimIdle.AnimationId = "http://www.roblox.com/asset/?id=" .. DefaultAnimations.SwimIdle
+		setAnimation(Animate, "idle", "Animation1", DefaultAnimations.Idle1)
+		setAnimation(Animate, "idle", "Animation2", DefaultAnimations.Idle2)
+		setAnimation(Animate, "walk", "WalkAnim", DefaultAnimations.Walk)
+		setAnimation(Animate, "run", "RunAnim", DefaultAnimations.Run)
+		setAnimation(Animate, "jump", "JumpAnim", DefaultAnimations.Jump)
+		setAnimation(Animate, "climb", "ClimbAnim", DefaultAnimations.Climb)
+		setAnimation(Animate, "fall", "FallAnim", DefaultAnimations.Fall)
+		setAnimation(Animate, "swim", "Swim", DefaultAnimations.Swim)
+		setAnimation(Animate, "swimidle", "SwimIdle", DefaultAnimations.SwimIdle)
 	elseif AnimationIDs then
-		Animate.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Idle[1]
-		Animate.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Idle[2]
-		Animate.walk.WalkAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Walk
-		Animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Run
-		Animate.jump.JumpAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Jump
-		Animate.climb.ClimbAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Climb
-		Animate.fall.FallAnim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Fall
-		Animate.swim.Swim.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.Swim
-		Animate.swimidle.SwimIdle.AnimationId = "http://www.roblox.com/asset/?id=" .. AnimationIDs.SwimIdle
+		setAnimation(Animate, "idle", "Animation1", AnimationIDs.Idle[1])
+		setAnimation(Animate, "idle", "Animation2", AnimationIDs.Idle[2])
+		setAnimation(Animate, "walk", "WalkAnim", AnimationIDs.Walk)
+		setAnimation(Animate, "run", "RunAnim", AnimationIDs.Run)
+		setAnimation(Animate, "jump", "JumpAnim", AnimationIDs.Jump)
+		setAnimation(Animate, "climb", "ClimbAnim", AnimationIDs.Climb)
+		setAnimation(Animate, "fall", "FallAnim", AnimationIDs.Fall)
+		setAnimation(Animate, "swim", "Swim", AnimationIDs.Swim)
+		setAnimation(Animate, "swimidle", "SwimIdle", AnimationIDs.SwimIdle)
 	end
 	Animate.Disabled = false
 end
+
 
 -- Link Control
 
