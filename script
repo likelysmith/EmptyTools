@@ -5231,6 +5231,7 @@ local confirmClose = false
 OuterFrame.Close.MouseButton1Click:Connect(function()
 	if MinimizeOnClose == true and not UserInputService.TouchEnabled then
 		MinimizeClose()
+	
 		return
 	end
 	if UserInputService.TouchEnabled then
@@ -5334,7 +5335,6 @@ Players.LocalPlayer.OnTeleport:Connect(function(State)
 		else
 			queueTeleport(EmptyToolsLoadstrings.Default)
 		end
-		Close()
 	end
 end)
 
