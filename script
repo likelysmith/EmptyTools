@@ -3818,21 +3818,21 @@ function CreatePlatform(Type, Adjustment)
 			table.insert(parts, p)
 		end
 	end
-	local unioned
-	local success, err = pcall(function()
-		unioned = workspace:UnionAsync(parts)
-	end)
-	if success and unioned then
-		unioned.Name = "PlatformUnion_" .. Player.UserId
-		unioned.Anchored = true
-		unioned.CanCollide = true
-		unioned.Parent = folder
-		for _, part in ipairs(parts) do
-			part:Destroy()
-		end
-	else
-		warn("Union operation failed: " .. tostring(err))
-	end
+	--local unioned
+	--local success, err = pcall(function()
+	--	unioned = workspace:UnionAsync(parts)
+	--end)
+	--if success and unioned then
+	--	unioned.Name = "PlatformUnion_" .. Player.UserId
+	--	unioned.Anchored = true
+	--	unioned.CanCollide = true
+	--	unioned.Parent = folder
+	--	for _, part in ipairs(parts) do
+	--		part:Destroy()
+	--	end
+	--else
+	--	warn("Union operation failed: " .. tostring(err))
+	--end
 end
 
 
