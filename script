@@ -142,11 +142,18 @@ EmptyToolsLoadstrings =
 	{
 		["Default"] = 
 		[[
+		if not game:IsLoaded() then
+				game.Loaded:Wait()
+			end
 		getgenv().EmptyTools = false
 		game:GetService("Players").LocalPlayer:SetAttribute("NoChangeLogs", true)
 		loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
 		]],
 		["Beta"] = [[
+			if not game:IsLoaded() then
+				game.Loaded:Wait()
+			end
+
 			getgenv().EmptyTools = false
 			game:GetService("Players").LocalPlayer:SetAttribute("NoChangeLogs", true)
 			game:GetService("Players").LocalPlayer:SetAttribute("EmptyToolz", true)
