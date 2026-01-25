@@ -206,6 +206,11 @@ PhaseObjects = {}
 
 TeleportIndicator = nil
 TeleportEnabled = false
+PointTeleportMode = "Interface"
+PointTeleportToolEnabled = false
+PointTeleportTool = nil
+PointTeleportToolConnections = {}
+PointTeleportToolCharacterConn = nil
 ReturnOnFall = false
 
 ForceTimeEnabled = false
@@ -221,6 +226,136 @@ local function StopForceTime()
 		end)
 	end
 	ForceTimeConnections = {}
+end
+
+local function StopPhaseMode()
+	PhaseEnabled = false
+	for _, PhaseObj in pairs(PhaseObjects) do
+		if PhaseObj:FindFirstChild("PhaseHighlight") then
+			PhaseObj.PhaseHighlight:Destroy()
+			PhaseObj.CanCollide = true
+		end
+	end
+end
+
+local function StopPointTeleportInterface()
+	TeleportEnabled = false
+	if TeleportIndicator then
+		pcall(function()
+			TeleportIndicator:Destroy()
+		end)
+		TeleportIndicator = nil
+	end
+	pcall(function()
+		Mouse.TargetFilter = nil
+	end)
+end
+
+local function IsPointTeleportTool(obj)
+	return obj
+		and obj:IsA("Tool")
+		and obj:GetAttribute("ET_PointTeleportTool") == true
+end
+
+local function RemovePointTeleportToolInstances()
+	local containers = {}
+	local backpack = Player:FindFirstChild("Backpack")
+	local character = Player.Character
+	local starterGear = Player:FindFirstChild("StarterGear")
+	if backpack then table.insert(containers, backpack) end
+	if character then table.insert(containers, character) end
+	if starterGear then table.insert(containers, starterGear) end
+
+	for _, container in ipairs(containers) do
+		for _, child in ipairs(container:GetChildren()) do
+			if IsPointTeleportTool(child) then
+				pcall(function()
+					child:Destroy()
+				end)
+			end
+		end
+	end
+end
+
+local function DisconnectPointTeleportToolConnections()
+	for _, conn in ipairs(PointTeleportToolConnections) do
+		pcall(function()
+			conn:Disconnect()
+		end)
+	end
+	PointTeleportToolConnections = {}
+end
+
+local function EnsurePointTeleportTool()
+	if not PointTeleportToolEnabled then return end
+
+	if PointTeleportTool and PointTeleportTool.Parent then
+		return
+	end
+
+	RemovePointTeleportToolInstances()
+	DisconnectPointTeleportToolConnections()
+
+	local Tool = Instance.new("Tool")
+	Tool.Name = "Point Teleport"
+	Tool.RequiresHandle = false
+	Tool.CanBeDropped = false
+	Tool:SetAttribute("ET_PointTeleportTool", true)
+
+	local Backpack = Player:WaitForChild("Backpack")
+	Tool.Parent = Backpack
+	PointTeleportTool = Tool
+
+	table.insert(PointTeleportToolConnections, Tool.Activated:Connect(function()
+		local Location = Mouse and Mouse.Hit and Mouse.Hit.Position
+		if not Location then return end
+		local Root = GetRoot(Player)
+		if Root then
+			Root.Velocity = Vector3.zero
+		end
+		local Character = GetCharacter(Player)
+		if Character then
+			Character:MoveTo(Location)
+		end
+	end))
+
+	table.insert(PointTeleportToolConnections, Tool.AncestryChanged:Connect(function()
+		if not PointTeleportToolEnabled then return end
+		task.defer(function()
+			if not PointTeleportToolEnabled then return end
+			if not Tool or not Tool.Parent then
+				task.wait(0.15)
+				EnsurePointTeleportTool()
+			end
+		end)
+	end))
+end
+
+local function StartPointTeleportTool()
+	if PointTeleportToolEnabled then
+		EnsurePointTeleportTool()
+		return
+	end
+	PointTeleportToolEnabled = true
+	EnsurePointTeleportTool()
+	if not PointTeleportToolCharacterConn then
+		PointTeleportToolCharacterConn = Player.CharacterAdded:Connect(function()
+			task.defer(EnsurePointTeleportTool)
+		end)
+	end
+end
+
+local function StopPointTeleportTool()
+	PointTeleportToolEnabled = false
+	if PointTeleportToolCharacterConn then
+		pcall(function()
+			PointTeleportToolCharacterConn:Disconnect()
+		end)
+		PointTeleportToolCharacterConn = nil
+	end
+	DisconnectPointTeleportToolConnections()
+	RemovePointTeleportToolInstances()
+	PointTeleportTool = nil
 end
 
 local function EnforceForceTime()
@@ -4877,24 +5012,33 @@ local function SetupCommands()
 			ToggleFlight(false, FlySpeed)
 		end
 	)
-	CreateCommand("Point Teleport", "When enabled, teleports your character to any point clicked on screen.", nil, nil, "Character",
-		function()
-			if modeEnabled or TeleportEnabled then return end
-			TeleportEnabled = true
-			PhaseEnabled = false
-			for _,PhaseObj in pairs(PhaseObjects) do
-				if PhaseObj:FindFirstChild("PhaseHighlight") then
-					PhaseObj.PhaseHighlight:Destroy()
-					PhaseObj.CanCollide = true
+	CreateCommand("Point Teleport", "Teleport to where you click. Interface: click anywhere. Tool: gives a tool that teleports on activation.", nil, {"Interface", "Tool"}, "Character",
+		function(Mode)
+			if modeEnabled then return end
+			Mode = Mode or "Interface"
+			PointTeleportMode = Mode
+
+			if Mode == "Interface" then
+				StopPointTeleportTool()
+				if TeleportEnabled then return end
+				TeleportEnabled = true
+				StopPhaseMode()
+				if PointTeleportIndicatorEnabled then
+					TeleportIndicator = CreateTeleportIndicator()
 				end
+				Mouse.TargetFilter = TeleportIndicator
+				return
 			end
-			if PointTeleportIndicatorEnabled then
-				TeleportIndicator = CreateTeleportIndicator()
+
+			if Mode == "Tool" then
+				StopPointTeleportInterface()
+				StopPhaseMode()
+				StartPointTeleportTool()
 			end
-			Mouse.TargetFilter = TeleportIndicator
 		end,
 		function()
-			TeleportEnabled = false
+			StopPointTeleportInterface()
+			StopPointTeleportTool()
 		end
 	)
 	CreateCommand("Reset", "Kills your character in order to reset it. Useful for games with reset disabled.", nil, nil, "Character",
@@ -5603,10 +5747,8 @@ local function Close()
 			Player.PlayerGui.LinkScreen:Destroy()
 		end
 		StopCFrameBoosting()
-		TeleportEnabled = false
-		if TeleportIndicator then
-			TeleportIndicator:Destroy()
-		end
+		StopPointTeleportInterface()
+		StopPointTeleportTool()
 		for i,v in pairs(Players:GetPlayers()) do
 			coroutine.resume(coroutine.create(function()
 				v:SetAttribute("Blocked", false)
