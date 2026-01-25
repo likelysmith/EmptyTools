@@ -177,6 +177,29 @@ local function RunRegisteredCommand(CommandName, ...)
 	if not entry or type(entry.Run) ~= "function" then
 		return false
 	end
+
+	local argc = select("#", ...)
+	if argc > 0 then
+		local a1 = select(1, ...)
+		local a2 = select(2, ...)
+		if entry.HasInput and entry.EnumTable then
+			if type(entry.SetInput) == "function" then
+				entry.SetInput(a1)
+			end
+			if type(entry.SetEnum) == "function" then
+				entry.SetEnum(a2)
+			end
+		elseif entry.HasInput then
+			if type(entry.SetInput) == "function" then
+				entry.SetInput(a1)
+			end
+		elseif entry.EnumTable then
+			if type(entry.SetEnum) == "function" then
+				entry.SetEnum(a1)
+			end
+		end
+	end
+
 	entry.Run(...)
 	return true
 end
@@ -211,6 +234,8 @@ PointTeleportToolEnabled = false
 PointTeleportTool = nil
 PointTeleportToolConnections = {}
 PointTeleportToolCharacterConn = nil
+PointTeleportToolGiveLoopActive = false
+PointTeleportToolEquippedMouse = nil
 AnchorEnabled = false
 AnchorOriginalAnchored = {}
 AnchorCharacterConn = nil
@@ -261,6 +286,27 @@ local function IsPointTeleportTool(obj)
 		and obj:GetAttribute("ET_PointTeleportTool") == true
 end
 
+local function FindPointTeleportToolInContainer(Container)
+	if not Container then return nil end
+	for _, child in ipairs(Container:GetChildren()) do
+		if IsPointTeleportTool(child) then
+			return child
+		end
+	end
+	return nil
+end
+
+local function RemoveExtraPointTeleportTools(Container, KeepTool)
+	if not Container then return end
+	for _, child in ipairs(Container:GetChildren()) do
+		if IsPointTeleportTool(child) and child ~= KeepTool then
+			pcall(function()
+				child:Destroy()
+			end)
+		end
+	end
+end
+
 local function RemovePointTeleportToolInstances()
 	local containers = {}
 	local backpack = Player:FindFirstChild("Backpack")
@@ -290,28 +336,142 @@ local function DisconnectPointTeleportToolConnections()
 	PointTeleportToolConnections = {}
 end
 
+local function GetPointTeleportClickPosition()
+	local function tryMouseHit(m)
+		if not m then return nil end
+		local ok, hit = pcall(function()
+			return m.Hit
+		end)
+		if ok and hit and typeof(hit) == "CFrame" then
+			return hit.Position
+		end
+		return nil
+	end
+
+	local pos = tryMouseHit(PointTeleportToolEquippedMouse)
+	if pos then return pos end
+
+	pos = tryMouseHit(Mouse)
+	if pos then return pos end
+
+	local ok, screenPos = pcall(function()
+		return UserInputService:GetMouseLocation()
+	end)
+	if not ok or not screenPos or not Camera then
+		return nil
+	end
+
+	pcall(function()
+		local topLeftInset = Vector2.zero
+		local insetA = game:GetService("GuiService"):GetGuiInset()
+		if typeof(insetA) == "Vector2" then
+			topLeftInset = insetA
+		else
+			local a = select(1, game:GetService("GuiService"):GetGuiInset())
+			if typeof(a) == "Vector2" then
+				topLeftInset = a
+			end
+		end
+		screenPos = screenPos - topLeftInset
+	end)
+
+	local ray
+	local okRay = pcall(function()
+		ray = Camera:ViewportPointToRay(screenPos.X, screenPos.Y)
+	end)
+	if not okRay then
+		pcall(function()
+			ray = Camera:ScreenPointToRay(screenPos.X, screenPos.Y)
+		end)
+	end
+	if not ray then
+		return nil
+	end
+
+	local ignore = {}
+	if Player.Character then
+		table.insert(ignore, Player.Character)
+	end
+	local result
+	if workspace.Raycast then
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = ignore
+		result = workspace:Raycast(ray.Origin, ray.Direction * 5000, params)
+		if result then
+			return result.Position
+		end
+	else
+		local okOld, part, hit = pcall(function()
+			return workspace:FindPartOnRayWithIgnoreList(Ray.new(ray.Origin, ray.Direction * 5000), ignore)
+		end)
+		if okOld and hit then
+			return hit
+		end
+	end
+
+	return nil
+end
+
 local function EnsurePointTeleportTool()
 	if not PointTeleportToolEnabled then return end
 
-	if PointTeleportTool and PointTeleportTool.Parent then
-		return
-	end
+	local Backpack = Player:WaitForChild("Backpack")
+	local Character = Player.Character
+	local StarterGear = Player:FindFirstChild("StarterGear")
 
-	RemovePointTeleportToolInstances()
 	DisconnectPointTeleportToolConnections()
 
-	local Tool = Instance.new("Tool")
-	Tool.Name = "Point Teleport"
-	Tool.RequiresHandle = false
-	Tool.CanBeDropped = false
-	Tool:SetAttribute("ET_PointTeleportTool", true)
+	local Tool = FindPointTeleportToolInContainer(Backpack)
+	if not Tool and Character then
+		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+		if Humanoid and Humanoid.Health > 0 then
+			Tool = FindPointTeleportToolInContainer(Character)
+		end
+	end
 
-	local Backpack = Player:WaitForChild("Backpack")
-	Tool.Parent = Backpack
+	if not Tool and StarterGear then
+		local Template = FindPointTeleportToolInContainer(StarterGear)
+		if Template then
+			Tool = Template:Clone()
+			Tool.Parent = Backpack
+		end
+	end
+
+	if not Tool then
+		Tool = Instance.new("Tool")
+		Tool.Name = "Point Teleport"
+		Tool.RequiresHandle = false
+		Tool.CanBeDropped = false
+		Tool:SetAttribute("ET_PointTeleportTool", true)
+		Tool.Parent = Backpack
+	end
+
 	PointTeleportTool = Tool
 
+	RemoveExtraPointTeleportTools(Backpack, Tool)
+	RemoveExtraPointTeleportTools(Character, Tool)
+
+	if StarterGear then
+		local StarterTool = FindPointTeleportToolInContainer(StarterGear)
+		if not StarterTool then
+			local Template = Tool:Clone()
+			Template.Parent = StarterGear
+		else
+			RemoveExtraPointTeleportTools(StarterGear, StarterTool)
+		end
+	end
+
+	table.insert(PointTeleportToolConnections, Tool.Equipped:Connect(function(m)
+		PointTeleportToolEquippedMouse = m
+	end))
+
+	table.insert(PointTeleportToolConnections, Tool.Unequipped:Connect(function()
+		PointTeleportToolEquippedMouse = nil
+	end))
+
 	table.insert(PointTeleportToolConnections, Tool.Activated:Connect(function()
-		local Location = Mouse and Mouse.Hit and Mouse.Hit.Position
+		local Location = GetPointTeleportClickPosition()
 		if not Location then return end
 		local Root = GetRoot(Player)
 		if Root then
@@ -335,22 +495,52 @@ local function EnsurePointTeleportTool()
 	end))
 end
 
+local function StartPointTeleportToolGiveLoop()
+	if PointTeleportToolGiveLoopActive then return end
+	PointTeleportToolGiveLoopActive = true
+	task.spawn(function()
+		while PointTeleportToolEnabled do
+			local backpack = Player:FindFirstChild("Backpack")
+			local character = Player.Character
+			local hasTool = FindPointTeleportToolInContainer(backpack) ~= nil
+			if not hasTool and character then
+				local humanoid = character:FindFirstChildOfClass("Humanoid")
+				if humanoid and humanoid.Health > 0 then
+					hasTool = FindPointTeleportToolInContainer(character) ~= nil
+				end
+			end
+			if not hasTool then
+				pcall(EnsurePointTeleportTool)
+			end
+			task.wait(0.2)
+		end
+		PointTeleportToolGiveLoopActive = false
+	end)
+end
+
 local function StartPointTeleportTool()
 	if PointTeleportToolEnabled then
 		EnsurePointTeleportTool()
+		StartPointTeleportToolGiveLoop()
 		return
 	end
 	PointTeleportToolEnabled = true
 	EnsurePointTeleportTool()
+	StartPointTeleportToolGiveLoop()
 	if not PointTeleportToolCharacterConn then
 		PointTeleportToolCharacterConn = Player.CharacterAdded:Connect(function()
-			task.defer(EnsurePointTeleportTool)
+			task.defer(function()
+				EnsurePointTeleportTool()
+				task.wait(0.35)
+				EnsurePointTeleportTool()
+			end)
 		end)
 	end
 end
 
 local function StopPointTeleportTool()
 	PointTeleportToolEnabled = false
+	PointTeleportToolEquippedMouse = nil
 	if PointTeleportToolCharacterConn then
 		pcall(function()
 			PointTeleportToolCharacterConn:Disconnect()
@@ -1520,6 +1710,31 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		SelectedEnum = EnumTable[1]
 	end
 
+	local function SetSelectedEnum(NewValue)
+		if EnumTable == nil then return end
+		if NewValue == nil then
+			SelectedEnum = EnumTable[1]
+			EnumButton.Text = SelectedEnum
+			return
+		end
+
+		local direct = table.find(EnumTable, NewValue)
+		if direct then
+			SelectedEnum = EnumTable[direct]
+			EnumButton.Text = SelectedEnum
+			return
+		end
+
+		local lowered = tostring(NewValue):lower()
+		for _, v in ipairs(EnumTable) do
+			if tostring(v):lower() == lowered then
+				SelectedEnum = v
+				EnumButton.Text = SelectedEnum
+				return
+			end
+		end
+	end
+
 	Command.Name = TitleText
 	Command.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
 	Command.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -1651,21 +1866,19 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		EnumButton.MouseButton1Click:Connect(function()
 			local CurrentIndex = table.find(EnumTable, SelectedEnum)
 			if CurrentIndex == #EnumTable then
-				SelectedEnum = EnumTable[1]
+				SetSelectedEnum(EnumTable[1])
 			else
-				SelectedEnum = EnumTable[CurrentIndex + 1]
+				SetSelectedEnum(EnumTable[CurrentIndex + 1])
 			end
-			EnumButton.Text = SelectedEnum
 		end)
 
 		EnumButton.MouseButton2Click:Connect(function()
 			local CurrentIndex = table.find(EnumTable, SelectedEnum)
 			if CurrentIndex == 1 then
-				SelectedEnum = EnumTable[#EnumTable]
+				SetSelectedEnum(EnumTable[#EnumTable])
 			else
-				SelectedEnum = EnumTable[CurrentIndex - 1]
+				SetSelectedEnum(EnumTable[CurrentIndex - 1])
 			end
-			EnumButton.Text = SelectedEnum
 		end)
 	end
 
@@ -1683,6 +1896,12 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		Category = FilterTag,
 		HasInput = InputText ~= nil,
 		EnumTable = EnumTable,
+		EnumButton = EnumTable ~= nil and EnumButton or nil,
+		SetEnum = EnumTable ~= nil and SetSelectedEnum or nil,
+		InputBox = InputText ~= nil and Input or nil,
+		SetInput = InputText ~= nil and function(Value)
+			Input.Text = tostring(Value or "")
+		end or nil,
 		Run = CallbackRun,
 		Stop = CallbackStop,
 	}
