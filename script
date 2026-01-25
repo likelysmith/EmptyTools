@@ -1,3 +1,5 @@
+local __ET_LOADSTRING_ARGS = { n = select("#", ...), ... }
+
 DontShowDuplicateUI = false
 
 if not game:IsLoaded() then
@@ -22,7 +24,7 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.6"
+local VersionString = "v1.3.5"
 local ChangeLog = "• Improved Time command\n• Added Ramp Command\n• Added 'Generic' shading option\n• Fixed Alert UI" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
@@ -65,9 +67,124 @@ local function ETLOG(Details)
 end
 
 CommandFrames = {}
+CommandRegistry = {}
 SettingsFrames = {}
 DefaultLighting = {}
 AttachmentLocations = {"Back","Head","Front","Left","Right"}
+
+local function NormalizeCommandName(Name)
+	return tostring(Name or ""):lower():gsub("%s+", "")
+end
+
+local __ET_UNPACK = table.unpack or unpack
+
+local function ParseStartupCommands(Args)
+	if not Args or Args.n == 0 then
+		return nil
+	end
+
+	local function normalizeSingle(cmdName, ...)
+		if cmdName == nil then return nil end
+		if type(cmdName) == "table" then
+			if cmdName.command or cmdName.cmd or cmdName.name then
+				local name = cmdName.command or cmdName.cmd or cmdName.name
+				local argList = {}
+				if type(cmdName.args) == "table" then
+					argList = cmdName.args
+				elseif type(cmdName.arguments) == "table" then
+					argList = cmdName.arguments
+				else
+					for i = 1, #cmdName do
+						table.insert(argList, cmdName[i])
+					end
+				end
+				return { name = name, args = argList }
+			end
+
+			if type(cmdName[1]) == "string" then
+				local name = cmdName[1]
+				local argList = {}
+				for i = 2, #cmdName do
+					table.insert(argList, cmdName[i])
+				end
+				return { name = name, args = argList }
+			end
+
+			return nil
+		end
+
+		if type(cmdName) == "string" then
+			return { name = cmdName, args = { ... } }
+		end
+
+		return nil
+	end
+
+	if type(Args[1]) == "table" and Args.n == 1 then
+		local t = Args[1]
+		local maybeOne = normalizeSingle(t)
+		if maybeOne then
+			return { maybeOne }
+		end
+
+		local list = {}
+		for i = 1, #t do
+			local entry = t[i]
+			if type(entry) == "string" then
+				table.insert(list, { name = entry, args = {} })
+			elseif type(entry) == "table" then
+				local normalized = normalizeSingle(entry)
+				if normalized then
+					table.insert(list, normalized)
+				end
+			end
+		end
+		if #list > 0 then
+			return list
+		end
+
+		local mapList = {}
+		for k, v in pairs(t) do
+			if type(k) == "string" then
+				if type(v) == "table" then
+					table.insert(mapList, { name = k, args = v })
+				else
+					table.insert(mapList, { name = k, args = { v } })
+				end
+			end
+		end
+		if #mapList > 0 then
+			return mapList
+		end
+
+		return nil
+	end
+
+	local one = normalizeSingle(Args[1], __ET_UNPACK(Args, 2, Args.n))
+	if one then
+		return { one }
+	end
+
+	return nil
+end
+
+local __ET_STARTUP_COMMANDS = ParseStartupCommands(__ET_LOADSTRING_ARGS)
+
+local function RunRegisteredCommand(CommandName, ...)
+	if not CommandName then return false end
+	local key = NormalizeCommandName(CommandName)
+	local entry = CommandRegistry[key]
+	if not entry or type(entry.Run) ~= "function" then
+		return false
+	end
+	entry.Run(...)
+	return true
+end
+
+getgenv().EmptyToolsAPI = getgenv().EmptyToolsAPI or {}
+getgenv().EmptyToolsAPI.RunCommand = function(CommandName, ...)
+	return RunRegisteredCommand(CommandName, ...)
+end
 
 CommandCategories = {"None"}
 CurrentCategory = "None"
@@ -193,6 +310,15 @@ EmptyToolsLoadstrings =
 		getgenv().EmptyTools = false
 		game:GetService("Players").LocalPlayer:SetAttribute("NoChangeLogs", true)
 		loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))()
+		]],
+		["Generic Shading"] =
+		[[
+		if not game:IsLoaded() then
+				game.Loaded:Wait()
+			end
+		getgenv().EmptyTools = false
+		game:GetService("Players").LocalPlayer:SetAttribute("NoChangeLogs", true)
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/likelysmith/EmptyTools/main/script"))("Shading", "Generic")
 		]],
 		["Beta"] = [[
 			if not game:IsLoaded() then
@@ -1323,6 +1449,15 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 	UICorner_4.Parent = EnumButton
 
 	table.insert(CommandFrames, Command)
+	CommandRegistry[NormalizeCommandName(TitleText)] = {
+		Frame = Command,
+		Title = TitleText,
+		Category = FilterTag,
+		HasInput = InputText ~= nil,
+		EnumTable = EnumTable,
+		Run = CallbackRun,
+		Stop = CallbackStop,
+	}
 	Command.Parent = Contents:WaitForChild("Commands")
 
 	if isThirdParty then
@@ -5314,6 +5449,23 @@ if PlusEnabled then
 end
 
 SetupThirdPartyCommands(userSettings.ThirdPartiesEnabled)
+
+if __ET_STARTUP_COMMANDS then
+	task.defer(function()
+		for _, Command in ipairs(__ET_STARTUP_COMMANDS) do
+			local ok, err = pcall(function()
+				local args = Command.args or {}
+				local ran = RunRegisteredCommand(Command.name, __ET_UNPACK(args, 1, #args))
+				if not ran then
+					ETLOG("Startup command not found: " .. tostring(Command.name))
+				end
+			end)
+			if not ok then
+				ETLOG("Startup command failed (" .. tostring(Command.name) .. "): " .. tostring(err))
+			end
+		end
+	end)
+end
 
 
 -- Mouse Handling
