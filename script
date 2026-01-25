@@ -23,7 +23,7 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 -- Changelog
 
 local VersionString = "v1.3.5"
-local ChangeLog = "• Extended & Expanded Platform\n• Added Ramp Command\n• Added cross-game persistance\n• Fixed Alert UI" 
+local ChangeLog = "• Improved Time command\n• Added Ramp Command\n• Added 'Generic' shading option\n• Fixed Alert UI" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
 -- Variables
@@ -91,12 +91,48 @@ TeleportIndicator = nil
 TeleportEnabled = false
 ReturnOnFall = false
 
+ForceTimeEnabled = false
+ForceTimeTarget = nil
+ForceTimeConnections = {}
+
+local function StopForceTime()
+	ForceTimeEnabled = false
+	ForceTimeTarget = nil
+	for _, conn in ipairs(ForceTimeConnections) do
+		pcall(function()
+			conn:Disconnect()
+		end)
+	end
+	ForceTimeConnections = {}
+end
+
+local function EnforceForceTime()
+	if not ForceTimeEnabled or ForceTimeTarget == nil then return end
+	if math.abs(Lighting.ClockTime - ForceTimeTarget) > 0.001 then
+		Lighting.ClockTime = ForceTimeTarget
+	end
+end
+
+local function StartForceTime(timeNumber)
+	ForceTimeTarget = timeNumber
+	ForceTimeEnabled = true
+	EnforceForceTime()
+	if #ForceTimeConnections > 0 then return end
+	table.insert(ForceTimeConnections, RunService.RenderStepped:Connect(EnforceForceTime))
+	table.insert(ForceTimeConnections, Lighting:GetPropertyChangedSignal("ClockTime"):Connect(EnforceForceTime))
+	table.insert(ForceTimeConnections, Lighting:GetPropertyChangedSignal("TimeOfDay"):Connect(EnforceForceTime))
+	pcall(function()
+		table.insert(ForceTimeConnections, Lighting:GetPropertyChangedSignal("MinutesAfterMidnight"):Connect(EnforceForceTime))
+	end)
+end
+
 RampPlacing = false
 RampGhostModel = nil
 RampIndicator = nil
 RampPreview = nil
 RampStartPosition = nil
 RampPreviousTargetFilter = nil
+RampPlacementType = "Translucent"
 RampWidth = 6
 RampThickness = 1
 
@@ -3838,6 +3874,7 @@ local function CancelRampPlacement()
 	RampPlacing = false
 	RampStartPosition = nil
 	RampPreview = nil
+	RampPlacementType = RampPlacementType or "Translucent"
 
 	if RampGhostModel then
 		RampGhostModel:Destroy()
@@ -3851,7 +3888,7 @@ local function CancelRampPlacement()
 	RampPreviousTargetFilter = nil
 end
 
-local function StartRampPlacement()
+local function StartRampPlacement(PlacementType)
 	if RampPlacing then
 		CancelRampPlacement()
 	end
@@ -3859,6 +3896,7 @@ local function StartRampPlacement()
 	RampPlacing = true
 	RampStartPosition = nil
 	RampPreview = nil
+	RampPlacementType = PlacementType or RampPlacementType or "Translucent"
 
 	if RampGhostModel then
 		RampGhostModel:Destroy()
@@ -3874,13 +3912,32 @@ local function StartRampPlacement()
 	RampIndicator.CanCollide = false
 	RampIndicator.CastShadow = false
 	RampIndicator.Material = Enum.Material.Neon
-	RampIndicator.Color = Color3.fromRGB(165, 38, 255)
+	RampIndicator.Color = Color3.fromRGB(120, 200, 255)
 	RampIndicator.Transparency = 0.25
 	RampIndicator.Name = "Indicator"
 	RampIndicator.Parent = RampGhostModel
 
 	RampPreviousTargetFilter = Mouse.TargetFilter
 	Mouse.TargetFilter = RampGhostModel
+end
+
+local function ApplyRampType(RampPart, Type)
+	if Type == "Translucent" then
+		RampPart.Transparency = 0
+		RampPart.CastShadow = false
+		RampPart.Material = Enum.Material.ForceField
+		RampPart.Color = Color3.fromRGB(165, 38, 255)
+	elseif Type == "Transparent" then
+		RampPart.Transparency = 1
+		RampPart.CastShadow = false
+		RampPart.Material = Enum.Material.ForceField
+		RampPart.Color = Color3.fromRGB(165, 38, 255)
+	else -- "Opaque"
+		RampPart.Transparency = 0
+		RampPart.CastShadow = true
+		RampPart.Material = Enum.Material.Concrete
+		RampPart.Color = Color3.fromRGB(100, 100, 100)
+	end
 end
 
 local function FinalizeRampPlacement(EndPosition)
@@ -3891,10 +3948,7 @@ local function FinalizeRampPlacement(EndPosition)
 
 	UpdateRampPart(RampPreview, RampStartPosition, EndPosition)
 
-	RampPreview.Transparency = 0
-	RampPreview.CastShadow = true
-	RampPreview.Material = Enum.Material.Concrete
-	RampPreview.Color = Color3.fromRGB(100, 100, 100)
+	ApplyRampType(RampPreview, RampPlacementType)
 	RampPreview.CanCollide = true
 	RampPreview.Parent = GetRampFolder()
 
@@ -4292,6 +4346,16 @@ local function SetGameShaders(Type)
 			Clouds.Name = "ShadingCloudInstance_" .. Player.UserId
 			Clouds.Parent = workspace.Terrain
 		end
+	elseif Type == "Generic" then
+		local Skybox = CreateSkybox(
+			"rbxassetid://566598488",
+			"rbxassetid://566598717",
+			"rbxassetid://566598536",
+			"rbxassetid://566598581",
+			"rbxassetid://566598640",
+			"rbxassetid://566598894"
+		)
+		Skybox.Parent = Lighting
 	elseif Type == "Grain" then
 		local Skybox = CreateSkybox(
 			"http://www.roblox.com/asset/?id=4495864450",
@@ -4715,9 +4779,9 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Ramp", "Click to place a start point, move your cursor, then click again to place a ramp. Backspace cancels. Stop clears all ramps (or cancels if you're currently placing).", nil, nil, "World",
-		function()
-			StartRampPlacement()
+	CreateCommand("Ramp", "Click to place a start point, move your cursor, then click again to place a ramp. Backspace cancels. Stop clears all ramps (or cancels if you're currently placing).", nil, {"Translucent", "Transparent", "Opaque"}, "World",
+		function(Type)
+			StartRampPlacement(Type)
 		end,
 		function()
 			if RampPlacing then
@@ -4904,15 +4968,23 @@ local function SetupCommands()
 			StopAttach.Parent = Player
 		end
 	)
-	CreateCommand("Time", "Sets the in-game clock time, changing the skybox. May not work in games with daylight cycles.", "Time..", nil, "Game",
-		function(Time)
-			if tonumber(Time) then
-				Lighting.ClockTime = tonumber(Time)
+	CreateCommand("Time", "Sets the in-game clock time, changing the skybox. May not work in games with daylight cycles.", "Time..", {"Passive", "Force"}, "Game",
+		function(Time, Mode)
+			local timeNumber = tonumber(Time)
+			if not timeNumber then return end
+
+			if Mode == "Force" then
+				StartForceTime(timeNumber)
+			else
+				StopForceTime()
+				Lighting.ClockTime = timeNumber
 			end
 		end,
-		nil
+		function()
+			StopForceTime()
+		end
 	)
-	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Grain", "Pink", "Space", "Baked", "B&W"}, "Game",
+	CreateCommand("Shading", "Changes the lighting effects, skybox, and post processing to some preset options.", nil, {"None", "Normal", "Generic", "Grain", "Pink", "Space", "Baked", "B&W"}, "Game",
 		function(Type)
 			SetGameShaders(Type)
 		end,
@@ -5268,7 +5340,7 @@ Mouse.Button1Down:Connect(function()
 			RampStartPosition = HitPosition
 
 			if not RampGhostModel then
-				StartRampPlacement()
+				StartRampPlacement(RampPlacementType)
 				RampStartPosition = HitPosition
 			end
 
@@ -5277,7 +5349,7 @@ Mouse.Button1Down:Connect(function()
 			RampPreview.Transparency = 0.6
 			RampPreview.CastShadow = false
 			RampPreview.Material = Enum.Material.ForceField
-			RampPreview.Color = Color3.fromRGB(165, 38, 255)
+			RampPreview.Color = Color3.fromRGB(120, 200, 255)
 			RampPreview.CanCollide = false
 			RampPreview.Anchored = true
 			RampPreview.Parent = RampGhostModel
@@ -5360,6 +5432,10 @@ local function Close()
 			PltInstance:Destroy()
 		end
 		CancelRampPlacement()
+		local RampFolder = workspace:FindFirstChild("RampInstance_" .. Player.UserId)
+		if RampFolder then
+			RampFolder:Destroy()
+		end
 		for _,PhaseObj in pairs(PhaseObjects) do
 			if PhaseObj:FindFirstChild("PhaseHighlight") then
 				PhaseObj.PhaseHighlight:Destroy()
