@@ -24,8 +24,8 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.5"
-local ChangeLog = "• Improved Time command\n• Added Ramp Command\n• Added 'Generic' shading option\n• Fixed Alert UI" 
+local VersionString = "v1.3.6"
+local ChangeLog = "• Improved Time command\n• Added Ramp Command\n• Added 'Generic' shading option\n• Added 'Deflect' mode to anchor command\n• Fixed various minor bugs" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
 -- Variables
@@ -235,12 +235,16 @@ PointTeleportTool = nil
 PointTeleportToolConnections = {}
 PointTeleportToolCharacterConn = nil
 PointTeleportToolGiveLoopActive = false
-PointTeleportToolEquippedMouse = nil
-AnchorEnabled = false
-AnchorOriginalAnchored = {}
-AnchorCharacterConn = nil
-AnchorDescendantConn = nil
-ReturnOnFall = false
+	PointTeleportToolEquippedMouse = nil
+	AnchorEnabled = false
+	AnchorMode = "Lock"
+	AnchorAvailableModes = {"Lock", "Deflect (WIP)"}
+	AnchorOriginalAnchored = {}
+	AnchorCharacterConn = nil
+	AnchorDescendantConn = nil
+	AnchorHeartbeatConn = nil
+	DeflectDisabledForces = {}
+	ReturnOnFall = false
 
 ForceTimeEnabled = false
 ForceTimeTarget = nil
@@ -571,74 +575,249 @@ local function ApplyAnchorToCharacter(Character, Enabled)
 	end
 end
 
-local function StartAnchor()
-	if AnchorEnabled then return end
-	AnchorEnabled = true
-	AnchorOriginalAnchored = {}
+local function TryGetProp(obj, prop)
+	local ok, val = pcall(function()
+		return obj[prop]
+	end)
+	if ok then return val end
+	return nil
+end
 
-	local Character = GetCharacter(Player)
+local function TrySetProp(obj, prop, value)
+	local ok = pcall(function()
+		obj[prop] = value
+	end)
+	return ok
+end
+
+local function NormalizeAnchorMode(mode)
+	local m = tostring(mode or ""):lower()
+	if m == "" then
+		return "Lock"
+	end
+	if m:find("deflect", 1, true) then
+		return "Deflect (WIP)"
+	end
+	return "Lock"
+end
+
+local function DisconnectConn(conn)
+	if not conn then return nil end
+	pcall(function()
+		conn:Disconnect()
+	end)
+	return nil
+end
+
+local function IsDeflectForceObject(obj)
+	if not obj then return false end
+	return obj:IsA("BodyMover")
+		or obj:IsA("LinearVelocity")
+		or obj:IsA("AngularVelocity")
+		or obj:IsA("VectorForce")
+		or obj:IsA("AlignPosition")
+		or obj:IsA("AlignOrientation")
+		or obj:IsA("Torque")
+end
+
+local function DeflectNeutralizeForceObject(obj, trackOriginal)
+	if not obj or not obj.Parent then return end
+	if DeflectDisabledForces[obj] ~= nil then return end
+
+	local original = {}
+
+	local function captureAndSet(prop, value)
+		local before = TryGetProp(obj, prop)
+		if before == nil then return end
+		local ok = TrySetProp(obj, prop, value)
+		if ok and trackOriginal then
+			original[prop] = before
+		end
+	end
+
+	captureAndSet("Enabled", false)
+	captureAndSet("MaxForce", Vector3.zero)
+	captureAndSet("MaxTorque", Vector3.zero)
+	captureAndSet("Force", Vector3.zero)
+	captureAndSet("Torque", Vector3.zero)
+	captureAndSet("Velocity", Vector3.zero)
+	captureAndSet("AngularVelocity", Vector3.zero)
+	captureAndSet("P", 0)
+	captureAndSet("D", 0)
+	captureAndSet("Responsiveness", 0)
+
+	pcall(function()
+		obj:SetAttribute("ET_DeflectSuppressed", true)
+	end)
+
+	if trackOriginal and next(original) ~= nil then
+		DeflectDisabledForces[obj] = original
+	end
+end
+
+local function DeflectRestoreTrackedForces()
+	for obj, props in pairs(DeflectDisabledForces) do
+		if obj and obj.Parent then
+			for prop, value in pairs(props) do
+				TrySetProp(obj, prop, value)
+			end
+			pcall(function()
+				obj:SetAttribute("ET_DeflectSuppressed", nil)
+			end)
+		end
+	end
+	DeflectDisabledForces = {}
+end
+
+local function ApplyDeflectToCharacter(Character, trackExisting)
+	if not Character then return end
+	for _, obj in ipairs(Character:GetDescendants()) do
+		if IsDeflectForceObject(obj) then
+			DeflectNeutralizeForceObject(obj, trackExisting)
+		end
+	end
+end
+
+local function StartAnchorLockForCharacter(Character)
+	AnchorOriginalAnchored = {}
 	ApplyAnchorToCharacter(Character, true)
 
-	if AnchorDescendantConn then
-		pcall(function()
-			AnchorDescendantConn:Disconnect()
-		end)
-		AnchorDescendantConn = nil
-	end
+	AnchorDescendantConn = DisconnectConn(AnchorDescendantConn)
 	if Character then
 		AnchorDescendantConn = Character.DescendantAdded:Connect(function(obj)
-			if not AnchorEnabled then return end
+			if not AnchorEnabled or AnchorMode ~= "Lock" then return end
 			if obj:IsA("BasePart") then
 				AnchorOriginalAnchored[obj] = obj.Anchored
 				obj.Anchored = true
 			end
 		end)
 	end
+end
+
+local function StartAnchorDeflectForCharacter(Character)
+	DeflectRestoreTrackedForces()
+	ApplyDeflectToCharacter(Character, true)
+
+	AnchorDescendantConn = DisconnectConn(AnchorDescendantConn)
+	if Character then
+		AnchorDescendantConn = Character.DescendantAdded:Connect(function(obj)
+			if not AnchorEnabled or AnchorMode ~= "Deflect (WIP)" then return end
+			if IsDeflectForceObject(obj) then
+				DeflectNeutralizeForceObject(obj, false)
+			end
+		end)
+	end
+
+	AnchorHeartbeatConn = DisconnectConn(AnchorHeartbeatConn)
+	AnchorHeartbeatConn = RunService.Heartbeat:Connect(function()
+		if not AnchorEnabled or AnchorMode ~= "Deflect (WIP)" then return end
+		local character = Player and Player.Character
+		if not character then return end
+
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not humanoid or not root then return end
+
+		local vel = TryGetProp(root, "AssemblyLinearVelocity") or TryGetProp(root, "Velocity")
+		if typeof(vel) ~= "Vector3" then return end
+
+		local moveDir = TryGetProp(humanoid, "MoveDirection") or Vector3.zero
+		local walkSpeed = TryGetProp(humanoid, "WalkSpeed") or 16
+		local jumpPower = TryGetProp(humanoid, "JumpPower") or 50
+		local jumpCap = math.max(jumpPower * 1.1, 55)
+
+		local floorMaterial = TryGetProp(humanoid, "FloorMaterial")
+		local onGround = floorMaterial ~= nil and floorMaterial ~= Enum.Material.Air
+
+		local horiz = Vector3.new(vel.X, 0, vel.Z)
+		local horizMag = horiz.Magnitude
+		local maxHoriz = math.max(walkSpeed * 1.6, 30)
+		local idleMax = 2
+
+		local newHoriz = horiz
+		local newY = vel.Y
+		local shouldSet = false
+
+		if newY > jumpCap then
+			newY = jumpCap
+			shouldSet = true
+		end
+
+		if onGround and moveDir.Magnitude < 0.05 and horizMag > idleMax then
+			newHoriz = Vector3.zero
+			shouldSet = true
+		elseif horizMag > maxHoriz then
+			if moveDir.Magnitude > 0.05 then
+				newHoriz = moveDir.Unit * maxHoriz
+			elseif horizMag > 0 then
+				newHoriz = horiz.Unit * maxHoriz
+			end
+			shouldSet = true
+		end
+
+		if shouldSet then
+			local newVel = Vector3.new(newHoriz.X, newY, newHoriz.Z)
+			TrySetProp(root, "AssemblyLinearVelocity", newVel)
+			TrySetProp(root, "Velocity", newVel)
+		end
+
+		local ang = TryGetProp(root, "AssemblyAngularVelocity") or TryGetProp(root, "RotVelocity")
+		if typeof(ang) == "Vector3" and ang.Magnitude > 0.5 then
+			TrySetProp(root, "AssemblyAngularVelocity", Vector3.zero)
+			TrySetProp(root, "RotVelocity", Vector3.zero)
+		end
+	end)
+end
+
+local StopAnchor
+
+local function StartAnchor(mode)
+	mode = NormalizeAnchorMode(mode)
+	if AnchorEnabled then
+		if AnchorMode == mode then
+			return
+		end
+		StopAnchor()
+	end
+
+	AnchorEnabled = true
+	AnchorMode = mode
+
+	local Character = GetCharacter(Player)
+	if AnchorMode == "Lock" then
+		StartAnchorLockForCharacter(Character)
+	else
+		StartAnchorDeflectForCharacter(Character)
+	end
 
 	if not AnchorCharacterConn then
 		AnchorCharacterConn = Player.CharacterAdded:Connect(function(NewCharacter)
 			task.defer(function()
 				if not AnchorEnabled then return end
-				AnchorOriginalAnchored = {}
-				ApplyAnchorToCharacter(NewCharacter, true)
-
-				if AnchorDescendantConn then
-					pcall(function()
-						AnchorDescendantConn:Disconnect()
-					end)
-					AnchorDescendantConn = nil
+				if AnchorMode == "Lock" then
+					StartAnchorLockForCharacter(NewCharacter)
+				else
+					StartAnchorDeflectForCharacter(NewCharacter)
 				end
-				AnchorDescendantConn = NewCharacter.DescendantAdded:Connect(function(obj)
-					if not AnchorEnabled then return end
-					if obj:IsA("BasePart") then
-						AnchorOriginalAnchored[obj] = obj.Anchored
-						obj.Anchored = true
-					end
-				end)
 			end)
 		end)
 	end
 end
 
-local function StopAnchor()
+StopAnchor = function()
 	if not AnchorEnabled then return end
+
+	if AnchorMode == "Lock" then
+		ApplyAnchorToCharacter(Player.Character, false)
+		AnchorOriginalAnchored = {}
+	else
+		DeflectRestoreTrackedForces()
+	end
+
 	AnchorEnabled = false
-
-	if AnchorDescendantConn then
-		pcall(function()
-			AnchorDescendantConn:Disconnect()
-		end)
-		AnchorDescendantConn = nil
-	end
-	if AnchorCharacterConn then
-		pcall(function()
-			AnchorCharacterConn:Disconnect()
-		end)
-		AnchorCharacterConn = nil
-	end
-
-	ApplyAnchorToCharacter(Player.Character, false)
-	AnchorOriginalAnchored = {}
+	AnchorDescendantConn = DisconnectConn(AnchorDescendantConn)
+	AnchorHeartbeatConn = DisconnectConn(AnchorHeartbeatConn)
+	AnchorCharacterConn = DisconnectConn(AnchorCharacterConn)
 end
 
 local function EnforceForceTime()
@@ -2552,6 +2731,32 @@ end
 
 function TogglePlayerCharacter(Target, Value)
 	local Character = GetCharacter(Target)
+	if not Character then return end
+
+	local function GetNeckMotor()
+		local Head = Character:FindFirstChild("Head")
+		if Head then
+			local Neck = Head:FindFirstChild("Neck")
+			if Neck and Neck:IsA("Motor6D") then
+				return Neck
+			end
+		end
+
+		local Torso = Character:FindFirstChild("UpperTorso") or Character:FindFirstChild("Torso")
+		if Torso then
+			local Neck = Torso:FindFirstChild("Neck")
+			if Neck and Neck:IsA("Motor6D") then
+				return Neck
+			end
+		end
+
+		local Neck = Character:FindFirstChild("Neck", true)
+		if Neck and Neck:IsA("Motor6D") then
+			return Neck
+		end
+	end
+
+	local NeckMotor = GetNeckMotor()
 
 	if Value then
 		for _,Object in pairs(Character:GetDescendants()) do
@@ -2560,15 +2765,12 @@ function TogglePlayerCharacter(Target, Value)
 			if Object:GetAttribute("OGTransparency") then
 				Object.Transparency = Object:GetAttribute("OGTransparency")
 			end
-			if Object.Name == "Head" then
-				local Neck = Object:FindFirstChild("Neck")
-				if Neck:IsA("Motor6D") then
-					local OldPos = Neck:FindFirstChild("OldPos")
-					if OldPos then
-						Neck.C1 = OldPos.Value
-						OldPos:Destroy()
-					end
-				end
+		end
+		if NeckMotor then
+			local OldPos = NeckMotor:FindFirstChild("OldPos")
+			if OldPos and OldPos:IsA("CFrameValue") then
+				NeckMotor.C1 = OldPos.Value
+				OldPos:Destroy()
 			end
 		end
 	else
@@ -2579,14 +2781,15 @@ function TogglePlayerCharacter(Target, Value)
 				Object:SetAttribute("OGTransparency", Object.Transparency)
 				Object.Transparency = 1
 			end
-			if Object.Name == "Head" then
-				local Neck = Object:FindFirstChild("Neck")
-				if Neck:IsA("Motor6D") then
-					local OldPos = Instance.new("CFrameValue", Neck)
-					OldPos.Name = "OldPos"
-					OldPos.Value = Neck.C1
-					Neck.C1 += Vector3.new(0, -1935, 0)
-				end
+		end
+		if NeckMotor then
+			local OldPos = NeckMotor:FindFirstChild("OldPos")
+			if not OldPos then
+				OldPos = Instance.new("CFrameValue")
+				OldPos.Name = "OldPos"
+				OldPos.Value = NeckMotor.C1
+				OldPos.Parent = NeckMotor
+				NeckMotor.C1 += Vector3.new(0, -1935, 0)
 			end
 		end
 	end
@@ -5324,9 +5527,9 @@ local function SetupCommands()
 			ToggleFlight(false, FlySpeed)
 		end
 	)
-	CreateCommand("Anchor", "Makes your character immovable while enabled.", nil, nil, "Character",
-		function()
-			StartAnchor()
+	CreateCommand("Anchor", "Lock: anchors all character parts. Deflect (WIP): ignores external forces/knockback while still allowing normal movement.", nil, AnchorAvailableModes, "Character",
+		function(Mode)
+			StartAnchor(Mode)
 		end,
 		function()
 			StopAnchor()
