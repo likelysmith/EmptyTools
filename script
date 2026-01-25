@@ -22,7 +22,7 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.5"
+local VersionString = "v1.3.6"
 local ChangeLog = "• Improved Time command\n• Added Ramp Command\n• Added 'Generic' shading option\n• Fixed Alert UI" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
