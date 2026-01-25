@@ -23,7 +23,7 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 -- Changelog
 
 local VersionString = "v1.3.5"
-local ChangeLog = "• Extended & Expanded Platform\n• Updated VC Unban with advanced capability\n• Added cross-game persistance\n• Added a Voice Chat Unban command" 
+local ChangeLog = "• Extended & Expanded Platform\n• Added Ramp Command\n• Added cross-game persistance\n• Fixed Alert UI" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
 -- Variables
@@ -72,9 +72,8 @@ AttachmentLocations = {"Back","Head","Front","Left","Right"}
 CommandCategories = {"None"}
 CurrentCategory = "None"
 
-FadeTweenTime = 0.25
 FadeTweenInfo = TweenInfo.new(
-	FadeTweenTime,
+	0.25, 
 	Enum.EasingStyle.Quint
 )
 
@@ -91,6 +90,15 @@ PhaseObjects = {}
 TeleportIndicator = nil
 TeleportEnabled = false
 ReturnOnFall = false
+
+RampPlacing = false
+RampGhostModel = nil
+RampIndicator = nil
+RampPreview = nil
+RampStartPosition = nil
+RampPreviousTargetFilter = nil
+RampWidth = 6
+RampThickness = 1
 
 DoubleJump = false
 JumpInstances = 1
@@ -253,23 +261,11 @@ end
 
 -- Create UI Method
 
-local function NewGuiGroup()
-	local success, group = pcall(function()
-		return Instance.new("CanvasGroup")
-	end)
-
-	if success and group then
-		return group
-	end
-
-	return Instance.new("Frame")
-end
-
 function CreateUI()
 	local EmptyTools = Instance.new("ScreenGui")
 	local OuterFrame = Instance.new("Frame")
 	local UICorner = Instance.new("UICorner")
-	local Contents = NewGuiGroup()
+	local Contents = Instance.new("Frame")
 	local Title = Instance.new("TextLabel")
 	local UICorner_2 = Instance.new("UICorner")
 	local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
@@ -294,7 +290,7 @@ function CreateUI()
 	local Info_3 = Instance.new("TextButton")
 	local UICorner_7 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_3 = Instance.new("UIAspectRatioConstraint")
-	local ContentShrunken = NewGuiGroup()
+	local ContentShrunken = Instance.new("Frame")
 	local UICorner_8 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_4 = Instance.new("UIAspectRatioConstraint")
 	local Close = Instance.new("TextButton")
@@ -306,8 +302,6 @@ function CreateUI()
 	local ToastFrame = Instance.new("Frame")
 	local UICorner_11 = Instance.new("UICorner")
 	local Text = Instance.new("TextLabel")
-	local ContentsScale = Instance.new("UIScale")
-	local ContentShrunkenScale = Instance.new("UIScale")
 
 	--Properties:
 
@@ -339,13 +333,6 @@ function CreateUI()
 	Contents.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Contents.BorderSizePixel = 0
 	Contents.Size = UDim2.new(1, 0, 1, 0)
-	if hasProperty(Contents, "GroupTransparency") then
-		Contents.GroupTransparency = 0
-	end
-
-	ContentsScale.Name = "ContentsScale"
-	ContentsScale.Scale = 1
-	ContentsScale.Parent = Contents
 
 	Title.Name = "Title"
 	Title.Parent = Contents
@@ -545,13 +532,6 @@ function CreateUI()
 	ContentShrunken.Position = UDim2.new(0.670155883, 0, 0.0024564031, 0)
 	ContentShrunken.Size = UDim2.new(0.334465146, 0, 0.160182983, 0)
 	ContentShrunken.Visible = false
-	if hasProperty(ContentShrunken, "GroupTransparency") then
-		ContentShrunken.GroupTransparency = 1
-	end
-
-	ContentShrunkenScale.Name = "ContentShrunkenScale"
-	ContentShrunkenScale.Scale = 0.97
-	ContentShrunkenScale.Parent = ContentShrunken
 
 	UICorner_8.CornerRadius = UDim.new(0.0500000007, 0)
 	UICorner_8.Parent = ContentShrunken
@@ -1278,20 +1258,24 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		end
 
 
-		local function CycleEnum(delta)
-			local currentIndex = table.find(EnumTable, SelectedEnum) or 1
-			local count = #EnumTable
-			local nextIndex = ((currentIndex - 1 + delta) % count) + 1
-			SelectedEnum = EnumTable[nextIndex]
-			EnumButton.Text = SelectedEnum
-		end
-
 		EnumButton.MouseButton1Click:Connect(function()
-			CycleEnum(1)
+			local CurrentIndex = table.find(EnumTable, SelectedEnum)
+			if CurrentIndex == #EnumTable then
+				SelectedEnum = EnumTable[1]
+			else
+				SelectedEnum = EnumTable[CurrentIndex + 1]
+			end
+			EnumButton.Text = SelectedEnum
 		end)
 
 		EnumButton.MouseButton2Click:Connect(function()
-			CycleEnum(-1)
+			local CurrentIndex = table.find(EnumTable, SelectedEnum)
+			if CurrentIndex == 1 then
+				SelectedEnum = EnumTable[#EnumTable]
+			else
+				SelectedEnum = EnumTable[CurrentIndex - 1]
+			end
+			EnumButton.Text = SelectedEnum
 		end)
 	end
 
@@ -3815,6 +3799,119 @@ local function CreateStaircaseUpwards(Stairs)
 		task.wait(0.01)
 	end
 end
+
+local function GetRampFolder()
+	local RampFolder = workspace:FindFirstChild("RampInstance_" .. Player.UserId)
+	if not RampFolder then
+		RampFolder = Instance.new("Folder", workspace)
+		RampFolder.Name = "RampInstance_" .. Player.UserId
+	end
+	return RampFolder
+end
+
+local function UpdateRampPart(RampPart, StartPosition, EndPosition)
+	local Delta = EndPosition - StartPosition
+	local Length = Delta.Magnitude
+	if Length < 0.05 then
+		Length = 0.05
+	end
+
+	local Midpoint = StartPosition + (Delta / 2)
+	local LookTarget = EndPosition
+	if (LookTarget - Midpoint).Magnitude < 0.001 then
+		LookTarget = Midpoint + Vector3.zAxis
+	end
+
+	local UpVector = Vector3.yAxis
+	if Delta.Magnitude > 0.001 then
+		local Direction = Delta.Unit
+		if math.abs(Direction:Dot(UpVector)) > 0.98 then
+			UpVector = Vector3.xAxis
+		end
+	end
+
+	RampPart.Size = Vector3.new(RampWidth, RampThickness, Length)
+	RampPart.CFrame = CFrame.lookAt(Midpoint, LookTarget, UpVector)
+end
+
+local function CancelRampPlacement()
+	RampPlacing = false
+	RampStartPosition = nil
+	RampPreview = nil
+
+	if RampGhostModel then
+		RampGhostModel:Destroy()
+	end
+	RampGhostModel = nil
+	RampIndicator = nil
+
+	if Mouse then
+		Mouse.TargetFilter = RampPreviousTargetFilter
+	end
+	RampPreviousTargetFilter = nil
+end
+
+local function StartRampPlacement()
+	if RampPlacing then
+		CancelRampPlacement()
+	end
+
+	RampPlacing = true
+	RampStartPosition = nil
+	RampPreview = nil
+
+	if RampGhostModel then
+		RampGhostModel:Destroy()
+	end
+
+	RampGhostModel = Instance.new("Model", workspace)
+	RampGhostModel.Name = "RampGhost_" .. Player.UserId
+
+	RampIndicator = Instance.new("Part")
+	RampIndicator.Shape = Enum.PartType.Ball
+	RampIndicator.Size = Vector3.new(0.8, 0.8, 0.8)
+	RampIndicator.Anchored = true
+	RampIndicator.CanCollide = false
+	RampIndicator.CastShadow = false
+	RampIndicator.Material = Enum.Material.Neon
+	RampIndicator.Color = Color3.fromRGB(165, 38, 255)
+	RampIndicator.Transparency = 0.25
+	RampIndicator.Name = "Indicator"
+	RampIndicator.Parent = RampGhostModel
+
+	RampPreviousTargetFilter = Mouse.TargetFilter
+	Mouse.TargetFilter = RampGhostModel
+end
+
+local function FinalizeRampPlacement(EndPosition)
+	if not RampPreview or not RampStartPosition then
+		CancelRampPlacement()
+		return
+	end
+
+	UpdateRampPart(RampPreview, RampStartPosition, EndPosition)
+
+	RampPreview.Transparency = 0
+	RampPreview.CastShadow = true
+	RampPreview.Material = Enum.Material.Concrete
+	RampPreview.Color = Color3.fromRGB(100, 100, 100)
+	RampPreview.CanCollide = true
+	RampPreview.Parent = GetRampFolder()
+
+	if RampGhostModel then
+		RampGhostModel:Destroy()
+	end
+	RampGhostModel = nil
+	RampIndicator = nil
+
+	Mouse.TargetFilter = RampPreviousTargetFilter
+	RampPreviousTargetFilter = nil
+
+	RampPlacing = false
+	RampStartPosition = nil
+	RampPreview = nil
+end
+
 function CreatePlatform(Type, Adjustment)
 	local PltInstance = workspace:FindFirstChild("PlatformFolder_" .. Player.UserId)
 	if PltInstance then
@@ -4618,6 +4715,21 @@ local function SetupCommands()
 			end
 		end
 	)
+	CreateCommand("Ramp", "Click to place a start point, move your cursor, then click again to place a ramp. Backspace cancels. Stop clears all ramps (or cancels if you're currently placing).", nil, nil, "World",
+		function()
+			StartRampPlacement()
+		end,
+		function()
+			if RampPlacing then
+				CancelRampPlacement()
+				return
+			end
+			local RampFolder = workspace:FindFirstChild("RampInstance_" .. Player.UserId)
+			if RampFolder then
+				RampFolder:ClearAllChildren()
+			end
+		end
+	)
 	CreateCommand("Rejoin", "Return to the same server, or hop to a new one.", nil, {"Rejoin", "Hop"}, "Game",
 		function(Type)
 			if Type == "Rejoin" then
@@ -5146,6 +5258,38 @@ Mouse.Button1Down:Connect(function()
 		end
 		lastTapTime = 0  
 	end
+
+	if RampPlacing then
+		if not Mouse.Target then return end
+		local HitPosition = Mouse.Hit.Position
+		if not HitPosition then return end
+
+		if not RampStartPosition then
+			RampStartPosition = HitPosition
+
+			if not RampGhostModel then
+				StartRampPlacement()
+				RampStartPosition = HitPosition
+			end
+
+			RampPreview = Instance.new("Part")
+			RampPreview.Name = "RampPreview"
+			RampPreview.Transparency = 0.6
+			RampPreview.CastShadow = false
+			RampPreview.Material = Enum.Material.ForceField
+			RampPreview.Color = Color3.fromRGB(165, 38, 255)
+			RampPreview.CanCollide = false
+			RampPreview.Anchored = true
+			RampPreview.Parent = RampGhostModel
+
+			UpdateRampPart(RampPreview, RampStartPosition, HitPosition)
+		else
+			FinalizeRampPlacement(HitPosition)
+		end
+
+		return
+	end
+
 	if modeEnabled then
 		local target = Mouse.Target
 		print(target)
@@ -5176,112 +5320,17 @@ if not MainUI then return end
 
 ToggleTween = nil
 
-local ToggleTweens = {}
-local ToggleSerial = 0
-
-local function CancelToggleTweens()
-	for _, tween in ipairs(ToggleTweens) do
-		pcall(function()
-			tween:Cancel()
-		end)
-	end
-	for i = #ToggleTweens, 1, -1 do
-		ToggleTweens[i] = nil
-	end
-end
-
-local function PlayToggleTween(object, info, props)
-	local tween = TweenService:Create(object, info, props)
-	table.insert(ToggleTweens, tween)
-	tween:Play()
-	return tween
-end
-
 function Toggle()
-	ToggleSerial += 1
-	local serial = ToggleSerial
-	CancelToggleTweens()
-
 	UIOpen = not UIOpen
+	ContentShrunken.Visible = not UIOpen
 	OuterFrame.Toggle.Text = UIOpen and "-" or "+"
-
-	local contentsScale = Contents and Contents:FindFirstChild("ContentsScale")
-	local shrunkenScale = ContentShrunken and ContentShrunken:FindFirstChild("ContentShrunkenScale")
-	local hasContentsFade = Contents and hasProperty(Contents, "GroupTransparency")
-	local hasShrunkenFade = ContentShrunken and hasProperty(ContentShrunken, "GroupTransparency")
-
-	Contents.Visible = true
-	ContentShrunken.Visible = true
-
-	if UIOpen then
-		if hasContentsFade then
-			Contents.GroupTransparency = 1
-		end
-		if contentsScale and hasProperty(contentsScale, "Scale") then
-			contentsScale.Scale = 0.985
-		end
-		if hasShrunkenFade then
-			ContentShrunken.GroupTransparency = 0
-		end
-		if shrunkenScale and hasProperty(shrunkenScale, "Scale") then
-			shrunkenScale.Scale = 1
-		end
-
-		PlayToggleTween(OuterFrame, FadeTweenInfo, {BackgroundTransparency = 0})
-		if hasContentsFade then
-			PlayToggleTween(Contents, FadeTweenInfo, {GroupTransparency = 0})
-		end
-		if contentsScale and hasProperty(contentsScale, "Scale") then
-			PlayToggleTween(contentsScale, FadeTweenInfo, {Scale = 1})
-		end
-		if hasShrunkenFade then
-			PlayToggleTween(ContentShrunken, FadeTweenInfo, {GroupTransparency = 1})
-		end
-		if shrunkenScale and hasProperty(shrunkenScale, "Scale") then
-			PlayToggleTween(shrunkenScale, FadeTweenInfo, {Scale = 0.97})
-		end
-
-		task.delay(FadeTweenTime, function()
-			if ToggleSerial ~= serial then
-				return
-			end
-			ContentShrunken.Visible = false
-		end)
-	else
-		if hasContentsFade then
-			Contents.GroupTransparency = 0
-		end
-		if contentsScale and hasProperty(contentsScale, "Scale") then
-			contentsScale.Scale = 1
-		end
-		if hasShrunkenFade then
-			ContentShrunken.GroupTransparency = 1
-		end
-		if shrunkenScale and hasProperty(shrunkenScale, "Scale") then
-			shrunkenScale.Scale = 0.97
-		end
-
-		PlayToggleTween(OuterFrame, FadeTweenInfo, {BackgroundTransparency = 1})
-		if hasContentsFade then
-			PlayToggleTween(Contents, FadeTweenInfo, {GroupTransparency = 1})
-		end
-		if contentsScale and hasProperty(contentsScale, "Scale") then
-			PlayToggleTween(contentsScale, FadeTweenInfo, {Scale = 0.985})
-		end
-		if hasShrunkenFade then
-			PlayToggleTween(ContentShrunken, FadeTweenInfo, {GroupTransparency = 0})
-		end
-		if shrunkenScale and hasProperty(shrunkenScale, "Scale") then
-			PlayToggleTween(shrunkenScale, FadeTweenInfo, {Scale = 1})
-		end
-
-		task.delay(FadeTweenTime, function()
-			if ToggleSerial ~= serial then
-				return
-			end
-			Contents.Visible = false
-		end)
+	local Transparency = UIOpen and 0 or 1
+	if ToggleTween then
+		ToggleTween:Cancel()
 	end
+	Contents.Visible = UIOpen
+	ToggleTween = TweenService:Create(OuterFrame, FadeTweenInfo, {BackgroundTransparency = Transparency})
+	ToggleTween:Play()
 end
 
 OuterFrame.Toggle.MouseButton1Click:Connect(function()
@@ -5310,6 +5359,7 @@ local function Close()
 		if PltInstance then
 			PltInstance:Destroy()
 		end
+		CancelRampPlacement()
 		for _,PhaseObj in pairs(PhaseObjects) do
 			if PhaseObj:FindFirstChild("PhaseHighlight") then
 				PhaseObj.PhaseHighlight:Destroy()
@@ -5516,6 +5566,12 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 		KeyButton = nil
 		return
 	end
+
+	if RampPlacing and Input.KeyCode == Enum.KeyCode.Backspace then
+		CancelRampPlacement()
+		return
+	end
+
 	if Input.KeyCode == Enum.KeyCode.Space then
 		JumpReq()
 	end
@@ -5576,6 +5632,20 @@ RunService.RenderStepped:Connect(function()
 	elseif TeleportIndicator ~= nil then
 		TeleportIndicator:Destroy()
 		TeleportIndicator = nil
+	end
+
+	if RampPlacing then
+		if not RampGhostModel or not RampIndicator then
+			CancelRampPlacement()
+		else
+			local HitPosition = Mouse.Hit.Position
+			if HitPosition then
+				RampIndicator.Position = HitPosition
+				if RampStartPosition and RampPreview then
+					UpdateRampPart(RampPreview, RampStartPosition, HitPosition)
+				end
+			end
+		end
 	end
 
 	if ReturnOnFall == true then
