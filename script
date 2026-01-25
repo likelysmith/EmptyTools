@@ -1278,14 +1278,20 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		end
 
 
-		EnumButton.MouseButton1Click:Connect(function()
-			local CurrentIndex = table.find(EnumTable, SelectedEnum)
-			if CurrentIndex == #EnumTable then
-				SelectedEnum = EnumTable[1]
-			else
-				SelectedEnum = EnumTable[CurrentIndex + 1]
-			end
+		local function CycleEnum(delta)
+			local currentIndex = table.find(EnumTable, SelectedEnum) or 1
+			local count = #EnumTable
+			local nextIndex = ((currentIndex - 1 + delta) % count) + 1
+			SelectedEnum = EnumTable[nextIndex]
 			EnumButton.Text = SelectedEnum
+		end
+
+		EnumButton.MouseButton1Click:Connect(function()
+			CycleEnum(1)
+		end)
+
+		EnumButton.MouseButton2Click:Connect(function()
+			CycleEnum(-1)
 		end)
 	end
 
