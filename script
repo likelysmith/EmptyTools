@@ -211,6 +211,10 @@ PointTeleportToolEnabled = false
 PointTeleportTool = nil
 PointTeleportToolConnections = {}
 PointTeleportToolCharacterConn = nil
+AnchorEnabled = false
+AnchorOriginalAnchored = {}
+AnchorCharacterConn = nil
+AnchorDescendantConn = nil
 ReturnOnFall = false
 
 ForceTimeEnabled = false
@@ -356,6 +360,95 @@ local function StopPointTeleportTool()
 	DisconnectPointTeleportToolConnections()
 	RemovePointTeleportToolInstances()
 	PointTeleportTool = nil
+end
+
+local function ApplyAnchorToCharacter(Character, Enabled)
+	if not Character then return end
+	for _, obj in ipairs(Character:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			if Enabled then
+				if AnchorOriginalAnchored[obj] == nil then
+					AnchorOriginalAnchored[obj] = obj.Anchored
+				end
+				obj.Anchored = true
+			else
+				local original = AnchorOriginalAnchored[obj]
+				if original ~= nil then
+					obj.Anchored = original
+				end
+			end
+		end
+	end
+end
+
+local function StartAnchor()
+	if AnchorEnabled then return end
+	AnchorEnabled = true
+	AnchorOriginalAnchored = {}
+
+	local Character = GetCharacter(Player)
+	ApplyAnchorToCharacter(Character, true)
+
+	if AnchorDescendantConn then
+		pcall(function()
+			AnchorDescendantConn:Disconnect()
+		end)
+		AnchorDescendantConn = nil
+	end
+	if Character then
+		AnchorDescendantConn = Character.DescendantAdded:Connect(function(obj)
+			if not AnchorEnabled then return end
+			if obj:IsA("BasePart") then
+				AnchorOriginalAnchored[obj] = obj.Anchored
+				obj.Anchored = true
+			end
+		end)
+	end
+
+	if not AnchorCharacterConn then
+		AnchorCharacterConn = Player.CharacterAdded:Connect(function(NewCharacter)
+			task.defer(function()
+				if not AnchorEnabled then return end
+				AnchorOriginalAnchored = {}
+				ApplyAnchorToCharacter(NewCharacter, true)
+
+				if AnchorDescendantConn then
+					pcall(function()
+						AnchorDescendantConn:Disconnect()
+					end)
+					AnchorDescendantConn = nil
+				end
+				AnchorDescendantConn = NewCharacter.DescendantAdded:Connect(function(obj)
+					if not AnchorEnabled then return end
+					if obj:IsA("BasePart") then
+						AnchorOriginalAnchored[obj] = obj.Anchored
+						obj.Anchored = true
+					end
+				end)
+			end)
+		end)
+	end
+end
+
+local function StopAnchor()
+	if not AnchorEnabled then return end
+	AnchorEnabled = false
+
+	if AnchorDescendantConn then
+		pcall(function()
+			AnchorDescendantConn:Disconnect()
+		end)
+		AnchorDescendantConn = nil
+	end
+	if AnchorCharacterConn then
+		pcall(function()
+			AnchorCharacterConn:Disconnect()
+		end)
+		AnchorCharacterConn = nil
+	end
+
+	ApplyAnchorToCharacter(Player.Character, false)
+	AnchorOriginalAnchored = {}
 end
 
 local function EnforceForceTime()
@@ -5012,6 +5105,14 @@ local function SetupCommands()
 			ToggleFlight(false, FlySpeed)
 		end
 	)
+	CreateCommand("Anchor", "Makes your character immovable while enabled.", nil, nil, "Character",
+		function()
+			StartAnchor()
+		end,
+		function()
+			StopAnchor()
+		end
+	)
 	CreateCommand("Point Teleport", "Teleport to where you click. Interface: click anywhere. Tool: gives a tool that teleports on activation.", nil, {"Interface", "Tool"}, "Character",
 		function(Mode)
 			if modeEnabled then return end
@@ -5743,6 +5844,7 @@ local function Close()
 		SetCameraTarget("None", nil)
 		SetPlayerAnimations("None")
 		ToggleFlight(false)
+		StopAnchor()
 		if Player.PlayerGui:FindFirstChild("LinkScreen") then
 			Player.PlayerGui.LinkScreen:Destroy()
 		end
