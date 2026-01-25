@@ -22,7 +22,7 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.4"
+local VersionString = "v1.3.5"
 local ChangeLog = "• Extended & Expanded Platform\n• Updated VC Unban with advanced capability\n• Added cross-game persistance\n• Added a Voice Chat Unban command" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
@@ -72,8 +72,9 @@ AttachmentLocations = {"Back","Head","Front","Left","Right"}
 CommandCategories = {"None"}
 CurrentCategory = "None"
 
+FadeTweenTime = 0.25
 FadeTweenInfo = TweenInfo.new(
-	0.25, 
+	FadeTweenTime,
 	Enum.EasingStyle.Quint
 )
 
@@ -252,11 +253,23 @@ end
 
 -- Create UI Method
 
+local function NewGuiGroup()
+	local success, group = pcall(function()
+		return Instance.new("CanvasGroup")
+	end)
+
+	if success and group then
+		return group
+	end
+
+	return Instance.new("Frame")
+end
+
 function CreateUI()
 	local EmptyTools = Instance.new("ScreenGui")
 	local OuterFrame = Instance.new("Frame")
 	local UICorner = Instance.new("UICorner")
-	local Contents = Instance.new("Frame")
+	local Contents = NewGuiGroup()
 	local Title = Instance.new("TextLabel")
 	local UICorner_2 = Instance.new("UICorner")
 	local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
@@ -281,7 +294,7 @@ function CreateUI()
 	local Info_3 = Instance.new("TextButton")
 	local UICorner_7 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_3 = Instance.new("UIAspectRatioConstraint")
-	local ContentShrunken = Instance.new("Frame")
+	local ContentShrunken = NewGuiGroup()
 	local UICorner_8 = Instance.new("UICorner")
 	local UIAspectRatioConstraint_4 = Instance.new("UIAspectRatioConstraint")
 	local Close = Instance.new("TextButton")
@@ -293,6 +306,8 @@ function CreateUI()
 	local ToastFrame = Instance.new("Frame")
 	local UICorner_11 = Instance.new("UICorner")
 	local Text = Instance.new("TextLabel")
+	local ContentsScale = Instance.new("UIScale")
+	local ContentShrunkenScale = Instance.new("UIScale")
 
 	--Properties:
 
@@ -324,6 +339,13 @@ function CreateUI()
 	Contents.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Contents.BorderSizePixel = 0
 	Contents.Size = UDim2.new(1, 0, 1, 0)
+	if hasProperty(Contents, "GroupTransparency") then
+		Contents.GroupTransparency = 0
+	end
+
+	ContentsScale.Name = "ContentsScale"
+	ContentsScale.Scale = 1
+	ContentsScale.Parent = Contents
 
 	Title.Name = "Title"
 	Title.Parent = Contents
@@ -523,6 +545,13 @@ function CreateUI()
 	ContentShrunken.Position = UDim2.new(0.670155883, 0, 0.0024564031, 0)
 	ContentShrunken.Size = UDim2.new(0.334465146, 0, 0.160182983, 0)
 	ContentShrunken.Visible = false
+	if hasProperty(ContentShrunken, "GroupTransparency") then
+		ContentShrunken.GroupTransparency = 1
+	end
+
+	ContentShrunkenScale.Name = "ContentShrunkenScale"
+	ContentShrunkenScale.Scale = 0.97
+	ContentShrunkenScale.Parent = ContentShrunken
 
 	UICorner_8.CornerRadius = UDim.new(0.0500000007, 0)
 	UICorner_8.Parent = ContentShrunken
@@ -688,9 +717,9 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	CallDialog.Selectable = false
 	CallDialog.Size = UDim2.new(0, 400, 0, 182)
 	CallDialog.AutoButtonColor = false
-	CallDialog.Image = "rbxasset://LuaPackages/Packages/_Index/FoundationImages/FoundationImages/SpriteSheets/img_set_1x_1.png"
+	CallDialog.Image = "rbxassetid://74861121457749"
 	CallDialog.ImageColor3 = Color3.fromRGB(57, 59, 61)
-	CallDialog.ImageRectOffset = Vector2.new(402, 494)
+	CallDialog.ImageRectOffset = Vector2.new(83, 494)
 	CallDialog.ImageRectSize = Vector2.new(17, 17)
 	CallDialog.ScaleType = Enum.ScaleType.Slice
 	CallDialog.SliceCenter = Rect.new(8, 8, 9, 9)
@@ -731,8 +760,8 @@ function CreateAlert(Title_Text, Body_Text, Image_ID, Button_Text, Sub_Button_Te
 	_1.AutomaticSize = Enum.AutomaticSize.Y
 	_1.Size = UDim2.new(0, 352, 0, 36)
 	_1.AutoButtonColor = false
-	_1.Image = "rbxasset://LuaPackages/Packages/_Index/FoundationImages/FoundationImages/SpriteSheets/img_set_1x_1.png"
-	_1.ImageRectOffset = Vector2.new(402, 494)
+	_1.Image = "rbxassetid://74861121457749"
+	_1.ImageRectOffset = Vector2.new(83, 494)
 	_1.ImageRectSize = Vector2.new(17, 17)
 	_1.ScaleType = Enum.ScaleType.Slice
 	_1.SliceCenter = Rect.new(8, 8, 9, 9)
@@ -2900,9 +2929,9 @@ local function CreateLinkAlert(ID)
 	CallDialog.Selectable = false
 	CallDialog.Size = UDim2.new(0, 400, 0, 182)
 	CallDialog.AutoButtonColor = false
-	CallDialog.Image = "rbxasset://LuaPackages/Packages/_Index/FoundationImages/FoundationImages/SpriteSheets/img_set_1x_1.png"
+	CallDialog.Image = "rbxassetid://74861121457749"
 	CallDialog.ImageColor3 = Color3.fromRGB(57, 59, 61)
-	CallDialog.ImageRectOffset = Vector2.new(402, 494)
+	CallDialog.ImageRectOffset = Vector2.new(83, 494)
 	CallDialog.ImageRectSize = Vector2.new(17, 17)
 	CallDialog.ScaleType = Enum.ScaleType.Slice
 	CallDialog.SliceCenter = Rect.new(8, 8, 9, 9)
@@ -2940,8 +2969,8 @@ local function CreateLinkAlert(ID)
 	_1.LayoutOrder = 1
 	_1.Size = UDim2.new(0, 352, 0, 36)
 	_1.AutoButtonColor = false
-	_1.Image = "rbxasset://LuaPackages/Packages/_Index/FoundationImages/FoundationImages/SpriteSheets/img_set_1x_1.png"
-	_1.ImageRectOffset = Vector2.new(402, 494)
+	_1.Image = "rbxassetid://74861121457749"
+	_1.ImageRectOffset = Vector2.new(83, 494)
 	_1.ImageRectSize = Vector2.new(17, 17)
 	_1.ScaleType = Enum.ScaleType.Slice
 	_1.SliceCenter = Rect.new(8, 8, 9, 9)
@@ -5141,17 +5170,112 @@ if not MainUI then return end
 
 ToggleTween = nil
 
-function Toggle()
-	UIOpen = not UIOpen
-	ContentShrunken.Visible = not UIOpen
-	OuterFrame.Toggle.Text = UIOpen and "-" or "+"
-	local Transparency = UIOpen and 0 or 1
-	if ToggleTween then
-		ToggleTween:Cancel()
+local ToggleTweens = {}
+local ToggleSerial = 0
+
+local function CancelToggleTweens()
+	for _, tween in ipairs(ToggleTweens) do
+		pcall(function()
+			tween:Cancel()
+		end)
 	end
-	Contents.Visible = UIOpen
-	ToggleTween = TweenService:Create(OuterFrame, FadeTweenInfo, {BackgroundTransparency = Transparency})
-	ToggleTween:Play()
+	for i = #ToggleTweens, 1, -1 do
+		ToggleTweens[i] = nil
+	end
+end
+
+local function PlayToggleTween(object, info, props)
+	local tween = TweenService:Create(object, info, props)
+	table.insert(ToggleTweens, tween)
+	tween:Play()
+	return tween
+end
+
+function Toggle()
+	ToggleSerial += 1
+	local serial = ToggleSerial
+	CancelToggleTweens()
+
+	UIOpen = not UIOpen
+	OuterFrame.Toggle.Text = UIOpen and "-" or "+"
+
+	local contentsScale = Contents and Contents:FindFirstChild("ContentsScale")
+	local shrunkenScale = ContentShrunken and ContentShrunken:FindFirstChild("ContentShrunkenScale")
+	local hasContentsFade = Contents and hasProperty(Contents, "GroupTransparency")
+	local hasShrunkenFade = ContentShrunken and hasProperty(ContentShrunken, "GroupTransparency")
+
+	Contents.Visible = true
+	ContentShrunken.Visible = true
+
+	if UIOpen then
+		if hasContentsFade then
+			Contents.GroupTransparency = 1
+		end
+		if contentsScale and hasProperty(contentsScale, "Scale") then
+			contentsScale.Scale = 0.985
+		end
+		if hasShrunkenFade then
+			ContentShrunken.GroupTransparency = 0
+		end
+		if shrunkenScale and hasProperty(shrunkenScale, "Scale") then
+			shrunkenScale.Scale = 1
+		end
+
+		PlayToggleTween(OuterFrame, FadeTweenInfo, {BackgroundTransparency = 0})
+		if hasContentsFade then
+			PlayToggleTween(Contents, FadeTweenInfo, {GroupTransparency = 0})
+		end
+		if contentsScale and hasProperty(contentsScale, "Scale") then
+			PlayToggleTween(contentsScale, FadeTweenInfo, {Scale = 1})
+		end
+		if hasShrunkenFade then
+			PlayToggleTween(ContentShrunken, FadeTweenInfo, {GroupTransparency = 1})
+		end
+		if shrunkenScale and hasProperty(shrunkenScale, "Scale") then
+			PlayToggleTween(shrunkenScale, FadeTweenInfo, {Scale = 0.97})
+		end
+
+		task.delay(FadeTweenTime, function()
+			if ToggleSerial ~= serial then
+				return
+			end
+			ContentShrunken.Visible = false
+		end)
+	else
+		if hasContentsFade then
+			Contents.GroupTransparency = 0
+		end
+		if contentsScale and hasProperty(contentsScale, "Scale") then
+			contentsScale.Scale = 1
+		end
+		if hasShrunkenFade then
+			ContentShrunken.GroupTransparency = 1
+		end
+		if shrunkenScale and hasProperty(shrunkenScale, "Scale") then
+			shrunkenScale.Scale = 0.97
+		end
+
+		PlayToggleTween(OuterFrame, FadeTweenInfo, {BackgroundTransparency = 1})
+		if hasContentsFade then
+			PlayToggleTween(Contents, FadeTweenInfo, {GroupTransparency = 1})
+		end
+		if contentsScale and hasProperty(contentsScale, "Scale") then
+			PlayToggleTween(contentsScale, FadeTweenInfo, {Scale = 0.985})
+		end
+		if hasShrunkenFade then
+			PlayToggleTween(ContentShrunken, FadeTweenInfo, {GroupTransparency = 0})
+		end
+		if shrunkenScale and hasProperty(shrunkenScale, "Scale") then
+			PlayToggleTween(shrunkenScale, FadeTweenInfo, {Scale = 1})
+		end
+
+		task.delay(FadeTweenTime, function()
+			if ToggleSerial ~= serial then
+				return
+			end
+			Contents.Visible = false
+		end)
+	end
 end
 
 OuterFrame.Toggle.MouseButton1Click:Connect(function()
