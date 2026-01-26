@@ -24,8 +24,8 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.6"
-local ChangeLog = "• Improved Time command\n• Added Ramp Command\n• Added 'Generic' shading option\n• Added 'Deflect' mode to anchor command\n• Fixed various minor bugs" 
+local VersionString = "v1.3.7"
+local ChangeLog = "• Added 'Flip' command\n• Added Ramp Command\n• Added 'Generic' shading option\n• Added 'Isolate' mode to anchor command\n• Fixed various minor bugs" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
 -- Variables
@@ -227,18 +227,29 @@ MarkersActive = false
 PhaseEnabled = false
 PhaseObjects = {}
 
-TeleportIndicator = nil
-TeleportEnabled = false
-PointTeleportMode = "Interface"
-PointTeleportToolEnabled = false
-PointTeleportTool = nil
-PointTeleportToolConnections = {}
-PointTeleportToolCharacterConn = nil
-PointTeleportToolGiveLoopActive = false
+ TeleportIndicator = nil
+ TeleportEnabled = false
+ PointTeleportMode = "Interface"
+ PointTeleportToolEnabled = false
+ PointTeleportTool = nil
+ PointTeleportToolConnections = {}
+ PointTeleportToolCharacterConn = nil
+ PointTeleportToolGiveLoopActive = false
 	PointTeleportToolEquippedMouse = nil
+
+	FlipMode = "Tool"
+	FlipInterfaceEnabled = false
+	FlipInterfaceConn = nil
+	FlipToolEnabled = false
+	FlipTool = nil
+	FlipToolConnections = {}
+	FlipToolMouseConns = {}
+	FlipToolCharacterConn = nil
+	FlipToolGiveLoopActive = false
+	FlipInProgress = false
 	AnchorEnabled = false
 	AnchorMode = "Lock"
-	AnchorAvailableModes = {"Lock", "Deflect (WIP)"}
+	AnchorAvailableModes = {"Lock", "Deflect", "Isolate (WIP)"}
 	AnchorOriginalAnchored = {}
 	AnchorCharacterConn = nil
 	AnchorDescendantConn = nil
@@ -340,23 +351,34 @@ local function DisconnectPointTeleportToolConnections()
 	PointTeleportToolConnections = {}
 end
 
-local function GetPointTeleportClickPosition()
+local function GetPointTeleportClickTargetAndPosition()
 	local function tryMouseHit(m)
 		if not m then return nil end
+		local okT, target = pcall(function()
+			return m.Target
+		end)
+		if okT and target and target:IsA("BasePart") then
+			local ok, hit = pcall(function()
+				return m.Hit
+			end)
+			if ok and hit and typeof(hit) == "CFrame" then
+				return target, hit.Position
+			end
+		end
 		local ok, hit = pcall(function()
 			return m.Hit
 		end)
 		if ok and hit and typeof(hit) == "CFrame" then
-			return hit.Position
+			return nil
 		end
 		return nil
 	end
 
-	local pos = tryMouseHit(PointTeleportToolEquippedMouse)
-	if pos then return pos end
+	local target, pos = tryMouseHit(PointTeleportToolEquippedMouse)
+	if target and pos then return target, pos end
 
-	pos = tryMouseHit(Mouse)
-	if pos then return pos end
+	target, pos = tryMouseHit(Mouse)
+	if target and pos then return target, pos end
 
 	local ok, screenPos = pcall(function()
 		return UserInputService:GetMouseLocation()
@@ -402,22 +424,35 @@ local function GetPointTeleportClickPosition()
 		params.FilterType = Enum.RaycastFilterType.Exclude
 		params.FilterDescendantsInstances = ignore
 		result = workspace:Raycast(ray.Origin, ray.Direction * 5000, params)
-		if result then
-			return result.Position
+		if result and result.Instance and result.Instance:IsA("BasePart") then
+			return result.Instance, result.Position
 		end
 	else
 		local okOld, part, hit = pcall(function()
 			return workspace:FindPartOnRayWithIgnoreList(Ray.new(ray.Origin, ray.Direction * 5000), ignore)
 		end)
-		if okOld and hit then
-			return hit
+		if okOld and part and part:IsA("BasePart") and hit then
+			return part, hit
 		end
 	end
 
 	return nil
 end
 
-local function EnsurePointTeleportTool()
+local EnsurePointTeleportTool
+
+local function EnsurePointTeleportToolInBackpack()
+	if not PointTeleportToolEnabled then return end
+
+	local backpack = Player:WaitForChild("Backpack")
+	local tool = FindPointTeleportToolInContainer(backpack)
+	if tool then return tool end
+
+	pcall(EnsurePointTeleportTool)
+	return FindPointTeleportToolInContainer(backpack)
+end
+
+EnsurePointTeleportTool = function()
 	if not PointTeleportToolEnabled then return end
 
 	local Backpack = Player:WaitForChild("Backpack")
@@ -475,8 +510,8 @@ local function EnsurePointTeleportTool()
 	end))
 
 	table.insert(PointTeleportToolConnections, Tool.Activated:Connect(function()
-		local Location = GetPointTeleportClickPosition()
-		if not Location then return end
+		local target, Location = GetPointTeleportClickTargetAndPosition()
+		if not (target and Location) then return end
 		local Root = GetRoot(Player)
 		if Root then
 			Root.Velocity = Vector3.zero
@@ -506,7 +541,8 @@ local function StartPointTeleportToolGiveLoop()
 		while PointTeleportToolEnabled do
 			local backpack = Player:FindFirstChild("Backpack")
 			local character = Player.Character
-			local hasTool = FindPointTeleportToolInContainer(backpack) ~= nil
+			local hasToolInBackpack = FindPointTeleportToolInContainer(backpack) ~= nil
+			local hasTool = hasToolInBackpack
 			if not hasTool and character then
 				local humanoid = character:FindFirstChildOfClass("Humanoid")
 				if humanoid and humanoid.Health > 0 then
@@ -534,9 +570,11 @@ local function StartPointTeleportTool()
 	if not PointTeleportToolCharacterConn then
 		PointTeleportToolCharacterConn = Player.CharacterAdded:Connect(function()
 			task.defer(function()
-				EnsurePointTeleportTool()
-				task.wait(0.35)
-				EnsurePointTeleportTool()
+				while PointTeleportToolEnabled do
+					local tool = EnsurePointTeleportToolInBackpack()
+					if tool then break end
+					task.wait(0.15)
+				end
 			end)
 		end)
 	end
@@ -554,6 +592,332 @@ local function StopPointTeleportTool()
 	DisconnectPointTeleportToolConnections()
 	RemovePointTeleportToolInstances()
 	PointTeleportTool = nil
+end
+
+local function PerformFlip(flipDirection)
+	if FlipInProgress then return end
+	FlipInProgress = true
+	task.spawn(function()
+		local character = Player and Player.Character
+		if not character then
+			FlipInProgress = false
+			return
+		end
+
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local rootpart = character:FindFirstChild("HumanoidRootPart")
+		if not humanoid or not rootpart then
+			FlipInProgress = false
+			return
+		end
+
+		pcall(function()
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end)
+		pcall(function()
+			humanoid.Sit = true
+		end)
+
+		local lookvector = rootpart.CFrame.LookVector
+		local spindirection = Vector3.new(-lookvector.Z, 0, lookvector.X)
+
+		local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso") or rootpart
+		local bodyvelocity
+		if torso then
+			bodyvelocity = Instance.new("BodyAngularVelocity")
+			bodyvelocity.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+			bodyvelocity.AngularVelocity = spindirection * ((flipDirection or 1) * 10)
+			bodyvelocity.P = 1000
+			bodyvelocity.Parent = torso
+			task.wait(0.4)
+			pcall(function()
+				bodyvelocity:Destroy()
+			end)
+		end
+
+		task.wait(0.2)
+		pcall(function()
+			humanoid.Sit = false
+		end)
+		FlipInProgress = false
+	end)
+end
+
+local function StartFlipInterface()
+	if FlipInterfaceEnabled then return end
+	FlipInterfaceEnabled = true
+	if FlipInterfaceConn then
+		pcall(function()
+			FlipInterfaceConn:Disconnect()
+		end)
+		FlipInterfaceConn = nil
+	end
+	FlipInterfaceConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if not FlipInterfaceEnabled then return end
+		if gameProcessed then return end
+		if UserInputService:GetFocusedTextBox() then return end
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			PerformFlip(-1)
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			PerformFlip(1)
+		end
+	end)
+end
+
+local function StopFlipInterface()
+	FlipInterfaceEnabled = false
+	if FlipInterfaceConn then
+		pcall(function()
+			FlipInterfaceConn:Disconnect()
+		end)
+		FlipInterfaceConn = nil
+	end
+end
+
+local function IsFlipTool(obj)
+	return obj
+		and obj:IsA("Tool")
+		and obj:GetAttribute("ET_FlipTool") == true
+end
+
+local function FindFlipToolInContainer(container)
+	if not container then return nil end
+	for _, child in ipairs(container:GetChildren()) do
+		if IsFlipTool(child) then
+			return child
+		end
+	end
+	return nil
+end
+
+local function RemoveExtraFlipTools(container, keepTool)
+	if not container then return end
+	for _, child in ipairs(container:GetChildren()) do
+		if IsFlipTool(child) and child ~= keepTool then
+			pcall(function()
+				child:Destroy()
+			end)
+		end
+	end
+end
+
+local function RemoveFlipToolInstances()
+	local containers = {}
+	local backpack = Player:FindFirstChild("Backpack")
+	local character = Player.Character
+	local starterGear = Player:FindFirstChild("StarterGear")
+	if backpack then table.insert(containers, backpack) end
+	if character then table.insert(containers, character) end
+	if starterGear then table.insert(containers, starterGear) end
+
+	for _, container in ipairs(containers) do
+		for _, child in ipairs(container:GetChildren()) do
+			if IsFlipTool(child) then
+				pcall(function()
+					child:Destroy()
+				end)
+			end
+		end
+	end
+end
+
+local function DisconnectFlipToolConnections()
+	for _, conn in ipairs(FlipToolConnections) do
+		pcall(function()
+			conn:Disconnect()
+		end)
+	end
+	FlipToolConnections = {}
+end
+
+local function DisconnectFlipToolMouseConns()
+	for _, conn in ipairs(FlipToolMouseConns) do
+		pcall(function()
+			conn:Disconnect()
+		end)
+	end
+	FlipToolMouseConns = {}
+end
+
+local EnsureFlipTool
+
+local function EnsureFlipToolInBackpack()
+	if not FlipToolEnabled then return end
+	local backpack = Player:WaitForChild("Backpack")
+	local tool = FindFlipToolInContainer(backpack)
+	if tool then return tool end
+	pcall(EnsureFlipTool)
+	return FindFlipToolInContainer(backpack)
+end
+
+EnsureFlipTool = function()
+	if not FlipToolEnabled then return end
+
+	local backpack = Player:WaitForChild("Backpack")
+	local character = Player.Character
+	local starterGear = Player:FindFirstChild("StarterGear")
+
+	DisconnectFlipToolMouseConns()
+	DisconnectFlipToolConnections()
+
+	local tool = FindFlipToolInContainer(backpack)
+	if not tool and character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.Health > 0 then
+			tool = FindFlipToolInContainer(character)
+		end
+	end
+
+	if not tool and starterGear then
+		local template = FindFlipToolInContainer(starterGear)
+		if template then
+			tool = template:Clone()
+			tool.Parent = backpack
+		end
+	end
+
+	if not tool then
+		tool = Instance.new("Tool")
+		tool.Name = "Flip"
+		tool.RequiresHandle = false
+		tool.CanBeDropped = false
+		tool:SetAttribute("ET_FlipTool", true)
+		tool.Parent = backpack
+	end
+
+	FlipTool = tool
+
+	RemoveExtraFlipTools(backpack, tool)
+	RemoveExtraFlipTools(character, tool)
+
+	if starterGear then
+		local starterTool = FindFlipToolInContainer(starterGear)
+		if not starterTool then
+			local template = tool:Clone()
+			template.Parent = starterGear
+		else
+			RemoveExtraFlipTools(starterGear, starterTool)
+		end
+	end
+
+	table.insert(FlipToolConnections, tool.Equipped:Connect(function(m)
+		DisconnectFlipToolMouseConns()
+		if not FlipToolEnabled then return end
+		if not m then return end
+		if typeof(m) ~= "Instance" then return end
+
+		local function tryFlip(dir)
+			if not FlipToolEnabled then return end
+			if UserInputService:GetFocusedTextBox() then return end
+			PerformFlip(dir)
+		end
+
+		pcall(function()
+			table.insert(FlipToolMouseConns, m.Button1Down:Connect(function()
+				tryFlip(-1)
+			end))
+		end)
+		pcall(function()
+			table.insert(FlipToolMouseConns, m.Button2Down:Connect(function()
+				tryFlip(1)
+			end))
+		end)
+	end))
+
+	table.insert(FlipToolConnections, tool.Unequipped:Connect(function()
+		DisconnectFlipToolMouseConns()
+	end))
+
+	table.insert(FlipToolConnections, tool.AncestryChanged:Connect(function()
+		if not FlipToolEnabled then return end
+		task.defer(function()
+			if not FlipToolEnabled then return end
+			if not tool or not tool.Parent then
+				task.wait(0.15)
+				EnsureFlipTool()
+			end
+		end)
+	end))
+end
+
+local function StartFlipToolGiveLoop()
+	if FlipToolGiveLoopActive then return end
+	FlipToolGiveLoopActive = true
+	task.spawn(function()
+		while FlipToolEnabled do
+			local backpack = Player:FindFirstChild("Backpack")
+			local character = Player.Character
+			local hasToolInBackpack = FindFlipToolInContainer(backpack) ~= nil
+			local hasTool = hasToolInBackpack
+			if not hasTool and character then
+				local humanoid = character:FindFirstChildOfClass("Humanoid")
+				if humanoid and humanoid.Health > 0 then
+					hasTool = FindFlipToolInContainer(character) ~= nil
+				end
+			end
+			if not hasTool then
+				pcall(EnsureFlipTool)
+			end
+			task.wait(0.2)
+		end
+		FlipToolGiveLoopActive = false
+	end)
+end
+
+local function StartFlipTool()
+	if FlipToolEnabled then
+		EnsureFlipTool()
+		StartFlipToolGiveLoop()
+		return
+	end
+	FlipToolEnabled = true
+	EnsureFlipTool()
+	StartFlipToolGiveLoop()
+	if not FlipToolCharacterConn then
+		FlipToolCharacterConn = Player.CharacterAdded:Connect(function()
+			task.defer(function()
+				while FlipToolEnabled do
+					local tool = EnsureFlipToolInBackpack()
+					if tool then break end
+					task.wait(0.15)
+				end
+			end)
+		end)
+	end
+end
+
+local function StopFlipTool()
+	FlipToolEnabled = false
+	if FlipToolCharacterConn then
+		pcall(function()
+			FlipToolCharacterConn:Disconnect()
+		end)
+		FlipToolCharacterConn = nil
+	end
+	DisconnectFlipToolMouseConns()
+	DisconnectFlipToolConnections()
+	RemoveFlipToolInstances()
+	FlipTool = nil
+end
+
+local function StartFlip(mode)
+	mode = tostring(mode or "Tool")
+	if mode ~= "Tool" and mode ~= "Interface" then
+		mode = "Tool"
+	end
+	FlipMode = mode
+	if FlipMode == "Tool" then
+		StopFlipInterface()
+		StartFlipTool()
+	else
+		StopFlipTool()
+		StartFlipInterface()
+	end
+end
+
+local function StopFlip()
+	StopFlipInterface()
+	StopFlipTool()
 end
 
 local function ApplyAnchorToCharacter(Character, Enabled)
@@ -595,8 +959,11 @@ local function NormalizeAnchorMode(mode)
 	if m == "" then
 		return "Lock"
 	end
+	if m:find("isolate", 1, true) then
+		return "Isolate (WIP)"
+	end
 	if m:find("deflect", 1, true) then
-		return "Deflect (WIP)"
+		return "Deflect"
 	end
 	return "Lock"
 end
@@ -669,6 +1036,273 @@ local function DeflectRestoreTrackedForces()
 	DeflectDisabledForces = {}
 end
 
+local function IsDeflectLikeAnchorMode(mode)
+	return mode == "Deflect" or mode == "Isolate (WIP)"
+end
+
+local IsolateRagdollConns = {}
+local IsolateRagdollHumanoid = nil
+local IsolateRagdollOriginalStates = nil
+local IsolateRagdollMotors = nil
+local IsolateRagdollCharacter = nil
+
+local function IsRagdollConstraint(obj)
+	return obj
+		and (obj:IsA("BallSocketConstraint")
+			or obj:IsA("HingeConstraint")
+			or obj:IsA("NoCollisionConstraint")
+			or obj:IsA("RopeConstraint")
+			or obj:IsA("RodConstraint")
+			or obj:IsA("SpringConstraint")
+			or obj:IsA("PrismaticConstraint")
+			or obj:IsA("CylindricalConstraint"))
+end
+
+local function ConstraintLooksLikeCharacterRagdoll(constraint, character)
+	if not constraint or not character then return false end
+	local a0 = TryGetProp(constraint, "Attachment0")
+	local a1 = TryGetProp(constraint, "Attachment1")
+	if not a0 or not a1 then return false end
+	local p0 = TryGetProp(a0, "Parent")
+	local p1 = TryGetProp(a1, "Parent")
+	if not p0 or not p1 then return false end
+	if not p0:IsA("BasePart") or not p1:IsA("BasePart") then return false end
+	return p0:IsDescendantOf(character) and p1:IsDescendantOf(character)
+end
+
+local function SnapshotCharacterMotors(character)
+	local motors = {}
+	if not character then return motors end
+	for _, obj in ipairs(character:GetDescendants()) do
+		if obj:IsA("Motor6D") then
+			table.insert(motors, {
+				Name = obj.Name,
+				Parent = obj.Parent,
+				Part0 = TryGetProp(obj, "Part0"),
+				Part1 = TryGetProp(obj, "Part1"),
+				C0 = TryGetProp(obj, "C0"),
+				C1 = TryGetProp(obj, "C1"),
+				Motor = obj,
+			})
+		end
+	end
+	return motors
+end
+
+local function RestoreCharacterMotors(character, motors)
+	if not character or not motors then return end
+	for _, info in ipairs(motors) do
+		local motor = info.Motor
+		if not motor or not TryGetProp(motor, "Parent") then
+			local parent = info.Parent
+			if typeof(parent) ~= "Instance" then parent = nil end
+			if parent and not parent:IsDescendantOf(character) then parent = nil end
+
+			local candidate
+			if parent then
+				candidate = parent:FindFirstChild(info.Name)
+				if candidate and candidate:IsA("Motor6D") then
+					motor = candidate
+				end
+			end
+
+			if not motor then
+				motor = Instance.new("Motor6D")
+				motor.Name = info.Name
+				motor.Parent = parent or info.Part0 or character
+			end
+			info.Motor = motor
+		end
+
+		pcall(function()
+			if info.Part0 ~= nil then motor.Part0 = info.Part0 end
+		end)
+		pcall(function()
+			if info.Part1 ~= nil then motor.Part1 = info.Part1 end
+		end)
+		pcall(function()
+			if typeof(info.C0) == "CFrame" then motor.C0 = info.C0 end
+		end)
+		pcall(function()
+			if typeof(info.C1) == "CFrame" then motor.C1 = info.C1 end
+		end)
+		pcall(function()
+			if TryGetProp(motor, "Enabled") == false then
+				motor.Enabled = true
+			end
+		end)
+	end
+end
+
+local function RemoveCharacterRagdollConstraints(character)
+	if not character then return false end
+	local removedAny = false
+	for _, obj in ipairs(character:GetDescendants()) do
+		if IsRagdollConstraint(obj) and ConstraintLooksLikeCharacterRagdoll(obj, character) then
+			removedAny = true
+			pcall(function()
+				obj:Destroy()
+			end)
+		end
+	end
+	return removedAny
+end
+
+local function ZeroCharacterVelocities(character)
+	if not character then return end
+	for _, obj in ipairs(character:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			TrySetProp(obj, "AssemblyLinearVelocity", Vector3.zero)
+			TrySetProp(obj, "AssemblyAngularVelocity", Vector3.zero)
+			TrySetProp(obj, "Velocity", Vector3.zero)
+			TrySetProp(obj, "RotVelocity", Vector3.zero)
+		end
+	end
+end
+
+local function StopIsolateRagdollProtection()
+	IsolateRagdollConns.StateChanged = DisconnectConn(IsolateRagdollConns.StateChanged)
+	IsolateRagdollConns.PlatformStand = DisconnectConn(IsolateRagdollConns.PlatformStand)
+	IsolateRagdollConns.AncestryChanged = DisconnectConn(IsolateRagdollConns.AncestryChanged)
+	IsolateRagdollConns.DescendantAdded = DisconnectConn(IsolateRagdollConns.DescendantAdded)
+	IsolateRagdollConns.Heartbeat = DisconnectConn(IsolateRagdollConns.Heartbeat)
+
+	if IsolateRagdollHumanoid and IsolateRagdollOriginalStates then
+		for stateType, wasEnabled in pairs(IsolateRagdollOriginalStates) do
+			pcall(function()
+				IsolateRagdollHumanoid:SetStateEnabled(stateType, wasEnabled)
+			end)
+		end
+	end
+
+	IsolateRagdollHumanoid = nil
+	IsolateRagdollOriginalStates = nil
+	IsolateRagdollMotors = nil
+	IsolateRagdollCharacter = nil
+end
+
+local function StartIsolateRagdollProtection(Character)
+	StopIsolateRagdollProtection()
+	if not Character then return end
+
+	local humanoid = Character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+
+	IsolateRagdollHumanoid = humanoid
+	IsolateRagdollOriginalStates = {}
+	IsolateRagdollCharacter = Character
+	IsolateRagdollMotors = SnapshotCharacterMotors(Character)
+
+	local blockedStates = {
+		Enum.HumanoidStateType.Ragdoll,
+		Enum.HumanoidStateType.Physics,
+		Enum.HumanoidStateType.FallingDown,
+		Enum.HumanoidStateType.PlatformStanding,
+	}
+
+	for _, stateType in ipairs(blockedStates) do
+		pcall(function()
+			IsolateRagdollOriginalStates[stateType] = humanoid:GetStateEnabled(stateType)
+		end)
+		pcall(function()
+			humanoid:SetStateEnabled(stateType, false)
+		end)
+	end
+
+	local function cancelRagdoll()
+		if not AnchorEnabled or AnchorMode ~= "Isolate (WIP)" then return end
+
+		local character = IsolateRagdollCharacter or Player.Character
+		if character then
+			RemoveCharacterRagdollConstraints(character)
+			RestoreCharacterMotors(character, IsolateRagdollMotors)
+		end
+
+		pcall(function()
+			if humanoid.PlatformStand then
+				humanoid.PlatformStand = false
+			end
+		end)
+
+		local state
+		pcall(function()
+			state = humanoid:GetState()
+		end)
+		if state == Enum.HumanoidStateType.Ragdoll
+			or state == Enum.HumanoidStateType.Physics
+			or state == Enum.HumanoidStateType.FallingDown
+			or state == Enum.HumanoidStateType.PlatformStanding then
+			pcall(function()
+				humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+			end)
+			pcall(function()
+				humanoid:ChangeState(Enum.HumanoidStateType.Running)
+			end)
+			if character then
+				ZeroCharacterVelocities(character)
+			end
+		end
+	end
+
+	IsolateRagdollConns.StateChanged = humanoid.StateChanged:Connect(function(_, new)
+		if not AnchorEnabled or AnchorMode ~= "Isolate (WIP)" then return end
+		if new == Enum.HumanoidStateType.Ragdoll
+			or new == Enum.HumanoidStateType.Physics
+			or new == Enum.HumanoidStateType.FallingDown
+			or new == Enum.HumanoidStateType.PlatformStanding then
+			cancelRagdoll()
+		end
+	end)
+
+	IsolateRagdollConns.PlatformStand = humanoid:GetPropertyChangedSignal("PlatformStand"):Connect(function()
+		if not AnchorEnabled or AnchorMode ~= "Isolate (WIP)" then return end
+		if humanoid.PlatformStand then
+			humanoid.PlatformStand = false
+		end
+	end)
+
+	IsolateRagdollConns.AncestryChanged = humanoid.AncestryChanged:Connect(function(_, parent)
+		if parent == nil then
+			StopIsolateRagdollProtection()
+		end
+	end)
+
+	IsolateRagdollConns.DescendantAdded = Character.DescendantAdded:Connect(function(obj)
+		if not AnchorEnabled or AnchorMode ~= "Isolate (WIP)" then return end
+		if IsRagdollConstraint(obj) and ConstraintLooksLikeCharacterRagdoll(obj, Character) then
+			pcall(function()
+				obj:Destroy()
+			end)
+			cancelRagdoll()
+			return
+		end
+		if obj:IsA("Motor6D") then
+			pcall(function()
+				if TryGetProp(obj, "Enabled") == false then
+					obj.Enabled = true
+				end
+			end)
+		end
+	end)
+
+	local lastEnforce = 0
+	IsolateRagdollConns.Heartbeat = RunService.Heartbeat:Connect(function()
+		if not AnchorEnabled or AnchorMode ~= "Isolate (WIP)" then return end
+		if tick() - lastEnforce < 0.12 then return end
+		lastEnforce = tick()
+
+		local character = IsolateRagdollCharacter or Player.Character
+		if not character then return end
+		local removedAny = RemoveCharacterRagdollConstraints(character)
+		RestoreCharacterMotors(character, IsolateRagdollMotors)
+		if removedAny then
+			ZeroCharacterVelocities(character)
+		end
+	end)
+
+	cancelRagdoll()
+end
+
 local function ApplyDeflectToCharacter(Character, trackExisting)
 	if not Character then return end
 	for _, obj in ipairs(Character:GetDescendants()) do
@@ -701,7 +1335,7 @@ local function StartAnchorDeflectForCharacter(Character)
 	AnchorDescendantConn = DisconnectConn(AnchorDescendantConn)
 	if Character then
 		AnchorDescendantConn = Character.DescendantAdded:Connect(function(obj)
-			if not AnchorEnabled or AnchorMode ~= "Deflect (WIP)" then return end
+			if not AnchorEnabled or not IsDeflectLikeAnchorMode(AnchorMode) then return end
 			if IsDeflectForceObject(obj) then
 				DeflectNeutralizeForceObject(obj, false)
 			end
@@ -710,7 +1344,7 @@ local function StartAnchorDeflectForCharacter(Character)
 
 	AnchorHeartbeatConn = DisconnectConn(AnchorHeartbeatConn)
 	AnchorHeartbeatConn = RunService.Heartbeat:Connect(function()
-		if not AnchorEnabled or AnchorMode ~= "Deflect (WIP)" then return end
+		if not AnchorEnabled or not IsDeflectLikeAnchorMode(AnchorMode) then return end
 		local character = Player and Player.Character
 		if not character then return end
 
@@ -788,6 +1422,9 @@ local function StartAnchor(mode)
 		StartAnchorLockForCharacter(Character)
 	else
 		StartAnchorDeflectForCharacter(Character)
+		if AnchorMode == "Isolate (WIP)" then
+			StartIsolateRagdollProtection(Character)
+		end
 	end
 
 	if not AnchorCharacterConn then
@@ -798,6 +1435,9 @@ local function StartAnchor(mode)
 					StartAnchorLockForCharacter(NewCharacter)
 				else
 					StartAnchorDeflectForCharacter(NewCharacter)
+					if AnchorMode == "Isolate (WIP)" then
+						StartIsolateRagdollProtection(NewCharacter)
+					end
 				end
 			end)
 		end)
@@ -813,6 +1453,7 @@ StopAnchor = function()
 	else
 		DeflectRestoreTrackedForces()
 	end
+	StopIsolateRagdollProtection()
 
 	AnchorEnabled = false
 	AnchorDescendantConn = DisconnectConn(AnchorDescendantConn)
@@ -895,6 +1536,10 @@ ThirdPartyLoadstrings =
 		function()
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/yofriendfromschool1/Sky-Hub/main/SkyHub.txt"))()
 		end,
+		["Backflip Tool"] =
+		function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Boxten-Keyes/music/refs/heads/main/music%23%5Bscripts%5D/music%23%5Bmiscellaneous%5D/music%23%5Bfe%20flip%5D.lua"))()
+		end,
 	}
 
 EmptyToolsLoadstrings =
@@ -941,10 +1586,7 @@ EmptyToolsLoadstrings =
 
 BetaTPLoadstrings = 
 	{
-		["Chatsploit"] =
-		function()
-			loadstring(game:HttpGet("https://pastebin.com/raw/tZJD6QyA"))()
-		end,
+		
 	}
 
 -- Settings Control
@@ -5527,7 +6169,7 @@ local function SetupCommands()
 			ToggleFlight(false, FlySpeed)
 		end
 	)
-	CreateCommand("Anchor", "Lock: anchors all character parts. Deflect (WIP): ignores external forces/knockback while still allowing normal movement.", nil, AnchorAvailableModes, "Character",
+	CreateCommand("Anchor", "Lock: anchors all character parts. Deflect: ignores external forces/knockback while still allowing normal movement. Isolate (WIP): Deflect + blocks ragdoll/physics states.", nil, AnchorAvailableModes, "Character",
 		function(Mode)
 			StartAnchor(Mode)
 		end,
@@ -5569,6 +6211,27 @@ local function SetupCommands()
 			GetHumanoid(Player).Health = 0
 		end,
 		nil
+	)
+	CreateCommand("Sit", "Makes your character sit.", nil, nil, "Character",
+		function()
+			local Humanoid = GetHumanoid(Player)
+			if not Humanoid then return end
+			pcall(function()
+				Humanoid.Sit = true
+			end)
+			pcall(function()
+				Humanoid:ChangeState(Enum.HumanoidStateType.Seated)
+			end)
+		end,
+		nil
+	)
+	CreateCommand("Flip", "Tool: equip the Flip tool (added to your backpack) then left click to front flip and right click to back flip. Interface: left/right click anywhere to flip while enabled. Can't flip while already flipping.", nil, {"Tool", "Interface"}, "Character",
+		function(Mode)
+			StartFlip(Mode)
+		end,
+		function()
+			StopFlip()
+		end
 	)
 	CreateCommand("Staircase", "Creates a staircase with a max of 200 steps in front of your character.", "Steps..", nil, "World",
 		function(Steps)
@@ -6273,6 +6936,7 @@ local function Close()
 		StopCFrameBoosting()
 		StopPointTeleportInterface()
 		StopPointTeleportTool()
+		StopFlip()
 		for i,v in pairs(Players:GetPlayers()) do
 			coroutine.resume(coroutine.create(function()
 				v:SetAttribute("Blocked", false)
