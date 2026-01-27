@@ -24,8 +24,8 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.7"
-local ChangeLog = "• Added 'Flip' command\n• Added Ramp Command\n• Added 'Generic' shading option\n• Added 'Isolate' mode to anchor command\n• Fixed various minor bugs" 
+local VersionString = "v1.3.8"
+local ChangeLog = "• Added 'Flip' command\n• Updated Ramp Command with 'Tool'\n• Added 'Generic' shading option\n• Added 'Isolate' mode to anchor command\n• Fixed various minor bugs" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
 -- Variables
@@ -247,6 +247,16 @@ PhaseObjects = {}
 	FlipToolCharacterConn = nil
 	FlipToolGiveLoopActive = false
 	FlipInProgress = false
+
+	RampToolEnabled = false
+	RampTool = nil
+	RampToolConnections = {}
+	RampToolCharacterConn = nil
+	RampToolGiveLoopActive = false
+	RampToolEquipped = false
+	RampToolUI = nil
+	RampToolUITransparencyLabel = nil
+	RampToolUIWidthLabel = nil
 	AnchorEnabled = false
 	AnchorMode = "Lock"
 	AnchorAvailableModes = {"Lock", "Deflect", "Isolate (WIP)"}
@@ -326,9 +336,10 @@ local function RemovePointTeleportToolInstances()
 	local containers = {}
 	local backpack = Player:FindFirstChild("Backpack")
 	local character = Player.Character
-	local starterGear = Player:FindFirstChild("StarterGear")
 	if backpack then table.insert(containers, backpack) end
 	if character then table.insert(containers, character) end
+
+	local starterGear = Player:FindFirstChild("StarterGear")
 	if starterGear then table.insert(containers, starterGear) end
 
 	for _, container in ipairs(containers) do
@@ -448,8 +459,12 @@ local function EnsurePointTeleportToolInBackpack()
 	local tool = FindPointTeleportToolInContainer(backpack)
 	if tool then return tool end
 
+	local character = Player.Character
+	tool = FindPointTeleportToolInContainer(character)
+	if tool then return tool end
+
 	pcall(EnsurePointTeleportTool)
-	return FindPointTeleportToolInContainer(backpack)
+	return FindPointTeleportToolInContainer(backpack) or FindPointTeleportToolInContainer(Player.Character)
 end
 
 EnsurePointTeleportTool = function()
@@ -469,14 +484,6 @@ EnsurePointTeleportTool = function()
 		end
 	end
 
-	if not Tool and StarterGear then
-		local Template = FindPointTeleportToolInContainer(StarterGear)
-		if Template then
-			Tool = Template:Clone()
-			Tool.Parent = Backpack
-		end
-	end
-
 	if not Tool then
 		Tool = Instance.new("Tool")
 		Tool.Name = "Point Teleport"
@@ -492,13 +499,7 @@ EnsurePointTeleportTool = function()
 	RemoveExtraPointTeleportTools(Character, Tool)
 
 	if StarterGear then
-		local StarterTool = FindPointTeleportToolInContainer(StarterGear)
-		if not StarterTool then
-			local Template = Tool:Clone()
-			Template.Parent = StarterGear
-		else
-			RemoveExtraPointTeleportTools(StarterGear, StarterTool)
-		end
+		RemoveExtraPointTeleportTools(StarterGear, nil)
 	end
 
 	table.insert(PointTeleportToolConnections, Tool.Equipped:Connect(function(m)
@@ -705,9 +706,10 @@ local function RemoveFlipToolInstances()
 	local containers = {}
 	local backpack = Player:FindFirstChild("Backpack")
 	local character = Player.Character
-	local starterGear = Player:FindFirstChild("StarterGear")
 	if backpack then table.insert(containers, backpack) end
 	if character then table.insert(containers, character) end
+
+	local starterGear = Player:FindFirstChild("StarterGear")
 	if starterGear then table.insert(containers, starterGear) end
 
 	for _, container in ipairs(containers) do
@@ -746,8 +748,13 @@ local function EnsureFlipToolInBackpack()
 	local backpack = Player:WaitForChild("Backpack")
 	local tool = FindFlipToolInContainer(backpack)
 	if tool then return tool end
+
+	local character = Player.Character
+	tool = FindFlipToolInContainer(character)
+	if tool then return tool end
+
 	pcall(EnsureFlipTool)
-	return FindFlipToolInContainer(backpack)
+	return FindFlipToolInContainer(backpack) or FindFlipToolInContainer(Player.Character)
 end
 
 EnsureFlipTool = function()
@@ -768,14 +775,6 @@ EnsureFlipTool = function()
 		end
 	end
 
-	if not tool and starterGear then
-		local template = FindFlipToolInContainer(starterGear)
-		if template then
-			tool = template:Clone()
-			tool.Parent = backpack
-		end
-	end
-
 	if not tool then
 		tool = Instance.new("Tool")
 		tool.Name = "Flip"
@@ -791,13 +790,7 @@ EnsureFlipTool = function()
 	RemoveExtraFlipTools(character, tool)
 
 	if starterGear then
-		local starterTool = FindFlipToolInContainer(starterGear)
-		if not starterTool then
-			local template = tool:Clone()
-			template.Parent = starterGear
-		else
-			RemoveExtraFlipTools(starterGear, starterTool)
-		end
+		RemoveExtraFlipTools(starterGear, nil)
 	end
 
 	table.insert(FlipToolConnections, tool.Equipped:Connect(function(m)
@@ -1482,6 +1475,7 @@ local function StartForceTime(timeNumber)
 end
 
 RampPlacing = false
+RampPlacingSource = nil
 RampGhostModel = nil
 RampIndicator = nil
 RampPreview = nil
@@ -1490,6 +1484,7 @@ RampPreviousTargetFilter = nil
 RampPlacementType = "Translucent"
 RampWidth = 6
 RampThickness = 1
+RampHistory = {}
 
 DoubleJump = false
 JumpInstances = 1
@@ -5272,6 +5267,9 @@ local function GetRampFolder()
 	return RampFolder
 end
 
+local BindRampPlacingWheel
+local UnbindRampPlacingWheel
+
 local function UpdateRampPart(RampPart, StartPosition, EndPosition)
 	local Delta = EndPosition - StartPosition
 	local Length = Delta.Magnitude
@@ -5299,9 +5297,13 @@ end
 
 local function CancelRampPlacement()
 	RampPlacing = false
+	RampPlacingSource = nil
 	RampStartPosition = nil
 	RampPreview = nil
 	RampPlacementType = RampPlacementType or "Translucent"
+	if UnbindRampPlacingWheel then
+		UnbindRampPlacingWheel()
+	end
 
 	if RampGhostModel then
 		RampGhostModel:Destroy()
@@ -5315,12 +5317,13 @@ local function CancelRampPlacement()
 	RampPreviousTargetFilter = nil
 end
 
-local function StartRampPlacement(PlacementType)
+local function StartRampPlacement(PlacementType, Source)
 	if RampPlacing then
 		CancelRampPlacement()
 	end
 
 	RampPlacing = true
+	RampPlacingSource = Source or RampPlacingSource or "Command"
 	RampStartPosition = nil
 	RampPreview = nil
 	RampPlacementType = PlacementType or RampPlacementType or "Translucent"
@@ -5331,6 +5334,9 @@ local function StartRampPlacement(PlacementType)
 
 	RampGhostModel = Instance.new("Model", workspace)
 	RampGhostModel.Name = "RampGhost_" .. Player.UserId
+	if BindRampPlacingWheel then
+		BindRampPlacingWheel()
+	end
 
 	RampIndicator = Instance.new("Part")
 	RampIndicator.Shape = Enum.PartType.Ball
@@ -5369,6 +5375,16 @@ end
 
 local function FinalizeRampPlacement(EndPosition)
 	if not RampPreview or not RampStartPosition then
+		if RampPlacingSource == "Tool" and RampToolEquipped then
+			if RampPreview then
+				pcall(function()
+					RampPreview:Destroy()
+				end)
+			end
+			RampPreview = nil
+			RampStartPosition = nil
+			return
+		end
 		CancelRampPlacement()
 		return
 	end
@@ -5378,6 +5394,13 @@ local function FinalizeRampPlacement(EndPosition)
 	ApplyRampType(RampPreview, RampPlacementType)
 	RampPreview.CanCollide = true
 	RampPreview.Parent = GetRampFolder()
+	table.insert(RampHistory, RampPreview)
+
+	if RampPlacingSource == "Tool" and RampToolEquipped then
+		RampStartPosition = nil
+		RampPreview = nil
+		return
+	end
 
 	if RampGhostModel then
 		RampGhostModel:Destroy()
@@ -5389,8 +5412,418 @@ local function FinalizeRampPlacement(EndPosition)
 	RampPreviousTargetFilter = nil
 
 	RampPlacing = false
+	RampPlacingSource = nil
 	RampStartPosition = nil
 	RampPreview = nil
+	if UnbindRampPlacingWheel then
+		UnbindRampPlacingWheel()
+	end
+end
+
+local function CancelRampSegmentKeepActive()
+	RampStartPosition = nil
+	if RampPreview then
+		pcall(function()
+			RampPreview:Destroy()
+		end)
+	end
+	RampPreview = nil
+end
+
+local function UndoLastRamp()
+	for i = #RampHistory, 1, -1 do
+		local part = RampHistory[i]
+		table.remove(RampHistory, i)
+		if part and part.Parent then
+			pcall(function()
+				part:Destroy()
+			end)
+			return true
+		end
+	end
+
+	local folder = workspace:FindFirstChild("RampInstance_" .. Player.UserId)
+	if folder then
+		local children = folder:GetChildren()
+		if #children > 0 then
+			pcall(function()
+				children[#children]:Destroy()
+			end)
+			return true
+		end
+	end
+
+	return false
+end
+
+local RampTypeOrder = {"Translucent", "Transparent", "Opaque"}
+local RampTypeIndex = {Translucent = 1, Transparent = 2, Opaque = 3}
+
+local function SetRampPlacementType(newType)
+	if not RampTypeIndex[newType] then
+		return
+	end
+	RampPlacementType = newType
+	if RampToolEquipped then
+		UpdateRampToolUI()
+	end
+end
+
+local function CycleRampPlacementType(direction)
+	local currentIndex = RampTypeIndex[RampPlacementType] or 1
+	local nextIndex = currentIndex + (direction or 1)
+	if nextIndex < 1 then
+		nextIndex = #RampTypeOrder
+	elseif nextIndex > #RampTypeOrder then
+		nextIndex = 1
+	end
+	SetRampPlacementType(RampTypeOrder[nextIndex])
+end
+
+local function EnsureRampToolUI()
+	if RampToolUI and RampToolUI.Parent then
+		return
+	end
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "ET_RampToolUI"
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 90
+
+	local frame = Instance.new("Frame")
+	frame.Name = "Container"
+	frame.AnchorPoint = Vector2.new(0.5, 0)
+	frame.Position = UDim2.fromScale(0.5, 0.02)
+	frame.Size = UDim2.new(0, 460, 0, 86)
+	frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	frame.BackgroundTransparency = 0.15
+	frame.BorderSizePixel = 0
+	frame.Parent = gui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 10)
+	corner.Parent = frame
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 1
+	stroke.Color = Color3.fromRGB(70, 70, 70)
+	stroke.Transparency = 0.25
+	stroke.Parent = frame
+
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.BackgroundTransparency = 1
+	title.Position = UDim2.new(0, 12, 0, 6)
+	title.Size = UDim2.new(1, -24, 0, 18)
+	title.Font = Enum.Font.GothamBold
+	title.TextSize = 16
+	title.TextColor3 = Color3.fromRGB(235, 235, 235)
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Text = "Ramp Tool"
+	title.Parent = frame
+
+	local transparencyLabel = Instance.new("TextLabel")
+	transparencyLabel.Name = "Transparency"
+	transparencyLabel.BackgroundTransparency = 1
+	transparencyLabel.Position = UDim2.new(0, 12, 0, 28)
+	transparencyLabel.Size = UDim2.new(1, -24, 0, 18)
+	transparencyLabel.Font = Enum.Font.Gotham
+	transparencyLabel.TextSize = 14
+	transparencyLabel.TextColor3 = Color3.fromRGB(210, 210, 210)
+	transparencyLabel.TextXAlignment = Enum.TextXAlignment.Left
+	transparencyLabel.Text = "Transparency: " .. tostring(RampPlacementType)
+	transparencyLabel.Parent = frame
+
+	local widthLabel = Instance.new("TextLabel")
+	widthLabel.Name = "Width"
+	widthLabel.BackgroundTransparency = 1
+	widthLabel.Position = UDim2.new(0, 12, 0, 46)
+	widthLabel.Size = UDim2.new(1, -24, 0, 18)
+	widthLabel.Font = Enum.Font.Gotham
+	widthLabel.TextSize = 14
+	widthLabel.TextColor3 = Color3.fromRGB(210, 210, 210)
+	widthLabel.TextXAlignment = Enum.TextXAlignment.Left
+	widthLabel.Text = "Width: " .. tostring(RampWidth) .. "  |  Q/E: cycle  |  Scroll: width  |  Backspace: undo"
+	widthLabel.Parent = frame
+
+	RampToolUI = gui
+	RampToolUITransparencyLabel = transparencyLabel
+	RampToolUIWidthLabel = widthLabel
+
+	local parentGui = Player:FindFirstChild("PlayerGui") or Player:WaitForChild("PlayerGui")
+	gui.Parent = parentGui
+end
+
+function UpdateRampToolUI()
+	if not (RampToolUI and RampToolUI.Parent) then return end
+	if RampToolUITransparencyLabel then
+		RampToolUITransparencyLabel.Text = "Transparency: " .. tostring(RampPlacementType)
+	end
+	if RampToolUIWidthLabel then
+		RampToolUIWidthLabel.Text = "Width: " .. tostring(RampWidth) .. "  |  Q/E: cycle  |  Scroll: width  |  Backspace: undo"
+	end
+end
+
+local RAMP_PLACING_WHEEL_ACTION = "ET_RampPlacingMouseWheel"
+local RampPlacingWheelBound = false
+
+BindRampPlacingWheel = function()
+	if RampPlacingWheelBound then return end
+	RampPlacingWheelBound = true
+
+	ContextActionService:BindActionAtPriority(
+		RAMP_PLACING_WHEEL_ACTION,
+		function(_, state, input)
+			if not RampPlacing then
+				return Enum.ContextActionResult.Pass
+			end
+
+			if state == Enum.UserInputState.Change and not UserInputService:GetFocusedTextBox() then
+				local z = 0
+				pcall(function()
+					z = input.Position.Z
+				end)
+				if z ~= 0 then
+					local direction = z > 0 and 1 or -1
+					RampWidth = math.clamp((RampWidth or 6) + direction, 1, 50)
+					if RampToolEquipped then
+						UpdateRampToolUI()
+					end
+				end
+			end
+
+			return Enum.ContextActionResult.Sink
+		end,
+		false,
+		Enum.ContextActionPriority.High.Value + 1,
+		Enum.UserInputType.MouseWheel
+	)
+end
+
+UnbindRampPlacingWheel = function()
+	if not RampPlacingWheelBound then return end
+	RampPlacingWheelBound = false
+	pcall(function()
+		ContextActionService:UnbindAction(RAMP_PLACING_WHEEL_ACTION)
+	end)
+end
+
+local function ShowRampToolUI()
+	EnsureRampToolUI()
+	UpdateRampToolUI()
+	if RampToolUI then
+		RampToolUI.Enabled = true
+	end
+end
+
+local function HideRampToolUI()
+	if RampToolUI then
+		RampToolUI.Enabled = false
+	end
+end
+
+local function IsRampTool(obj)
+	return obj
+		and obj:IsA("Tool")
+		and obj:GetAttribute("ET_RampTool") == true
+end
+
+local function FindRampToolInContainer(container)
+	if not container then return nil end
+	for _, child in ipairs(container:GetChildren()) do
+		if IsRampTool(child) then
+			return child
+		end
+	end
+	return nil
+end
+
+local function RemoveExtraRampTools(container, keepTool)
+	if not container then return end
+	for _, child in ipairs(container:GetChildren()) do
+		if IsRampTool(child) and child ~= keepTool then
+			pcall(function()
+				child:Destroy()
+			end)
+		end
+	end
+end
+
+local function RemoveRampToolInstances()
+	local containers = {}
+	local backpack = Player:FindFirstChild("Backpack")
+	local character = Player.Character
+	if backpack then table.insert(containers, backpack) end
+	if character then table.insert(containers, character) end
+
+	local starterGear = Player:FindFirstChild("StarterGear")
+	if starterGear then table.insert(containers, starterGear) end
+
+	for _, container in ipairs(containers) do
+		for _, child in ipairs(container:GetChildren()) do
+			if IsRampTool(child) then
+				pcall(function()
+					child:Destroy()
+				end)
+			end
+		end
+	end
+end
+
+local function DisconnectRampToolConnections()
+	for _, conn in ipairs(RampToolConnections) do
+		pcall(function()
+			conn:Disconnect()
+		end)
+	end
+	RampToolConnections = {}
+end
+
+local EnsureRampTool
+
+local function EnsureRampToolInBackpack()
+	if not RampToolEnabled then return end
+	local backpack = Player:WaitForChild("Backpack")
+	local tool = FindRampToolInContainer(backpack)
+	if tool then return tool end
+
+	local character = Player.Character
+	tool = FindRampToolInContainer(character)
+	if tool then return tool end
+
+	pcall(EnsureRampTool)
+	return FindRampToolInContainer(backpack) or FindRampToolInContainer(Player.Character)
+end
+
+EnsureRampTool = function()
+	if not RampToolEnabled then return end
+
+	local backpack = Player:WaitForChild("Backpack")
+	local character = Player.Character
+	local starterGear = Player:FindFirstChild("StarterGear")
+
+	DisconnectRampToolConnections()
+
+	local tool = FindRampToolInContainer(backpack)
+	if not tool and character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.Health > 0 then
+			tool = FindRampToolInContainer(character)
+		end
+	end
+
+	if not tool then
+		tool = Instance.new("Tool")
+		tool.Name = "Ramp"
+		tool.RequiresHandle = false
+		tool.CanBeDropped = false
+		tool:SetAttribute("ET_RampTool", true)
+		tool.Parent = backpack
+	end
+
+	RampTool = tool
+
+	RemoveExtraRampTools(backpack, tool)
+	RemoveExtraRampTools(character, tool)
+
+	if starterGear then
+		RemoveExtraRampTools(starterGear, nil)
+	end
+
+	table.insert(RampToolConnections, tool.Equipped:Connect(function()
+		RampToolEquipped = true
+		ShowRampToolUI()
+		StartRampPlacement(RampPlacementType, "Tool")
+	end))
+
+	table.insert(RampToolConnections, tool.Unequipped:Connect(function()
+		RampToolEquipped = false
+		HideRampToolUI()
+		if RampPlacingSource == "Tool" then
+			CancelRampPlacement()
+		end
+	end))
+
+	table.insert(RampToolConnections, tool.AncestryChanged:Connect(function()
+		if not RampToolEnabled then return end
+		task.defer(function()
+			if not RampToolEnabled then return end
+			if not tool or not tool.Parent then
+				task.wait(0.15)
+				EnsureRampTool()
+			end
+		end)
+	end))
+end
+
+local function StartRampToolGiveLoop()
+	if RampToolGiveLoopActive then return end
+	RampToolGiveLoopActive = true
+	task.spawn(function()
+		while RampToolEnabled do
+			local backpack = Player:FindFirstChild("Backpack")
+			local character = Player.Character
+			local hasToolInBackpack = FindRampToolInContainer(backpack) ~= nil
+			local hasTool = hasToolInBackpack
+			if not hasTool and character then
+				local humanoid = character:FindFirstChildOfClass("Humanoid")
+				if humanoid and humanoid.Health > 0 then
+					hasTool = FindRampToolInContainer(character) ~= nil
+				end
+			end
+			if not hasTool then
+				pcall(EnsureRampTool)
+			end
+			task.wait(0.2)
+		end
+		RampToolGiveLoopActive = false
+	end)
+end
+
+function StartRampTool()
+	if RampToolEnabled then
+		EnsureRampTool()
+		StartRampToolGiveLoop()
+		return
+	end
+	RampToolEnabled = true
+	EnsureRampTool()
+	StartRampToolGiveLoop()
+	if not RampToolCharacterConn then
+		RampToolCharacterConn = Player.CharacterAdded:Connect(function()
+			RampToolEquipped = false
+			HideRampToolUI()
+			if RampPlacingSource == "Tool" then
+				CancelRampPlacement()
+			end
+			task.defer(function()
+				while RampToolEnabled do
+					local tool = EnsureRampToolInBackpack()
+					if tool then break end
+					task.wait(0.15)
+				end
+			end)
+		end)
+	end
+end
+
+function StopRampTool()
+	RampToolEnabled = false
+	RampToolEquipped = false
+	HideRampToolUI()
+	if RampToolCharacterConn then
+		pcall(function()
+			RampToolCharacterConn:Disconnect()
+		end)
+		RampToolCharacterConn = nil
+	end
+	DisconnectRampToolConnections()
+	RemoveRampToolInstances()
+	RampTool = nil
+	if RampPlacingSource == "Tool" then
+		CancelRampPlacement()
+	end
 end
 
 function CreatePlatform(Type, Adjustment)
@@ -6244,19 +6677,29 @@ local function SetupCommands()
 			end
 		end
 	)
-	CreateCommand("Ramp", "Click to place a start point, move your cursor, then click again to place a ramp. Backspace cancels. Stop clears all ramps (or cancels if you're currently placing).", nil, {"Translucent", "Transparent", "Opaque"}, "World",
+	CreateCommand("Ramp", "Place ramps. Modes: Translucent/Transparent/Opaque (command placement) or Tool (gives a persistent Ramp Tool). Stop clears all ramps (or cancels if you're currently placing).", nil, {"Translucent", "Transparent", "Opaque", "Tool"}, "World",
 		function(Type)
-			StartRampPlacement(Type)
+			if Type == "Tool" then
+				StartRampTool()
+				return
+			end
+			StartRampPlacement(Type, "Command")
 		end,
 		function()
 			if RampPlacing then
-				CancelRampPlacement()
+				if RampPlacingSource == "Tool" then
+					StopRampTool()
+				else
+					CancelRampPlacement()
+				end
 				return
 			end
+			StopRampTool()
 			local RampFolder = workspace:FindFirstChild("RampInstance_" .. Player.UserId)
 			if RampFolder then
 				RampFolder:ClearAllChildren()
 			end
+			RampHistory = {}
 		end
 	)
 	CreateCommand("Rejoin", "Return to the same server, or hop to a new one.", nil, {"Rejoin", "Hop"}, "Game",
@@ -6822,7 +7265,7 @@ Mouse.Button1Down:Connect(function()
 			RampStartPosition = HitPosition
 
 			if not RampGhostModel then
-				StartRampPlacement(RampPlacementType)
+				StartRampPlacement(RampPlacementType, RampPlacingSource)
 				RampStartPosition = HitPosition
 			end
 
@@ -6913,10 +7356,20 @@ local function Close()
 		if PltInstance then
 			PltInstance:Destroy()
 		end
+		StopRampTool()
 		CancelRampPlacement()
 		local RampFolder = workspace:FindFirstChild("RampInstance_" .. Player.UserId)
 		if RampFolder then
 			RampFolder:Destroy()
+		end
+		RampHistory = {}
+		if RampToolUI then
+			pcall(function()
+				RampToolUI:Destroy()
+			end)
+			RampToolUI = nil
+			RampToolUITransparencyLabel = nil
+			RampToolUIWidthLabel = nil
 		end
 		for _,PhaseObj in pairs(PhaseObjects) do
 			if PhaseObj:FindFirstChild("PhaseHighlight") then
@@ -6937,6 +7390,7 @@ local function Close()
 		StopPointTeleportInterface()
 		StopPointTeleportTool()
 		StopFlip()
+		UnbindRampPlacingWheel()
 		for i,v in pairs(Players:GetPlayers()) do
 			coroutine.resume(coroutine.create(function()
 				v:SetAttribute("Blocked", false)
@@ -7125,8 +7579,23 @@ UserInputService.InputBegan:Connect(function(Input, GPE)
 		return
 	end
 
-	if RampPlacing and Input.KeyCode == Enum.KeyCode.Backspace then
-		CancelRampPlacement()
+	if RampToolEquipped and (Input.KeyCode == Enum.KeyCode.Q or Input.KeyCode == Enum.KeyCode.E) then
+		if UserInputService:GetFocusedTextBox() then return end
+		CycleRampPlacementType(Input.KeyCode == Enum.KeyCode.E and 1 or -1)
+		return
+	end
+
+	if Input.KeyCode == Enum.KeyCode.Backspace and RampPlacing then
+		if UserInputService:GetFocusedTextBox() then return end
+		if RampPlacingSource == "Tool" and RampToolEquipped then
+			if RampStartPosition or RampPreview then
+				CancelRampSegmentKeepActive()
+			else
+				UndoLastRamp()
+			end
+		else
+			CancelRampPlacement()
+		end
 		return
 	end
 
