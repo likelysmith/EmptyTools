@@ -24,8 +24,8 @@ httpRequest = (syn and syn.request) or (http and http.request) or http_request o
 
 -- Changelog
 
-local VersionString = "v1.3.8"
-local ChangeLog = "• Added 'Flip' command\n• Updated Ramp Command with 'Tool'\n• Added 'Generic' shading option\n• Added 'Isolate' mode to anchor command\n• Fixed various minor bugs" 
+local VersionString = "v1.3.9"
+local ChangeLog = "• Overhauled UI\n• Added headshots to marker command\n• Added 'Flip' command\n• Updated Ramp Command with 'Tool'" 
 local Info = "Empty Tools is a free and open-source command menu designed to work in every experience. For more scripts and information, go to https://empty.tools and join our discord."
 
 -- Variables
@@ -1655,357 +1655,473 @@ function ProtectUI(UI)
 	ETLOG("Gui Protected - " .. UI.Name)
 end
 
+-- UI Theme
+
+Theme = {
+	Window = Color3.fromRGB(22, 22, 26),
+	Surface = Color3.fromRGB(33, 33, 38),
+	SurfaceHover = Color3.fromRGB(41, 41, 47),
+	Field = Color3.fromRGB(45, 45, 52),
+	FieldHover = Color3.fromRGB(57, 57, 65),
+	Stroke = Color3.fromRGB(55, 55, 62),
+	Divider = Color3.fromRGB(40, 40, 46),
+	Tooltip = Color3.fromRGB(30, 30, 35),
+	Text = Color3.fromRGB(236, 236, 241),
+	SubText = Color3.fromRGB(150, 150, 162),
+	Placeholder = Color3.fromRGB(112, 112, 124),
+	Accent = Color3.fromRGB(92, 128, 255),
+	Run = Color3.fromRGB(106, 189, 102),
+	Stop = Color3.fromRGB(214, 98, 98),
+	Danger = Color3.fromRGB(190, 58, 58),
+	ThirdParty = Color3.fromRGB(56, 36, 39),
+	ThirdPartyHover = Color3.fromRGB(68, 42, 46),
+	ThirdPartyRun = Color3.fromRGB(255, 129, 129),
+	Grip = Color3.fromRGB(105, 105, 115),
+}
+
+UIMetrics = {
+	Header = 42,
+	HeaderButton = 26,
+	Toolbar = 30,
+	Chips = 24,
+	Footer = 22,
+	Pad = 12,
+	Gap = 8,
+	Row = UserInputService.TouchEnabled and 42 or 36,
+	Grip = UserInputService.TouchEnabled and 30 or 18,
+	MinW = 340,
+	MinH = 260,
+	MinimizedW = 280,
+}
+
+HoverTweenInfo = TweenInfo.new(0.12, Enum.EasingStyle.Quad)
+WindowSize = Vector2.new(460, 420)
+CategoryBar = nil
+CategoryChips = {}
+SettingsOpen = false
+
+function UICornerOf(Parent, Radius)
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = typeof(Radius) == "UDim" and Radius or UDim.new(0, Radius or 8)
+	Corner.Parent = Parent
+	return Corner
+end
+
+function UIStrokeOf(Parent, Color, Thickness)
+	local Stroke = Instance.new("UIStroke")
+	Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	Stroke.Color = Color
+	Stroke.Thickness = Thickness or 1
+	Stroke.Parent = Parent
+	return Stroke
+end
+
+function UIPaddingOf(Parent, Left, Right, Top, Bottom)
+	local Padding = Instance.new("UIPadding")
+	Padding.PaddingLeft = UDim.new(0, Left or 0)
+	Padding.PaddingRight = UDim.new(0, Right or 0)
+	Padding.PaddingTop = UDim.new(0, Top or 0)
+	Padding.PaddingBottom = UDim.new(0, Bottom or 0)
+	Padding.Parent = Parent
+	return Padding
+end
+
+function UIListOf(Parent, Direction, Spacing)
+	local Layout = Instance.new("UIListLayout")
+	Layout.FillDirection = Direction or Enum.FillDirection.Vertical
+	Layout.SortOrder = Enum.SortOrder.LayoutOrder
+	Layout.Padding = UDim.new(0, Spacing or 0)
+	Layout.Parent = Parent
+	return Layout
+end
+
+-- Hover colour tween. Normal/Hover may be a Color3 or a function returning one
+function ETHover(Object, Normal, Hover)
+	local function Resolve(Color)
+		if type(Color) == "function" then
+			return Color()
+		end
+		return Color
+	end
+	Object.MouseEnter:Connect(function()
+		TweenService:Create(Object, HoverTweenInfo, {BackgroundColor3 = Resolve(Hover)}):Play()
+	end)
+	Object.MouseLeave:Connect(function()
+		TweenService:Create(Object, HoverTweenInfo, {BackgroundColor3 = Resolve(Normal)}):Play()
+	end)
+end
+
+-- Accent outline while a TextBox is focused
+function FocusStroke(TextBox)
+	local Stroke = UIStrokeOf(TextBox, Theme.Accent, 1)
+	Stroke.Transparency = 1
+	TextBox.Focused:Connect(function()
+		TweenService:Create(Stroke, HoverTweenInfo, {Transparency = 0}):Play()
+	end)
+	TextBox.FocusLost:Connect(function()
+		TweenService:Create(Stroke, HoverTweenInfo, {Transparency = 1}):Play()
+	end)
+	return Stroke
+end
+
+function NewText(Class, Props)
+	local Object = Instance.new(Class)
+	Object.BackgroundTransparency = 1
+	Object.BorderSizePixel = 0
+	Object.Font = Enum.Font.Gotham
+	Object.TextColor3 = Theme.Text
+	Object.TextSize = 14
+	if Props then
+		for Key, Value in pairs(Props) do
+			Object[Key] = Value
+		end
+	end
+	return Object
+end
+
+function KeyDisplayName(Key)
+	local ok, Str = pcall(function()
+		return UserInputService:GetStringForKeyCode(Key)
+	end)
+	if ok and Str and Str ~= "" then
+		return Str
+	end
+	if typeof(Key) == "EnumItem" then
+		return Key.Name
+	end
+	return tostring(Key)
+end
+
 -- Create UI Method
 
 function CreateUI()
+	local M = UIMetrics
+	local TopOffset = M.Header + 10
+
 	local EmptyTools = Instance.new("ScreenGui")
-	local OuterFrame = Instance.new("Frame")
-	local UICorner = Instance.new("UICorner")
-	local Contents = Instance.new("Frame")
-	local Title = Instance.new("TextLabel")
-	local UICorner_2 = Instance.new("UICorner")
-	local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
-	local Commands = Instance.new("ScrollingFrame")
-	local UIListLayout = Instance.new("UIListLayout")
-	local Search = Instance.new("TextBox")
-	local UICorner_3 = Instance.new("UICorner")
-	local UITextSizeConstraint = Instance.new("UITextSizeConstraint")
-	local Category = Instance.new("TextButton")
-	local UICorner_4 = Instance.new("UICorner")
-	local UITextSizeConstraint_2 = Instance.new("UITextSizeConstraint")
-	local Info = Instance.new("Frame")
-	local UICorner_5 = Instance.new("UICorner")
-	local Title_2 = Instance.new("TextLabel")
-	local Info_2 = Instance.new("TextLabel")
-	local UIAspectRatioConstraint_2 = Instance.new("UIAspectRatioConstraint")
-	local Settings = Instance.new("TextButton")
-	local UICorner_6 = Instance.new("UICorner")
-	local UITextSizeConstraint_3 = Instance.new("UITextSizeConstraint")
-	local Settings_2 = Instance.new("ScrollingFrame")
-	local UIListLayout_2 = Instance.new("UIListLayout")
-	local Info_3 = Instance.new("TextButton")
-	local UICorner_7 = Instance.new("UICorner")
-	local UIAspectRatioConstraint_3 = Instance.new("UIAspectRatioConstraint")
-	local ContentShrunken = Instance.new("Frame")
-	local UICorner_8 = Instance.new("UICorner")
-	local UIAspectRatioConstraint_4 = Instance.new("UIAspectRatioConstraint")
-	local Close = Instance.new("TextButton")
-	local UICorner_9 = Instance.new("UICorner")
-	local UIAspectRatioConstraint_5 = Instance.new("UIAspectRatioConstraint")
-	local Toggle = Instance.new("TextButton")
-	local UICorner_10 = Instance.new("UICorner")
-	local UIAspectRatioConstraint_6 = Instance.new("UIAspectRatioConstraint")
-	local ToastFrame = Instance.new("Frame")
-	local UICorner_11 = Instance.new("UICorner")
-	local Text = Instance.new("TextLabel")
-
-	--Properties:
-
 	EmptyTools.Name = "EmptyTools"
 	EmptyTools.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	EmptyTools.ResetOnSpawn = false
 	EmptyTools.IgnoreGuiInset = true
 
+	-- Window size & position (size is remembered between sessions)
 
+	local Viewport = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(1280, 720)
+	local W, H = 460, 420
+	if UserInputService.TouchEnabled then
+		W = math.floor(Viewport.X * 0.55)
+		H = math.floor(Viewport.Y * 0.62)
+	end
+	local Saved = userSettings and userSettings.WindowSize
+	if type(Saved) == "table" and tonumber(Saved[1]) and tonumber(Saved[2]) then
+		W, H = tonumber(Saved[1]), tonumber(Saved[2])
+	end
+	W = math.floor(math.clamp(W, M.MinW, math.max(M.MinW, Viewport.X - 20)))
+	H = math.floor(math.clamp(H, M.MinH, math.max(M.MinH, Viewport.Y - 20)))
+	WindowSize = Vector2.new(W, H)
+
+	local X = math.max(10, Viewport.X - W - 24)
+	local Y = math.clamp(math.floor(Viewport.Y * 0.43), 10, math.max(10, Viewport.Y - H - 10))
+
+	local OuterFrame = Instance.new("Frame")
 	OuterFrame.Name = "OuterFrame"
-	OuterFrame.Parent = EmptyTools
-	OuterFrame.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
-	OuterFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	OuterFrame.BackgroundColor3 = Theme.Window
 	OuterFrame.BorderSizePixel = 0
-	OuterFrame.Position = UDim2.new(0.65821141, 0, 0.429824561, 0)
-	OuterFrame.Size = UDim2.new(0.329648048, 0, 0.492894381, 0)
-	if UserInputService.TouchEnabled then 
-		OuterFrame.Size = UDim2.new(0.514648048, 0, 0.551894381, 0)
-		OuterFrame.Position = UDim2.new(0.588, 0, 0.429824561, 0)
-	end
+	OuterFrame.Position = UDim2.fromOffset(X, Y)
+	OuterFrame.Size = UDim2.fromOffset(W, H)
+	OuterFrame.Parent = EmptyTools
+	UICornerOf(OuterFrame, 10)
+	UIStrokeOf(OuterFrame, Theme.Stroke, 1)
 
-	UICorner.CornerRadius = UDim.new(0.0500000007, 0)
-	UICorner.Parent = OuterFrame
+	-- Header (drag handle)
 
-	Contents.Name = "Contents"
-	Contents.Parent = OuterFrame
-	Contents.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
-	Contents.BackgroundTransparency = 1.000
-	Contents.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Contents.BorderSizePixel = 0
-	Contents.Size = UDim2.new(1, 0, 1, 0)
+	local Header = Instance.new("Frame")
+	Header.Name = "Header"
+	Header.BackgroundTransparency = 1
+	Header.BorderSizePixel = 0
+	Header.Size = UDim2.new(1, 0, 0, M.Header)
+	Header.Parent = OuterFrame
 
-	Title.Name = "Title"
-	Title.Parent = Contents
-	Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Title.BackgroundTransparency = 1.000
-	Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title.BorderSizePixel = 0
-	Title.Position = UDim2.new(0.064338237, 0, 0.034324944, 0)
-	Title.Size = UDim2.new(0.63786763, 0, 0.125858128, 0)
-	Title.Font = Enum.Font.Gotham
-	Title.Text = "Empty Tools"
-	Title.TextColor3 = Color3.fromRGB(255,255,255)
-	Title.TextScaled = true
-	Title.TextSize = 14.000
-	Title.TextWrapped = true
-	Title.TextXAlignment = Enum.TextXAlignment.Left
-
-
+	local TitleText = 'Empty Tools  <font size="12" color="rgb(140,140,152)">' .. VersionString .. '</font>'
 	if PlusEnabled then
-		Title.Size = UDim2.new(0.599,0,0.126,0)
-		Title.RichText = true
-		Title.Text = [[Empty Tools <font size="11" color="rgb(255, 69, 32)">beta</font> ]]
+		TitleText = TitleText .. ' <font size="11" color="rgb(255,69,32)">beta</font>'
+	end
+	local Title = NewText("TextLabel", {
+		Name = "Title",
+		RichText = true,
+		Text = TitleText,
+		Font = Enum.Font.GothamBold,
+		TextSize = 16,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Position = UDim2.fromOffset(14, 0),
+		Size = UDim2.new(1, -(14 + 3 * (M.HeaderButton + 6) + 10), 1, 0),
+	})
+	Title.Parent = Header
+
+	local Divider = Instance.new("Frame")
+	Divider.Name = "Divider"
+	Divider.BackgroundColor3 = Theme.Divider
+	Divider.BorderSizePixel = 0
+	Divider.Position = UDim2.new(0, 0, 1, -1)
+	Divider.Size = UDim2.new(1, 0, 0, 1)
+	Divider.Parent = Header
+
+	local function HeaderButton(Name, Text, Index, HoverColor)
+		local Button = NewText("TextButton", {
+			Name = Name,
+			Text = Text,
+			Font = Enum.Font.GothamBold,
+			TextSize = 14,
+			AutoButtonColor = false,
+			BackgroundTransparency = 0,
+			BackgroundColor3 = Theme.Field,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -10 - (Index - 1) * (M.HeaderButton + 6), 0, M.Header / 2),
+			Size = UDim2.fromOffset(M.HeaderButton, M.HeaderButton),
+			ZIndex = 4,
+		})
+		UICornerOf(Button, 6)
+		ETHover(Button, Theme.Field, HoverColor or Theme.FieldHover)
+		Button.Parent = OuterFrame
+		return Button
 	end
 
-	UICorner_2.CornerRadius = UDim.new(0.0500000007, 0)
-	UICorner_2.Parent = Contents
+	HeaderButton("Close", "×", 1, Theme.Danger)
+	HeaderButton("Toggle", "–", 2)
+	HeaderButton("Info", "i", 3)
 
-	UIAspectRatioConstraint.Parent = Contents
-	UIAspectRatioConstraint.AspectRatio = 1.245
+	-- Contents
 
-	Commands.Name = "Commands"
-	Commands.Parent = Contents
-	Commands.Active = true
-	Commands.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Commands.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Commands.BorderSizePixel = 0
-	Commands.Position = UDim2.new(0.064338237, 0, 0.295194507, 0)
-	Commands.Size = UDim2.new(0.880514681, 0, 0.645308912, 0)
-	Commands.CanvasSize = UDim2.new(0, 0, 3.5, 0)
-	Commands.ScrollBarThickness = 13
+	local Contents = Instance.new("Frame")
+	Contents.Name = "Contents"
+	Contents.BackgroundTransparency = 1
+	Contents.BorderSizePixel = 0
+	Contents.Position = UDim2.fromOffset(M.Pad, TopOffset)
+	Contents.Size = UDim2.new(1, -2 * M.Pad, 1, -TopOffset)
+	Contents.Parent = OuterFrame
 
+	-- Toolbar: search + settings
 
-	UIListLayout.Parent = Commands
-	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	UIListLayout.Padding = UDim.new(0.00249999994, 0)
+	local SettingsWidth = 84
 
-	Search.Name = "Search"
+	local Search = NewText("TextBox", {
+		Name = "Search",
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Theme.Field,
+		PlaceholderText = "Search commands...",
+		PlaceholderColor3 = Theme.Placeholder,
+		Text = "",
+		ClearTextOnFocus = false,
+		ClipsDescendants = true,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextSize = 14,
+		Size = UDim2.new(1, -(SettingsWidth + M.Gap), 0, M.Toolbar),
+	})
+	UICornerOf(Search, 8)
+	UIPaddingOf(Search, 10, 10, 0, 0)
+	FocusStroke(Search)
 	Search.Parent = Contents
-	Search.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-	Search.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Search.BorderSizePixel = 0
-	Search.Position = UDim2.new(0.064338237, 0, 0.194508016, 0)
-	Search.Size = UDim2.new(0.286764711, 0, 0.080091536, 0)
-	Search.Font = Enum.Font.Gotham
-	Search.PlaceholderColor3 = Color3.fromRGB(149, 149, 149)
-	Search.PlaceholderText = "Search.."
-	Search.Text = ""
-	Search.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Search.TextScaled = true
-	Search.TextSize = 25.000
-	Search.TextWrapped = true
 
-	UICorner_3.CornerRadius = UDim.new(0.550000012, 0)
-	UICorner_3.Parent = Search
-
-	UITextSizeConstraint.Parent = Search
-	UITextSizeConstraint.MaxTextSize = 23
-
-	Category.Name = "Category"
-	Category.Parent = Contents
-	Category.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-	Category.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Category.BorderSizePixel = 0
-	Category.Position = UDim2.new(0.370332718, 0, 0.192686558, 0)
-	Category.Size = UDim2.new(0.274057955, 0, 0.0800000057, 0)
-	Category.Font = Enum.Font.Gotham
-	Category.Text = "Filter: None"
-	Category.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Category.TextScaled = true
-	Category.TextSize = 20.000
-	Category.TextWrapped = true
-
-	UICorner_4.CornerRadius = UDim.new(0.550000012, 0)
-	UICorner_4.Parent = Category
-
-	UITextSizeConstraint_2.Parent = Category
-	UITextSizeConstraint_2.MaxTextSize = 20
-
-	Info.Name = "Info"
-	Info.Parent = Contents
-	Info.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
-	Info.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Info.BorderSizePixel = 0
-	Info.Position = UDim2.new(0.00554660289, 0, -0.230156511, 0)
-	Info.Size = UDim2.new(0.985446513, 0, 0.214045554, 0)
-	Info.Visible = false
-
-	UICorner_5.CornerRadius = UDim.new(0.25, 0)
-	UICorner_5.Parent = Info
-
-	Title_2.Name = "Title"
-	Title_2.Parent = Info
-	Title_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Title_2.BackgroundTransparency = 1.000
-	Title_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_2.BorderSizePixel = 0
-	Title_2.Position = UDim2.new(0.317073166, 0, 0.0645161271, 0)
-	Title_2.Size = UDim2.new(0.375234514, 0, 0.290322572, 0)
-	Title_2.Font = Enum.Font.GothamBold
-	Title_2.Text = "Title"
-	Title_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Title_2.TextScaled = true
-	Title_2.TextSize = 14.000
-	Title_2.TextWrapped = true
-
-	Info_2.Name = "Info"
-	Info_2.Parent = Info
-	Info_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Info_2.BackgroundTransparency = 1.000
-	Info_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Info_2.BorderSizePixel = 0
-	Info_2.Position = UDim2.new(0.0450282581, 0, 0.354838699, 0)
-	Info_2.Size = UDim2.new(0.915654898, 0, 0.54838711, 0)
-	Info_2.Font = Enum.Font.Gotham
-	Info_2.Text = "Info"
-	Info_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Info_2.TextScaled = true
-	Info_2.TextSize = 14.000
-	Info_2.TextWrapped = true
-
-	UIAspectRatioConstraint_2.Parent = Info
-	UIAspectRatioConstraint_2.AspectRatio = 5.731
-
-	Settings.Name = "Settings"
+	local Settings = NewText("TextButton", {
+		Name = "Settings",
+		Text = "Settings",
+		Font = Enum.Font.GothamMedium,
+		TextSize = 13,
+		AutoButtonColor = false,
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Theme.Field,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromOffset(SettingsWidth, M.Toolbar),
+	})
+	UICornerOf(Settings, 8)
+	ETHover(Settings,
+		function() return SettingsOpen and Theme.Accent or Theme.Field end,
+		function() return SettingsOpen and Theme.Accent or Theme.FieldHover end
+	)
 	Settings.Parent = Contents
-	Settings.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-	Settings.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Settings.BorderSizePixel = 0
-	Settings.Position = UDim2.new(0.663670063, 0, 0.192686558, 0)
-	Settings.Size = UDim2.new(0.244357735, 0, 0.0800000057, 0)
-	Settings.Font = Enum.Font.Gotham
-	Settings.Text = "Settings"
-	Settings.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Settings.TextScaled = true
-	Settings.TextSize = 20.000
-	Settings.TextWrapped = true
 
-	UICorner_6.CornerRadius = UDim.new(0.550000012, 0)
-	UICorner_6.Parent = Settings
+	-- Category chips
 
-	UITextSizeConstraint_3.Parent = Settings
-	UITextSizeConstraint_3.MaxTextSize = 20
+	local Categories = Instance.new("ScrollingFrame")
+	Categories.Name = "Categories"
+	Categories.Active = true
+	Categories.BackgroundTransparency = 1
+	Categories.BorderSizePixel = 0
+	Categories.Position = UDim2.fromOffset(0, M.Toolbar + M.Gap)
+	Categories.Size = UDim2.new(1, 0, 0, M.Chips)
+	Categories.CanvasSize = UDim2.new(0, 0, 0, 0)
+	Categories.AutomaticCanvasSize = Enum.AutomaticSize.X
+	Categories.ScrollingDirection = Enum.ScrollingDirection.X
+	Categories.ScrollBarThickness = 0
+	Categories.Parent = Contents
+	local ChipLayout = UIListOf(Categories, Enum.FillDirection.Horizontal, 6)
+	ChipLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	Settings_2.Name = "SettingsFrame"
-	Settings_2.Parent = Contents
-	Settings_2.Active = true
-	Settings_2.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Settings_2.BackgroundTransparency = 1
-	Settings_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Settings_2.BorderSizePixel = 0
-	Settings_2.Position = UDim2.new(0.064338237, 0, 0.295194507, 0)
-	Settings_2.Size = UDim2.new(0.880514681, 0, 0.645308912, 0)
-	Settings_2.Visible = false
-	Settings_2.CanvasSize = UDim2.new(0, 0, 3.5, 0)
-	Settings_2.ScrollBarThickness = 13
+	CategoryBar = Categories
+	CategoryChips = {}
+	AddCategoryChip("None")
 
-	UIListLayout_2.Parent = Settings_2
-	UIListLayout_2.SortOrder = Enum.SortOrder.LayoutOrder
-	UIListLayout_2.Padding = UDim.new(0.00249999994, 0)
+	-- Lists
 
-	Info_3.Name = "Info"
-	Info_3.Parent = OuterFrame
-	Info_3.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-	Info_3.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Info_3.BorderSizePixel = 0
-	Info_3.Position = UDim2.new(0.701061368, 0, 0.0343248919, 0)
-	Info_3.Size = UDim2.new(0.0790441632, 0, 0.125858128, 0)
-	Info_3.ZIndex = 4
-	Info_3.Font = Enum.Font.Roboto
-	Info_3.Text = "i"
-	Info_3.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Info_3.TextScaled = true
-	Info_3.TextSize = 14.000
-	Info_3.TextWrapped = true
+	local function MakeList(Name, Top)
+		local List = Instance.new("ScrollingFrame")
+		List.Name = Name
+		List.Active = true
+		List.BackgroundTransparency = 1
+		List.BorderSizePixel = 0
+		List.Position = UDim2.fromOffset(0, Top)
+		List.Size = UDim2.new(1, 0, 1, -(Top + M.Footer))
+		List.CanvasSize = UDim2.new(0, 0, 0, 0)
+		List.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		List.ScrollingDirection = Enum.ScrollingDirection.Y
+		List.ScrollBarThickness = 4
+		List.ScrollBarImageColor3 = Color3.fromRGB(95, 95, 105)
+		List.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+		List.Parent = Contents
+		UIListOf(List, Enum.FillDirection.Vertical, 6)
+		UIPaddingOf(List, 0, 6, 1, 1)
+		return List
+	end
 
-	UICorner_7.CornerRadius = UDim.new(0.0500000007, 0)
-	UICorner_7.Parent = Info_3
+	MakeList("Commands", M.Toolbar + M.Gap + M.Chips + M.Gap)
+	MakeList("SettingsFrame", M.Toolbar + M.Gap).Visible = false
 
-	UIAspectRatioConstraint_3.Parent = Info_3
-	UIAspectRatioConstraint_3.AspectRatio = 1.004
+	-- Footer
 
-	ContentShrunken.Name = "ContentShrunken"
-	ContentShrunken.Parent = OuterFrame
-	ContentShrunken.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
-	ContentShrunken.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	ContentShrunken.BorderSizePixel = 0
-	ContentShrunken.Position = UDim2.new(0.670155883, 0, 0.0024564031, 0)
-	ContentShrunken.Size = UDim2.new(0.334465146, 0, 0.160182983, 0)
-	ContentShrunken.Visible = false
+	local Footer = Instance.new("Frame")
+	Footer.Name = "Footer"
+	Footer.BackgroundTransparency = 1
+	Footer.BorderSizePixel = 0
+	Footer.Position = UDim2.new(0, 0, 1, -M.Footer)
+	Footer.Size = UDim2.new(1, 0, 0, M.Footer)
+	Footer.Parent = Contents
 
-	UICorner_8.CornerRadius = UDim.new(0.0500000007, 0)
-	UICorner_8.Parent = ContentShrunken
+	local Count = NewText("TextLabel", {
+		Name = "Count",
+		Text = "",
+		TextSize = 12,
+		TextColor3 = Theme.SubText,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(1, -M.Grip, 1, 0),
+	})
+	Count.Parent = Footer
 
-	UIAspectRatioConstraint_4.Parent = OuterFrame
-	UIAspectRatioConstraint_4.AspectRatio = 1.245
+	-- Tooltip (shown above the window)
 
-	Close.Name = "Close"
-	Close.Parent = OuterFrame
-	Close.BackgroundColor3 = Color3.fromRGB(84, 34, 34)
-	Close.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Close.BorderSizePixel = 0
-	Close.Position = UDim2.new(0.893432915, 0, 0.0343249068, 0)
-	Close.Size = UDim2.new(0.0790441632, 0, 0.125858128, 0)
-	Close.ZIndex = 4
-	Close.Font = Enum.Font.Gotham
-	Close.Text = "X"
-	Close.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Close.TextScaled = true
-	Close.TextSize = 14.000
-	Close.TextWrapped = true
+	local Info = Instance.new("Frame")
+	Info.Name = "Info"
+	Info.BackgroundColor3 = Theme.Tooltip
+	Info.BackgroundTransparency = 1
+	Info.BorderSizePixel = 0
+	Info.AnchorPoint = Vector2.new(0, 1)
+	Info.Position = UDim2.new(0, -M.Pad, 0, -TopOffset - 8)
+	Info.Size = UDim2.new(1, 2 * M.Pad, 0, 60)
+	Info.Visible = false
+	Info.ZIndex = 10
+	Info.Parent = Contents
+	UICornerOf(Info, 10)
+	UIPaddingOf(Info, 12, 12, 10, 10)
+	UIListOf(Info, Enum.FillDirection.Vertical, 3)
 
-	UICorner_9.CornerRadius = UDim.new(0.0500000007, 0)
-	UICorner_9.Parent = Close
+	local TipTitle = NewText("TextLabel", {
+		Name = "Title",
+		Text = "Title",
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextWrapped = true,
+		TextTransparency = 1,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(1, 0, 0, 0),
+		LayoutOrder = 1,
+		ZIndex = 11,
+	})
+	TipTitle.Parent = Info
 
-	UIAspectRatioConstraint_5.Parent = Close
-	UIAspectRatioConstraint_5.AspectRatio = 1.004
+	local TipInfo = NewText("TextLabel", {
+		Name = "Info",
+		Text = "Info",
+		TextSize = 13,
+		TextColor3 = Color3.fromRGB(205, 205, 212),
+		TextWrapped = true,
+		TextTransparency = 1,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(1, 0, 0, 0),
+		LayoutOrder = 2,
+		ZIndex = 11,
+	})
+	TipInfo.Parent = Info
 
-	Toggle.Name = "Toggle"
-	Toggle.Parent = OuterFrame
-	Toggle.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-	Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Toggle.BorderSizePixel = 0
-	Toggle.Position = UDim2.new(0.798575521, 0, 0.0343248919, 0)
-	Toggle.Size = UDim2.new(0.0790441632, 0, 0.125858128, 0)
-	Toggle.ZIndex = 4
-	Toggle.Font = Enum.Font.Roboto
-	Toggle.Text = "-"
-	Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Toggle.TextScaled = true
-	Toggle.TextSize = 14.000
-	Toggle.TextWrapped = true
+	-- Resize grip (bottom right corner)
 
-	UICorner_10.CornerRadius = UDim.new(0.0500000007, 0)
-	UICorner_10.Parent = Toggle
+	local Grip = Instance.new("TextButton")
+	Grip.Name = "ResizeGrip"
+	Grip.Text = ""
+	Grip.AutoButtonColor = false
+	Grip.BackgroundTransparency = 1
+	Grip.BorderSizePixel = 0
+	Grip.AnchorPoint = Vector2.new(1, 1)
+	Grip.Position = UDim2.new(1, -2, 1, -2)
+	Grip.Size = UDim2.fromOffset(M.Grip, M.Grip)
+	Grip.ZIndex = 6
+	Grip.Parent = OuterFrame
 
-	UIAspectRatioConstraint_6.Parent = Toggle
-	UIAspectRatioConstraint_6.AspectRatio = 1.004
+	local GripDots = {}
+	for Row = 0, 2 do
+		for Col = 0, 2 do
+			if Row + Col >= 2 then
+				local Dot = Instance.new("Frame")
+				Dot.BackgroundColor3 = Theme.Grip
+				Dot.BorderSizePixel = 0
+				Dot.AnchorPoint = Vector2.new(1, 1)
+				Dot.Position = UDim2.new(1, -3 - (2 - Col) * 4, 1, -3 - (2 - Row) * 4)
+				Dot.Size = UDim2.fromOffset(2, 2)
+				Dot.ZIndex = 7
+				Dot.Parent = Grip
+				table.insert(GripDots, Dot)
+			end
+		end
+	end
+	Grip.MouseEnter:Connect(function()
+		for _, Dot in ipairs(GripDots) do
+			TweenService:Create(Dot, HoverTweenInfo, {BackgroundColor3 = Theme.Text}):Play()
+		end
+	end)
+	Grip.MouseLeave:Connect(function()
+		for _, Dot in ipairs(GripDots) do
+			TweenService:Create(Dot, HoverTweenInfo, {BackgroundColor3 = Theme.Grip}):Play()
+		end
+	end)
 
+	-- Toast
+
+	local ToastFrame = Instance.new("Frame")
 	ToastFrame.Name = "ToastFrame"
-	ToastFrame.Parent = EmptyTools
 	ToastFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-	ToastFrame.BackgroundColor3 = Color3.fromRGB(36, 36, 36)
-	ToastFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	ToastFrame.BackgroundColor3 = Theme.Surface
 	ToastFrame.BorderSizePixel = 0
-	ToastFrame.Position = UDim2.new(0.499656826, 0, 0.0427135676, 0)
-	ToastFrame.Size = UDim2.new(0.427590936, 0, 0.0527638197, 0)
+	ToastFrame.Position = UDim2.new(0.5, 0, 0, 52)
+	ToastFrame.Size = UDim2.new(0.43, 0, 0.05, 0)
 	ToastFrame.Visible = false
 	ToastFrame.ZIndex = 99
+	ToastFrame.Parent = EmptyTools
+	UICornerOf(ToastFrame, 12)
 
-	UICorner_11.CornerRadius = UDim.new(0.400000006, 0)
-	UICorner_11.Parent = ToastFrame
-
+	local Text = Instance.new("TextLabel")
 	Text.Name = "ToastText"
-	Text.Parent = EmptyTools
 	Text.AnchorPoint = Vector2.new(0.5, 0.5)
-	Text.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Text.BackgroundTransparency = 1.000
-	Text.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Text.BackgroundTransparency = 1
 	Text.BorderSizePixel = 0
-	Text.Position = UDim2.new(0.499313653, 0, 0.0427135676, 0)
-	Text.Size = UDim2.new(0.0179999992, 0, 0.0529999994, 0)
+	Text.Position = UDim2.new(0.5, 0, 0, 52)
+	Text.Size = UDim2.new(0.018, 0, 0.053, 0)
 	Text.Visible = false
-	Text.Font = Enum.Font.Gotham
+	Text.Font = Enum.Font.GothamMedium
 	Text.Text = "[nil]"
-	Text.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Text.TextSize = 24.000
+	Text.TextColor3 = Theme.Text
+	Text.TextSize = 18
 	Text.ZIndex = 100
+	Text.Parent = EmptyTools
 
 	return EmptyTools
 end
@@ -2463,6 +2579,22 @@ FadeOutTween = nil
 FadeOutTween2 = nil
 FadeOutTween3 = nil
 
+-- Sizes the tooltip to fit its wrapped text (AutomaticSize doesn't wrap reliably)
+function LayoutTooltip()
+	if not InfoFrame then return end
+	local TextService = game:GetService("TextService")
+	local TitleLabel = InfoFrame:FindFirstChild("Title")
+	local InfoLabel = InfoFrame:FindFirstChild("Info")
+	if not TitleLabel or not InfoLabel then return end
+	local Width = math.max(50, InfoFrame.AbsoluteSize.X - 24)
+	local Bounds = Vector2.new(Width, 10000)
+	local TitleH = TextService:GetTextSize(TitleLabel.Text, TitleLabel.TextSize, TitleLabel.Font, Bounds).Y + 2
+	local InfoH = TextService:GetTextSize(InfoLabel.Text, InfoLabel.TextSize, InfoLabel.Font, Bounds).Y + 4
+	TitleLabel.Size = UDim2.new(1, 0, 0, TitleH)
+	InfoLabel.Size = UDim2.new(1, 0, 0, InfoH)
+	InfoFrame.Size = UDim2.new(InfoFrame.Size.X.Scale, InfoFrame.Size.X.Offset, 0, TitleH + 3 + InfoH + 20)
+end
+
 local function TipView(LabelObject, Title, Text)
 	local function FadeIn()
 		if not TipsEnabled then
@@ -2475,6 +2607,7 @@ local function TipView(LabelObject, Title, Text)
 		InfoFrame.Info.TextTransparency = 1
 		InfoFrame.Title.Text = Title
 		InfoFrame.Info.Text = Text
+		LayoutTooltip()
 
 		TweenService:Create(InfoFrame, FadeTweenInfo, {BackgroundTransparency = 0}):Play()
 		for _, Label in pairs(InfoFrame:GetChildren()) do
@@ -2494,24 +2627,285 @@ local function TipView(LabelObject, Title, Text)
 	LabelObject.MouseLeave:Connect(FadeOut)
 end
 
+-- Category chips / filtering
+
+function RefreshCategoryChips()
+	for Category, Chip in pairs(CategoryChips) do
+		local Active = (Category == CurrentCategory)
+		Chip.BackgroundColor3 = Active and Theme.Accent or Theme.Field
+		Chip.TextColor3 = Active and Color3.new(1, 1, 1) or Theme.SubText
+	end
+end
+
+function AddCategoryChip(Category)
+	if CategoryBar == nil or Category == nil or CategoryChips[Category] then return end
+	local Chip = Instance.new("TextButton")
+	Chip.Name = "Chip_" .. tostring(Category)
+	Chip.AutoButtonColor = false
+	Chip.BorderSizePixel = 0
+	Chip.AutomaticSize = Enum.AutomaticSize.X
+	Chip.Size = UDim2.new(0, 0, 1, 0)
+	Chip.Font = Enum.Font.GothamMedium
+	Chip.TextSize = 12
+	Chip.Text = (Category == "None") and "All" or tostring(Category)
+	Chip.LayoutOrder = table.find(CommandCategories, Category) or 99
+	UICornerOf(Chip, UDim.new(1, 0))
+	UIPaddingOf(Chip, 12, 12, 0, 0)
+	ETHover(Chip,
+		function() return Category == CurrentCategory and Theme.Accent or Theme.Field end,
+		function() return Category == CurrentCategory and Theme.Accent or Theme.FieldHover end
+	)
+	Chip.MouseButton1Click:Connect(function()
+		CurrentCategory = Category
+		RefreshCategoryChips()
+		ApplyCommandFilter(true)
+	end)
+	CategoryChips[Category] = Chip
+	Chip.Parent = CategoryBar
+	RefreshCategoryChips()
+end
+
+function SearchMatches(Text, Query)
+	if Query == nil or Query == "" then return true end
+	return string.find(string.lower(Text or ""), Query, 1, true) ~= nil
+end
+
+function GetSearchQuery()
+	local Search = Contents and Contents:FindFirstChild("Search")
+	return Search and string.lower(Search.Text) or ""
+end
+
+function UpdateFooterCount()
+	if not Contents then return end
+	local Footer = Contents:FindFirstChild("Footer")
+	local Count = Footer and Footer:FindFirstChild("Count")
+	if not Count then return end
+	local Total, Shown = 0, 0
+	for _, Frame in pairs(SettingsOpen and SettingsFrames or CommandFrames) do
+		if Frame and Frame.Parent then
+			Total += 1
+			if Frame.Visible then
+				Shown += 1
+			end
+		end
+	end
+	local Noun = SettingsOpen and "setting" or "command"
+	if Total ~= 1 then
+		Noun = Noun .. "s"
+	end
+	if Shown == Total then
+		Count.Text = Total .. " " .. Noun
+	else
+		Count.Text = Shown .. " of " .. Total .. " " .. Noun
+	end
+end
+
+function ApplyCommandFilter(ResetScroll)
+	if not Contents then return end
+	local Query = GetSearchQuery()
+	for _, Command in pairs(CommandFrames) do
+		local Category = Command:GetAttribute("Category")
+		local MatchesCategory = (CurrentCategory == "None" or Category == CurrentCategory)
+		Command.Visible = MatchesCategory and SearchMatches(Command.Name, Query)
+	end
+	if ResetScroll and Contents:FindFirstChild("Commands") then
+		Contents.Commands.CanvasPosition = Vector2.zero
+	end
+	UpdateFooterCount()
+end
+
+function ApplySettingsFilter(ResetScroll)
+	if not Contents then return end
+	local Query = GetSearchQuery()
+	for _, Option in pairs(SettingsFrames) do
+		Option.Visible = SearchMatches(Option.Name, Query) or SearchMatches(Option:GetAttribute("InfoText"), Query)
+	end
+	if ResetScroll and Contents:FindFirstChild("SettingsFrame") then
+		Contents.SettingsFrame.CanvasPosition = Vector2.zero
+	end
+	UpdateFooterCount()
+end
+
+-- Dropdown (used by enum options)
+
+ActiveDropdown = nil
+
+function CloseDropdown()
+	local Dropdown = ActiveDropdown
+	if not Dropdown then return end
+	ActiveDropdown = nil
+	for _, Connection in ipairs(Dropdown.Connections) do
+		Connection:Disconnect()
+	end
+	if Dropdown.Owner and Dropdown.Owner.Parent then
+		local Chevron = Dropdown.Owner:FindFirstChild("Chevron")
+		if Chevron then
+			TweenService:Create(Chevron, HoverTweenInfo, {Rotation = 0}):Play()
+		end
+	end
+	Dropdown.Catcher:Destroy()
+	Dropdown.Frame:Destroy()
+end
+
+function OpenDropdown(Owner, Options, Selected, OnSelect)
+	-- Clicking the same button again just closes it
+	if ActiveDropdown and ActiveDropdown.Owner == Owner then
+		CloseDropdown()
+		return
+	end
+	CloseDropdown()
+	if not MainUI or not Options or #Options == 0 then return end
+
+	local ItemH = UserInputService.TouchEnabled and 32 or 26
+	local ItemGap = 2
+	local Pad = 4
+	local MaxVisible = 7
+	local Visible = math.min(#Options, MaxVisible)
+	local W = math.max(Owner.AbsoluteSize.X, 130)
+	local H = Visible * ItemH + (Visible - 1) * ItemGap + Pad * 2
+
+	-- Invisible full-screen layer: clicking anywhere outside closes the dropdown
+	local Catcher = Instance.new("TextButton")
+	Catcher.Name = "DropdownCatcher"
+	Catcher.Text = ""
+	Catcher.AutoButtonColor = false
+	Catcher.BackgroundTransparency = 1
+	Catcher.BorderSizePixel = 0
+	Catcher.Size = UDim2.new(1, 0, 1, 0)
+	Catcher.ZIndex = 200
+	Catcher.Parent = MainUI
+	Catcher.MouseButton1Click:Connect(CloseDropdown)
+	Catcher.MouseButton2Click:Connect(CloseDropdown)
+
+	-- Place below the button, or above it if there is no room below
+	local Screen = MainUI.AbsoluteSize
+	local OwnerPos = Owner.AbsolutePosition
+	local X = math.clamp(OwnerPos.X, 4, math.max(4, Screen.X - W - 4))
+	local Y = OwnerPos.Y + Owner.AbsoluteSize.Y + 4
+	local OpensUp = false
+	if Y + H > Screen.Y - 4 then
+		Y = OwnerPos.Y - H - 4
+		OpensUp = true
+	end
+
+	local Frame = Instance.new("Frame")
+	Frame.Name = "Dropdown"
+	Frame.BackgroundColor3 = Theme.Tooltip
+	Frame.BorderSizePixel = 0
+	Frame.Position = UDim2.fromOffset(X, Y + (OpensUp and 6 or -6))
+	Frame.Size = UDim2.fromOffset(W, H)
+	Frame.ZIndex = 201
+	Frame.Parent = MainUI
+	UICornerOf(Frame, 8)
+	UIStrokeOf(Frame, Theme.Stroke, 1)
+	TweenService:Create(Frame, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {Position = UDim2.fromOffset(X, Y)}):Play()
+
+	local List = Instance.new("ScrollingFrame")
+	List.Name = "List"
+	List.Active = true
+	List.BackgroundTransparency = 1
+	List.BorderSizePixel = 0
+	List.Position = UDim2.fromOffset(Pad, Pad)
+	List.Size = UDim2.new(1, -Pad * 2, 1, -Pad * 2)
+	List.CanvasSize = UDim2.new(0, 0, 0, 0)
+	List.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	List.ScrollingDirection = Enum.ScrollingDirection.Y
+	List.ScrollBarThickness = (#Options > MaxVisible) and 3 or 0
+	List.ScrollBarImageColor3 = Color3.fromRGB(95, 95, 105)
+	List.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+	List.ZIndex = 202
+	List.Parent = Frame
+	UIListOf(List, Enum.FillDirection.Vertical, ItemGap)
+
+	local SelectedIndex = 1
+	for Index, Option in ipairs(Options) do
+		local IsSelected = (Option == Selected)
+		if IsSelected then
+			SelectedIndex = Index
+		end
+		local BaseColor = IsSelected and Theme.Field or Theme.Tooltip
+
+		local Item = NewText("TextButton", {
+			Name = tostring(Option),
+			Text = tostring(Option),
+			Font = IsSelected and Enum.Font.GothamMedium or Enum.Font.Gotham,
+			TextSize = 13,
+			TextColor3 = IsSelected and Color3.fromRGB(150, 175, 255) or Theme.Text,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			AutoButtonColor = false,
+			BackgroundTransparency = 0,
+			BackgroundColor3 = BaseColor,
+			Size = UDim2.new(1, 0, 0, ItemH),
+			LayoutOrder = Index,
+			ZIndex = 203,
+		})
+		UICornerOf(Item, 6)
+		UIPaddingOf(Item, 8, 22, 0, 0)
+		ETHover(Item, BaseColor, Theme.FieldHover)
+		Item.Parent = List
+
+		if IsSelected then
+			local Check = NewText("TextLabel", {
+				Name = "Check",
+				Text = "✓",
+				Font = Enum.Font.GothamBold,
+				TextSize = 13,
+				TextColor3 = Color3.fromRGB(150, 175, 255),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(1, 12, 0.5, 0),
+				Size = UDim2.fromOffset(14, 14),
+				ZIndex = 204,
+			})
+			Check.Parent = Item
+		end
+
+		Item.MouseButton1Click:Connect(function()
+			CloseDropdown()
+			OnSelect(Option)
+		end)
+	end
+
+	-- Scroll so the selected option is in view
+	if SelectedIndex > MaxVisible then
+		task.defer(function()
+			if List.Parent then
+				List.CanvasPosition = Vector2.new(0, (SelectedIndex - MaxVisible) * (ItemH + ItemGap))
+			end
+		end)
+	end
+
+	local Chevron = Owner:FindFirstChild("Chevron")
+	if Chevron then
+		TweenService:Create(Chevron, HoverTweenInfo, {Rotation = 180}):Play()
+	end
+
+	ActiveDropdown = {
+		Owner = Owner,
+		Frame = Frame,
+		Catcher = Catcher,
+		Connections = {
+			-- Close if the button moves (list scrolled, window dragged/resized) or disappears
+			Owner:GetPropertyChangedSignal("AbsolutePosition"):Connect(CloseDropdown),
+			Owner:GetPropertyChangedSignal("AbsoluteSize"):Connect(CloseDropdown),
+			Owner.AncestryChanged:Connect(CloseDropdown),
+		},
+	}
+end
+
 function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, CallbackRun, CallbackStop)
+	local M = UIMetrics
 
 	local Command = Instance.new("Frame")
 	local Title = Instance.new("TextLabel")
 	local Input = Instance.new("TextBox")
-	local UICorner = Instance.new("UICorner")
 	local Run = Instance.new("ImageButton")
-	local UICorner_2 = Instance.new("UICorner")
-	local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
 	local Stop = Instance.new("ImageButton")
-	local UICorner_3 = Instance.new("UICorner")
-	local UIAspectRatioConstraint_2 = Instance.new("UIAspectRatioConstraint")
 	local EnumButton = Instance.new("TextButton")
-	local UITextSizeConstraint = Instance.new("UITextSizeConstraint")
-	local UICorner_4 = Instance.new("UICorner")
 
 	if not table.find(CommandCategories, FilterTag) then
 		table.insert(CommandCategories, FilterTag)
+		AddCategoryChip(FilterTag)
 	end
 	Command:SetAttribute("Category", FilterTag)
 
@@ -2551,63 +2945,37 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		end
 	end
 
+	-- Row
+
+	local BaseColor = isThirdParty and Theme.ThirdParty or Theme.Surface
+	local HoverColor = isThirdParty and Theme.ThirdPartyHover or Theme.SurfaceHover
+
 	Command.Name = TitleText
-	Command.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
-	Command.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Command.BackgroundColor3 = BaseColor
 	Command.BorderSizePixel = 0
-	Command.Position = UDim2.new(0, 0, 1.09406805e-07, 0)
-	Command.Size = UDim2.new(1, 0, 0.0219999999, 0)
+	Command.Size = UDim2.new(1, 0, 0, M.Row)
+	UICornerOf(Command, 8)
+	ETHover(Command, BaseColor, HoverColor)
 
-	Title.Name = "Title"
-	Title.Parent = Command
-	Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Title.BackgroundTransparency = 1.000
-	Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title.BorderSizePixel = 0
-	Title.Position = UDim2.new(0.0238096155, 0, 0.0882355049, 0)
-	Title.Size = UDim2.new(0.323765904, 0, 0.823529363, 0)
-	Title.Font = Enum.Font.Gotham
-	Title.Text = TitleText
-	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Title.TextScaled = true
-	Title.TextSize = 14.000
-	Title.TextWrapped = true
-	Title.TextXAlignment = Enum.TextXAlignment.Left
+	-- Controls are laid out right-to-left: Run, Stop, Input, Enum
 
-
-	TipView(Title, TitleText, Info)
-	
-	Input.Position = UDim2.new(0.549000025, 0, 0.074000001, 0)
-	if InputText ~= nil then
-		Input.Name = "Input"
-		Input.Parent = Command
-		Input.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-		Input.BorderColor3 = Color3.fromRGB(0, 0, 0)
-		Input.BorderSizePixel = 0
-		Input.Size = UDim2.new(0.263412803, 0, 0.805496335, 0)
-		Input.ClearTextOnFocus = false
-		Input.Font = Enum.Font.Gotham
-		Input.PlaceholderColor3 = Color3.fromRGB(126, 126, 126)
-		Input.PlaceholderText = InputText
-		Input.Text = ""
-		Input.TextColor3 = Color3.fromRGB(255, 255, 255)
-		Input.TextScaled = true
-		Input.TextSize = 25.000
-		Input.TextWrapped = true
-	end
-
-	UICorner.CornerRadius = UDim.new(0.25, 0)
-	UICorner.Parent = Input
+	local Control = M.Row - 12
+	local Right = 6
+	local FieldScale = 0.25
+	local UsedScale = 0
 
 	Run.Name = "Run"
-	Run.Parent = Command
-	Run.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Run.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Run.AnchorPoint = Vector2.new(1, 0.5)
+	Run.Position = UDim2.new(1, -Right, 0.5, 0)
+	Run.Size = UDim2.fromOffset(Control, Control)
+	Run.BackgroundColor3 = Theme.Field
 	Run.BorderSizePixel = 0
-	Run.Position = UDim2.new(0.907579541, 0, 0.0597809143, 0)
-	Run.Size = UDim2.new(0.0637670681, 0, 0.850548923, 0)
+	Run.AutoButtonColor = false
 	Run.Image = "http://www.roblox.com/asset/?id=18912253064"
-	Run.ImageColor3 = Color3.fromRGB(106, 189, 102)
+	Run.ImageColor3 = isThirdParty and Theme.ThirdPartyRun or Theme.Run
+	UICornerOf(Run, 6)
+	ETHover(Run, Theme.Field, Theme.FieldHover)
+	Run.Parent = Command
 	Run.MouseButton1Click:Connect(function()
 		--PlaySoundFromID(ClickSoundID, {Volume = 0.4})
 		if InputText ~= nil then
@@ -2622,88 +2990,109 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 			CallbackRun()
 		end
 	end)
-
-	if isThirdParty or (EnumTable == nil and InputText == nil) then
-		Title.Size = UDim2.new(0.623765904, 0, 0.823529363, 0)
-	end
-
-	if isThirdParty then
-		Command.BackgroundColor3 = Color3.fromRGB(79, 55, 55)
-		Run.ImageColor3 = Color3.fromRGB(255, 129, 129)
-		Title.Text = Title.Text .. " [Third-Party]"
-	end
-
-	UICorner_2.CornerRadius = UDim.new(0.189999998, 0)
-	UICorner_2.Parent = Run
-
-	UIAspectRatioConstraint.Parent = Run
+	Right = Right + Control + 6
 
 	if CallbackStop ~= nil then
 		Stop.Name = "Stop"
-		Stop.Parent = Command
-		Stop.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-		Stop.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		Stop.AnchorPoint = Vector2.new(1, 0.5)
+		Stop.Position = UDim2.new(1, -Right, 0.5, 0)
+		Stop.Size = UDim2.fromOffset(Control, Control)
+		Stop.BackgroundColor3 = Theme.Field
 		Stop.BorderSizePixel = 0
-		Stop.Position = UDim2.new(0.829146743, 0, 0.0597800016, 0)
-		Stop.Size = UDim2.new(0.0637670681, 0, 0.880439401, 0)
+		Stop.AutoButtonColor = false
 		Stop.Image = "http://www.roblox.com/asset/?id=18912262996"
-		Stop.ImageColor3 = Color3.fromRGB(180, 92, 92)
+		Stop.ImageColor3 = Theme.Stop
+		UICornerOf(Stop, 6)
+		ETHover(Stop, Theme.Field, Theme.FieldHover)
+		Stop.Parent = Command
 		Stop.MouseButton1Click:Connect(function()
 			--PlaySoundFromID(ClickSoundID, {Volume = 0.4})
 			CallbackStop()
 		end)
+		Right = Right + Control + 6
 	end
 
-	UICorner_3.CornerRadius = UDim.new(0.189999998, 0)
-	UICorner_3.Parent = Stop
-
-	UIAspectRatioConstraint_2.Parent = Stop
+	if InputText ~= nil then
+		Input.Name = "Input"
+		Input.AnchorPoint = Vector2.new(1, 0.5)
+		Input.Position = UDim2.new(1 - UsedScale, -Right, 0.5, 0)
+		Input.Size = UDim2.new(FieldScale, 0, 0, Control)
+		Input.BackgroundColor3 = Theme.Field
+		Input.BorderSizePixel = 0
+		Input.ClearTextOnFocus = false
+		Input.ClipsDescendants = true
+		Input.Font = Enum.Font.Gotham
+		Input.PlaceholderColor3 = Theme.Placeholder
+		Input.PlaceholderText = InputText
+		Input.Text = ""
+		Input.TextColor3 = Theme.Text
+		Input.TextSize = 13
+		UICornerOf(Input, 6)
+		UIPaddingOf(Input, 6, 6, 0, 0)
+		FocusStroke(Input)
+		Input.Parent = Command
+		UsedScale = UsedScale + FieldScale
+		Right = Right + 6
+	end
 
 	if EnumTable ~= nil then
 		EnumButton.Name = "Enum"
-		EnumButton.Parent = Command
-		EnumButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-		EnumButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+		EnumButton.AnchorPoint = Vector2.new(1, 0.5)
+		EnumButton.Position = UDim2.new(1 - UsedScale, -Right, 0.5, 0)
+		EnumButton.Size = UDim2.new(FieldScale, 0, 0, Control)
+		EnumButton.BackgroundColor3 = Theme.Field
 		EnumButton.BorderSizePixel = 0
-		EnumButton.Position = UDim2.new(0.271358907, 0, 0.0963262469, 0)
-		EnumButton.Size = UDim2.new(0.263000011, 0, 0.805000007, 0)
-		EnumButton.Font = Enum.Font.Gotham
+		EnumButton.AutoButtonColor = false
+		EnumButton.Font = Enum.Font.GothamMedium
 		EnumButton.Text = EnumTable[1]
-		EnumButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-		EnumButton.TextScaled = true
-		EnumButton.TextSize = 25.000
-		EnumButton.TextWrapped = true
-		
-		if InputText == nil then
-			EnumButton.Position = Input.Position
-		end
+		EnumButton.TextColor3 = Theme.Text
+		EnumButton.TextSize = 13
+		EnumButton.TextXAlignment = Enum.TextXAlignment.Left
+		EnumButton.TextTruncate = Enum.TextTruncate.AtEnd
+		UICornerOf(EnumButton, 6)
+		UIPaddingOf(EnumButton, 8, 20, 0, 0)
+		ETHover(EnumButton, Theme.Field, Theme.FieldHover)
+		EnumButton.Parent = Command
 
+		local Chevron = NewText("TextLabel", {
+			Name = "Chevron",
+			Text = "▼",
+			TextSize = 9,
+			TextColor3 = Theme.SubText,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(1, 11, 0.5, 0),
+			Size = UDim2.fromOffset(12, 12),
+		})
+		Chevron.Parent = EnumButton
 
 		EnumButton.MouseButton1Click:Connect(function()
-			local CurrentIndex = table.find(EnumTable, SelectedEnum)
-			if CurrentIndex == #EnumTable then
-				SetSelectedEnum(EnumTable[1])
-			else
-				SetSelectedEnum(EnumTable[CurrentIndex + 1])
-			end
+			OpenDropdown(EnumButton, EnumTable, SelectedEnum, function(Option)
+				SetSelectedEnum(Option)
+			end)
 		end)
 
-		EnumButton.MouseButton2Click:Connect(function()
-			local CurrentIndex = table.find(EnumTable, SelectedEnum)
-			if CurrentIndex == 1 then
-				SetSelectedEnum(EnumTable[#EnumTable])
-			else
-				SetSelectedEnum(EnumTable[CurrentIndex - 1])
-			end
-		end)
+		UsedScale = UsedScale + FieldScale
+		Right = Right + 6
 	end
 
+	Title.Name = "Title"
+	Title.BackgroundTransparency = 1
+	Title.BorderSizePixel = 0
+	Title.Position = UDim2.fromOffset(12, 0)
+	Title.Size = UDim2.new(1 - UsedScale, -(Right + 12), 1, 0)
+	Title.Font = Enum.Font.GothamMedium
+	Title.Text = TitleText
+	Title.TextColor3 = Theme.Text
+	Title.TextSize = 14
+	Title.TextXAlignment = Enum.TextXAlignment.Left
+	Title.TextTruncate = Enum.TextTruncate.AtEnd
+	if isThirdParty then
+		Title.RichText = true
+		Title.Text = TitleText .. '  <font size="10" color="rgb(255,129,129)">3RD PARTY</font>'
+	end
+	Title.Parent = Command
 
-	UITextSizeConstraint.Parent = EnumButton
-	UITextSizeConstraint.MaxTextSize = 25
-
-	UICorner_4.CornerRadius = UDim.new(0.189999998, 0)
-	UICorner_4.Parent = EnumButton
+	TipView(Command, TitleText, Info)
 
 	table.insert(CommandFrames, Command)
 	CommandRegistry[NormalizeCommandName(TitleText)] = {
@@ -2722,6 +3111,7 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 		Stop = CallbackStop,
 	}
 	Command.Parent = Contents:WaitForChild("Commands")
+	ApplyCommandFilter(false)
 
 	if isThirdParty then
 		return Command
@@ -2729,111 +3119,103 @@ function CreateCommand(TitleText, Info, InputText, EnumTable, FilterTag, Callbac
 end
 
 function RemoveCommand(CommandFrame)
-	table.remove(CommandFrames, table.find(CommandFrames, CommandFrame))
+	local Index = table.find(CommandFrames, CommandFrame)
+	if Index then
+		table.remove(CommandFrames, Index)
+	end
 	task.wait()
 	CommandFrame:Destroy()
+	UpdateFooterCount()
 end
 
 function SetOptionChecked(OptionButton, Value)
 	OptionButton.Text = Value and "✓" or ""
+	OptionButton.BackgroundColor3 = Value and Theme.Accent or Theme.Field
 end
 
 function SetKeyMode(KeyButton, Value)
 	if Value == "Enabled" then
-		KeyButton.Text = ""
-		KeyButton.BackgroundColor3 = Color3.fromRGB(117, 117, 117)
+		KeyButton.Text = "..."
+		KeyButton.BackgroundColor3 = Theme.Accent
 	else
-		KeyButton.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-		KeyButton.Text = UserInputService:GetStringForKeyCode(Value)
+		KeyButton.BackgroundColor3 = Theme.Field
+		KeyButton.Text = KeyDisplayName(Value)
 	end
 end
 
 function CreateSettingsOption(TitleText, Info, Type, Variable, CallbackClicked)
+	local CheckWidth = (Type == "Key") and 64 or 28
 
 	local SettingsOption = Instance.new("Frame")
-	local Title = Instance.new("TextLabel")
-	local UICorner = Instance.new("UICorner")
-	local Title_2 = Instance.new("TextLabel")
-	local Check = Instance.new("TextButton")
-	local UICorner_2 = Instance.new("UICorner")
-	local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
-
-	--Properties:
-
-	SettingsOption.Name = "SettingsOption"
-	SettingsOption.BackgroundColor3 = Color3.fromRGB(4, 4, 4)
-	SettingsOption.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	SettingsOption.BorderSizePixel = 0
-	SettingsOption.Position = UDim2.new(1.50091054e-07, 0, 2.54941881e-07, 0)
-	SettingsOption.Size = UDim2.new(0.936999857, 0, 0.0461164564, 0)
 	SettingsOption.Name = TitleText
+	SettingsOption:SetAttribute("InfoText", Info)
+	SettingsOption.BackgroundColor3 = Theme.Surface
+	SettingsOption.BorderSizePixel = 0
+	SettingsOption.Size = UDim2.new(1, 0, 0, 0)
+	SettingsOption.AutomaticSize = Enum.AutomaticSize.Y
+	UICornerOf(SettingsOption, 8)
+	UIPaddingOf(SettingsOption, 12, 10, 9, 9)
+	ETHover(SettingsOption, Theme.Surface, Theme.SurfaceHover)
 
-	Title.Name = "Title"
-	Title.Parent = SettingsOption
-	Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Title.BackgroundTransparency = 1.000
-	Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title.BorderSizePixel = 0
-	Title.Position = UDim2.new(0.0238095392, 0, 0.0882362947, 0)
-	Title.Size = UDim2.new(0.562692106, 0, 0.350000024, 0)
-	Title.Font = Enum.Font.GothamBold
-	Title.Text = TitleText
-	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Title.TextScaled = true
-	Title.TextSize = 14.000
-	Title.TextWrapped = true
-	Title.TextXAlignment = Enum.TextXAlignment.Left
+	local TextHolder = Instance.new("Frame")
+	TextHolder.Name = "Text"
+	TextHolder.BackgroundTransparency = 1
+	TextHolder.BorderSizePixel = 0
+	TextHolder.Size = UDim2.new(1, -(CheckWidth + 12), 0, 0)
+	TextHolder.AutomaticSize = Enum.AutomaticSize.Y
+	TextHolder.Parent = SettingsOption
+	UIListOf(TextHolder, Enum.FillDirection.Vertical, 2)
 
-	UICorner.Parent = SettingsOption
+	local Title = NewText("TextLabel", {
+		Name = "Title",
+		Text = TitleText,
+		Font = Enum.Font.GothamMedium,
+		TextSize = 14,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(1, 0, 0, 0),
+		LayoutOrder = 1,
+	})
+	Title.Parent = TextHolder
 
-	Title_2.Name = "Info"
-	Title_2.Parent = SettingsOption
-	Title_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Title_2.BackgroundTransparency = 1.000
-	Title_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Title_2.BorderSizePixel = 0
-	Title_2.Position = UDim2.new(0.0240000002, 0, 0.43599999, 0)
-	Title_2.Size = UDim2.new(0.657068729, 0, 0.534385622, 0)
-	Title_2.Font = Enum.Font.Gotham
-	Title_2.Text = Info
-	Title_2.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Title_2.TextScaled = true
-	Title_2.TextSize = 14.000
-	Title_2.TextWrapped = true
-	Title_2.TextXAlignment = Enum.TextXAlignment.Left
+	local InfoLabel = NewText("TextLabel", {
+		Name = "Info",
+		Text = Info,
+		TextSize = 12,
+		TextColor3 = Theme.SubText,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(1, 0, 0, 0),
+		LayoutOrder = 2,
+	})
+	InfoLabel.Parent = TextHolder
 
-	Check.Name = "Check"
+	local Check = NewText("TextButton", {
+		Name = "Check",
+		Text = "",
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Theme.Field,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 0, 0.5, 0),
+		Size = UDim2.fromOffset(CheckWidth, 28),
+	})
+	UICornerOf(Check, 6)
 	Check.Parent = SettingsOption
-	Check.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-	Check.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Check.BorderSizePixel = 0
-	Check.Position = UDim2.new(0.842000008, 0, 0.0930000022, 0)
-	Check.Size = UDim2.new(0.123999998, 0, 0.806999981, 0)
-	Check.Font = Enum.Font.SourceSans
-	Check.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Check.TextScaled = true
-	Check.Text = ""
-	Check.TextSize = 14.000
-	Check.TextWrapped = true
 
 	if Type == "Boolean" then
-		if Variable == true then
-			Check.Text = "✓"
-		else
-			Check.Text = ""
-		end
+		SetOptionChecked(Check, Variable == true)
 	elseif Type == "Key" then
-		Check.Text = UserInputService:GetStringForKeyCode(Variable)
+		SetKeyMode(Check, Variable)
 	end
 
 	Check.MouseButton1Click:Connect(function()
 		CallbackClicked(Check)
 	end)
-
-	UICorner_2.CornerRadius = UDim.new(0.189999998, 0)
-	UICorner_2.Parent = Check
-
-	UIAspectRatioConstraint.Parent = Check
 
 	table.insert(SettingsFrames, SettingsOption)
 	SettingsOption.Parent = Contents:WaitForChild("SettingsFrame")
@@ -3269,11 +3651,74 @@ function CreateTeleportIndicator()
 	return Model
 end
 
+-- Renders a 3D headshot of Character into a ViewportFrame
+function RenderHeadshot(Viewport, Character)
+	if not Viewport or not Character then return end
+	local Head = Character:FindFirstChild("Head")
+	if not Head or not Head:IsA("BasePart") then return end
+
+	local WasArchivable = Character.Archivable
+	Character.Archivable = true
+	local ok, Clone = pcall(function()
+		return Character:Clone()
+	end)
+	pcall(function()
+		Character.Archivable = WasArchivable
+	end)
+	if not ok or not Clone then return end
+
+	-- Strip anything that isn't appearance (scripts, tools, effects, overhead guis)
+	for _, Desc in ipairs(Clone:GetDescendants()) do
+		if Desc:IsA("LuaSourceContainer") or Desc:IsA("Tool") or Desc:IsA("Sound")
+			or Desc:IsA("BillboardGui") or Desc:IsA("SurfaceGui") or Desc:IsA("ForceField")
+			or Desc:IsA("Highlight") or Desc:IsA("SelectionBox") or Desc:IsA("ParticleEmitter")
+			or Desc:IsA("Trail") or Desc:IsA("Beam") or Desc:IsA("Light") or Desc:IsA("Fire")
+			or Desc:IsA("Smoke") or Desc:IsA("Sparkles") then
+			Desc:Destroy()
+		elseif Desc:IsA("BasePart") then
+			Desc.Anchored = true
+		elseif Desc:IsA("Humanoid") then
+			Desc.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			Desc.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+		end
+	end
+
+	local CloneHead = Clone:FindFirstChild("Head")
+	if not CloneHead then
+		Clone:Destroy()
+		return
+	end
+
+	-- Camera: slightly angled, in front of the face, framing head + hair/hats
+	local Camera = Viewport:FindFirstChild("HeadshotCamera")
+	if not Camera then
+		Camera = Instance.new("Camera")
+		Camera.Name = "HeadshotCamera"
+		Camera.Parent = Viewport
+	end
+	Camera.FieldOfView = 40
+
+	local HeadCF = CloneHead.CFrame
+	local HeadHeight = math.max(CloneHead.Size.Y, 0.8)
+	local Focus = HeadCF.Position + HeadCF.UpVector * (HeadHeight * 0.12)
+	local Direction = (HeadCF * CFrame.Angles(math.rad(-8), math.rad(22), 0)).LookVector
+	Camera.CFrame = CFrame.lookAt(Focus + Direction * (HeadHeight * 2.7), Focus)
+	Viewport.CurrentCamera = Camera
+
+	-- Swap in the new model, then remove the old one (avoids flicker)
+	local Old = Viewport:FindFirstChild("Headshot")
+	Clone.Name = "Headshot"
+	Clone.Parent = Viewport
+	if Old then
+		Old:Destroy()
+	end
+end
+
 function CreateMarker(TargetPlayer, Type)
 	local Marker = Instance.new("BillboardGui")
 	local Frame = Instance.new("Frame")
+	local Headshot = Instance.new("ViewportFrame")
 	local User = Instance.new("TextLabel")
-	local UICorner = Instance.new("UICorner")
 	local Display = Instance.new("TextLabel")
 	local Button = Instance.new("ImageButton")
 	local Stroke = Instance.new("UIStroke")
@@ -3286,68 +3731,80 @@ function CreateMarker(TargetPlayer, Type)
 	Marker.Adornee = GetRoot(TargetPlayer)
 	Marker.AlwaysOnTop = true
 	Marker.LightInfluence = 1.000
-	Marker.Size = UDim2.new(0, 150, 0, 60)
+	Marker.Size = UDim2.new(0, 200, 0, 56)
 
+	Frame.Name = "Card"
 	Frame.Parent = Marker
 	Frame.AnchorPoint = Vector2.new(0.5, 0.5)
-	Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Frame.BackgroundTransparency = 0.2
-	Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Frame.BackgroundColor3 = Theme.Surface
+	Frame.BackgroundTransparency = 0.15
 	Frame.BorderSizePixel = 0
 	Frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-	Frame.Size = UDim2.new(0.800000012, 0, 0.600000024, 0)
+	Frame.Size = UDim2.new(1, -12, 0, 42)
+	UICornerOf(Frame, 10)
 
+	-- Headshot (left)
+	Headshot.Name = "Headshot"
+	Headshot.Parent = Frame
+	Headshot.AnchorPoint = Vector2.new(0, 0.5)
+	Headshot.Position = UDim2.new(0, 5, 0.5, 0)
+	Headshot.Size = UDim2.fromOffset(32, 32)
+	Headshot.BackgroundColor3 = Theme.Field
+	Headshot.BackgroundTransparency = 0
+	Headshot.BorderSizePixel = 0
+	Headshot.Ambient = Color3.fromRGB(190, 190, 190)
+	Headshot.LightColor = Color3.fromRGB(255, 255, 255)
+	Headshot.LightDirection = Vector3.new(-0.4, -1, -0.6)
+	UICornerOf(Headshot, UDim.new(1, 0))
+
+	-- Names (right of headshot)
 	User.Name = "User"
 	User.Parent = Frame
-	User.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	User.BackgroundTransparency = 1.000
-	User.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	User.BackgroundTransparency = 1
 	User.BorderSizePixel = 0
-	User.Size = UDim2.new(1, 0, 0.5, 0)
+	User.Position = UDim2.new(0, 44, 0, 5)
+	User.Size = UDim2.new(1, -52, 0, 17)
 	User.Font = Enum.Font.GothamBold
 	User.Text = TargetPlayer.DisplayName
-	User.TextColor3 = Color3.fromRGB(255, 255, 255)
-	User.TextScaled = true
-	User.TextSize = 14.000
-	User.TextWrapped = true
-
-	UICorner.Parent = Frame
+	User.TextColor3 = Theme.Text
+	User.TextSize = 14
+	User.TextXAlignment = Enum.TextXAlignment.Left
+	User.TextTruncate = Enum.TextTruncate.AtEnd
 
 	Display.Name = "Display"
 	Display.Parent = Frame
-	Display.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	Display.BackgroundTransparency = 1.000
-	Display.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Display.BackgroundTransparency = 1
 	Display.BorderSizePixel = 0
-	Display.Position = UDim2.new(0, 0, 0.5, 0)
-	Display.Size = UDim2.new(1, 0, 0.449999988, 0)
+	Display.Position = UDim2.new(0, 44, 0, 22)
+	Display.Size = UDim2.new(1, -52, 0, 14)
 	Display.Font = Enum.Font.Gotham
 	Display.Text = "@" .. TargetPlayer.Name
-	Display.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Display.TextScaled = true
-	Display.TextSize = 14.000
-	Display.TextWrapped = true
+	Display.TextColor3 = Color3.fromRGB(190, 190, 200)
+	Display.TextSize = 11
+	Display.TextXAlignment = Enum.TextXAlignment.Left
+	Display.TextTruncate = Enum.TextTruncate.AtEnd
 
 	Button.Name = "Button"
 	Button.Parent = Marker
-	Button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	Button.BackgroundTransparency = 1.000
-	Button.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Button.BorderSizePixel = 0
 	Button.Size = UDim2.new(1, 0, 1, 0)
 	Button.ZIndex = 3
 	Button.Image = "http://www.roblox.com/asset/?id=1415236683"
 
 	Stroke.Name = "Select"
+	Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	Stroke.Color = Color3.fromRGB(255,255,255)
 	Stroke.Thickness = 0
 	Stroke.Parent = Frame
-	if Player:IsFriendsWith(TargetPlayer.UserId) then
-		Frame.BackgroundColor3 = Color3.fromRGB(71, 113, 177)
-	end
 
-	local defaultOffset = Marker.StudsOffset
-	local hoverOffset = defaultOffset + Vector3.new(0, 5, 0)
+	local okFriend, IsFriend = pcall(function()
+		return Player:IsFriendsWith(TargetPlayer.UserId)
+	end)
+	if okFriend and IsFriend then
+		Frame.BackgroundColor3 = Color3.fromRGB(71, 113, 177)
+		Headshot.BackgroundColor3 = Color3.fromRGB(95, 135, 200)
+	end
 
 	if Type == "Teleport" then
 		Button.MouseEnter:Connect(function()
@@ -3361,6 +3818,113 @@ function CreateMarker(TargetPlayer, Type)
 	else
 		Button.Visible = false
 	end
+
+	-- Headshot rendering + re-render when appearance changes
+
+	local Destroyed = false
+	local Pending = false
+	local LastRender = 0
+	local PlayerConnections = {}
+	local CharacterConnections = {}
+
+	local function DisconnectAll(List)
+		for _, Connection in ipairs(List) do
+			Connection:Disconnect()
+		end
+		table.clear(List)
+	end
+
+	-- Debounced + throttled so outfit swaps (many child changes at once) cause one render
+	local function QueueRender()
+		if Pending or Destroyed then return end
+		Pending = true
+		local Wait = math.max(0.3, 1 - (os.clock() - LastRender))
+		task.delay(Wait, function()
+			Pending = false
+			if Destroyed then return end
+			local Character = TargetPlayer.Character
+			if Character then
+				LastRender = os.clock()
+				pcall(RenderHeadshot, Headshot, Character)
+			end
+		end)
+	end
+
+	local WatchedProps = {
+		Shirt = "ShirtTemplate",
+		Pants = "PantsTemplate",
+		ShirtGraphic = "Graphic",
+		Decal = "Texture",
+		SpecialMesh = "TextureId",
+		BodyColors = "HeadColor3",
+	}
+
+	local function IsAppearanceObject(Desc)
+		if Desc:FindFirstAncestorWhichIsA("Tool") then return false end
+		return Desc:IsA("Accessory") or Desc:IsA("Clothing") or Desc:IsA("ShirtGraphic")
+			or Desc:IsA("BodyColors") or Desc:IsA("Decal") or Desc:IsA("SpecialMesh")
+			or Desc:IsA("CharacterMesh") or Desc:IsA("WrapLayer") or Desc:IsA("BasePart")
+	end
+
+	local function WatchObject(Desc)
+		if Desc:FindFirstAncestorWhichIsA("Tool") then return end
+		local Prop = WatchedProps[Desc.ClassName]
+		if Prop then
+			table.insert(CharacterConnections, Desc:GetPropertyChangedSignal(Prop):Connect(QueueRender))
+		end
+		if Desc.ClassName == "BodyColors" then
+			for _, Extra in ipairs({"TorsoColor3", "LeftArmColor3", "RightArmColor3"}) do
+				table.insert(CharacterConnections, Desc:GetPropertyChangedSignal(Extra):Connect(QueueRender))
+			end
+		end
+		if Desc.Name == "Head" and Desc:IsA("BasePart") then
+			table.insert(CharacterConnections, Desc:GetPropertyChangedSignal("Color"):Connect(QueueRender))
+		end
+	end
+
+	local function BindCharacter(Character)
+		DisconnectAll(CharacterConnections)
+		if not Character then return end
+
+		for _, Desc in ipairs(Character:GetDescendants()) do
+			WatchObject(Desc)
+		end
+		table.insert(CharacterConnections, Character.DescendantAdded:Connect(function(Desc)
+			WatchObject(Desc)
+			if IsAppearanceObject(Desc) then
+				QueueRender()
+			end
+		end))
+		table.insert(CharacterConnections, Character.DescendantRemoving:Connect(function(Desc)
+			if IsAppearanceObject(Desc) then
+				QueueRender()
+			end
+		end))
+
+		QueueRender()
+	end
+
+	table.insert(PlayerConnections, TargetPlayer.CharacterAdded:Connect(function(Character)
+		BindCharacter(Character)
+		-- Re-attach the marker to the new character's root
+		task.spawn(function()
+			local Root = Character:WaitForChild("HumanoidRootPart", 10)
+			if Root and not Destroyed then
+				Marker.Adornee = Root
+			end
+		end)
+	end))
+	table.insert(PlayerConnections, TargetPlayer.CharacterAppearanceLoaded:Connect(function()
+		QueueRender()
+	end))
+
+	Marker.Destroying:Connect(function()
+		Destroyed = true
+		DisconnectAll(PlayerConnections)
+		DisconnectAll(CharacterConnections)
+	end)
+
+	BindCharacter(TargetPlayer.Character)
 
 	return Marker, Button
 end
@@ -6387,7 +6951,6 @@ local function Setup()
 	MainUI.Parent = PARENT
 	OuterFrame = MainUI:WaitForChild("OuterFrame")
 	Contents = OuterFrame:WaitForChild("Contents")
-	ContentShrunken = OuterFrame:WaitForChild("ContentShrunken")
 	InfoFrame = Contents:WaitForChild("Info")
 
 	ToastFrame = MainUI:WaitForChild("ToastFrame")
@@ -6473,90 +7036,74 @@ local function Setup()
 	end
 
 
-	-- Drag Handler
+	-- Drag (header) & Resize (bottom-right grip) Handler
 
-	coroutine.resume(coroutine.create(function()
-		local userInputService = game:GetService("UserInputService")
-		local tweenService = game:GetService("TweenService")
-		local dragToggle = false
-		local dragObject = OuterFrame  -- The UI object to be dragged
-		local dragInput = nil
-		local dragStart = nil
-		local dragInfo = TweenInfo.new(0.075, Enum.EasingStyle.Quad)
-		local dragPos = nil
-		local originalCameraType = nil
+	do
+		local Header = OuterFrame:WaitForChild("Header")
+		local Grip = OuterFrame:WaitForChild("ResizeGrip")
+		local DragInfo = TweenInfo.new(0.075, Enum.EasingStyle.Quad)
+		local Dragging, DragInput, DragStart, DragPos = false, nil, nil, nil
+		local Resizing, ResizeStart, ResizeStartSize = false, nil, nil
 
-		local function updateInput(input)
-			local delta = input.Position - dragStart
-			local newPos = UDim2.new(dragPos.X.Scale, dragPos.X.Offset + delta.X, dragPos.Y.Scale, dragPos.Y.Offset + delta.Y)
-			tweenService:Create(dragObject, dragInfo, {Position = newPos}):Play()
+		local function IsPress(Input)
+			return Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch
 		end
 
-		coroutine.resume(coroutine.create(function()
-			local userInputService: UserInputService = game:GetService("UserInputService") -- UserInputService
-			local tweenService: TweenService = game:GetService("TweenService") -- Tweenservice
-			local dragToggle: boolean = nil -- Toggle?
-			local dragObject: GuiObject = OuterFrame -- Object Being Dragged
-			local dragInput: InputObject = nil -- Input On The Drag Object
-			local dragStart: Vector2 = nil -- Starting Position
-			local dragInfo: TweenInfo = TweenInfo.new(0.075, Enum.EasingStyle.Quad) -- Drag Speed
-			local dragPos: UDim2 = nil -- Drag Pos
+		local function IsMove(Input)
+			return Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch
+		end
 
-			local function updateInput(input) -- Updates Input
-				local delta: Vector2 = input.Position - dragStart
-				local position: UDim2 = UDim2.new(dragPos.X.Scale, dragPos.X.Offset + delta.X, dragPos.Y.Scale, dragPos.Y.Offset + delta.Y)
-				tweenService:Create(dragObject, dragInfo, {Position = position}):Play()
-			end
-
-			local function dragInputBegan(input: InputObject)
-				if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and userInputService:GetFocusedTextBox() == nil then
-					if UIOpen then
-						dragToggle = true
-						dragStart = input.Position
-						dragPos = dragObject.Position
-						input.Changed:Connect(function()
-							if input.UserInputState == Enum.UserInputState.End then
-								dragToggle = false
-							end
-						end)
-					elseif not UIOpen and ContentShrunken then
-						-- Check if input started within ContentShrunken boundaries
-						local mousePosition = input.Position
-						local contentPosition = ContentShrunken.AbsolutePosition
-						local contentSize = ContentShrunken.AbsoluteSize
-
-						if mousePosition.X >= contentPosition.X and mousePosition.X <= contentPosition.X + contentSize.X and
-							mousePosition.Y >= contentPosition.Y and mousePosition.Y <= contentPosition.Y + contentSize.Y then
-							dragToggle = true
-							dragStart = input.Position
-							dragPos = dragObject.Position
-							input.Changed:Connect(function()
-								if input.UserInputState == Enum.UserInputState.End then
-									dragToggle = false
-								end
-							end)
-						end
-					end
+		Header.InputBegan:Connect(function(Input)
+			if not IsPress(Input) or Resizing then return end
+			if UserInputService:GetFocusedTextBox() ~= nil then return end
+			Dragging = true
+			DragStart = Input.Position
+			DragPos = OuterFrame.Position
+			Input.Changed:Connect(function()
+				if Input.UserInputState == Enum.UserInputState.End then
+					Dragging = false
 				end
-			end
+			end)
+		end)
 
-			local function dragInputChanged(input: InputObject)
-				if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-					dragInput = input
+		Header.InputChanged:Connect(function(Input)
+			if IsMove(Input) then
+				DragInput = Input
+			end
+		end)
+
+		Grip.InputBegan:Connect(function(Input)
+			if not IsPress(Input) or not UIOpen then return end
+			Resizing = true
+			Dragging = false
+			ResizeStart = Input.Position
+			ResizeStartSize = WindowSize
+			Input.Changed:Connect(function()
+				if Input.UserInputState == Enum.UserInputState.End and Resizing then
+					Resizing = false
+					userSettings.WindowSize = {WindowSize.X, WindowSize.Y}
+					saveSettings(userSettings)
 				end
-			end
+			end)
+		end)
 
-			local function userInputChanged(input: InputObject, gameProcessedEvent: boolean)
-				if input == dragInput and dragToggle then
-					updateInput(input)
-				end
+		UserInputService.InputChanged:Connect(function(Input)
+			if Resizing and IsMove(Input) then
+				local Delta = Input.Position - ResizeStart
+				local Viewport = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(1920, 1080)
+				local MaxW = math.max(UIMetrics.MinW, Viewport.X - OuterFrame.AbsolutePosition.X - 4)
+				local MaxH = math.max(UIMetrics.MinH, Viewport.Y - OuterFrame.AbsolutePosition.Y - 4)
+				local NewW = math.floor(math.clamp(ResizeStartSize.X + Delta.X, UIMetrics.MinW, MaxW))
+				local NewH = math.floor(math.clamp(ResizeStartSize.Y + Delta.Y, UIMetrics.MinH, MaxH))
+				WindowSize = Vector2.new(NewW, NewH)
+				OuterFrame.Size = UDim2.fromOffset(NewW, NewH)
+			elseif Dragging and Input == DragInput then
+				local Delta = Input.Position - DragStart
+				local NewPos = UDim2.new(DragPos.X.Scale, DragPos.X.Offset + Delta.X, DragPos.Y.Scale, DragPos.Y.Offset + Delta.Y)
+				TweenService:Create(OuterFrame, DragInfo, {Position = NewPos}):Play()
 			end
-
-			OuterFrame.InputBegan:Connect(dragInputBegan)
-			OuterFrame.InputChanged:Connect(dragInputChanged)
-			userInputService.InputChanged:Connect(userInputChanged)
-		end))
-	end))
+		end)
+	end
 end
 
 
@@ -7317,16 +7864,42 @@ if not MainUI then return end
 
 ToggleTween = nil
 
+-- Minimize collapses the window to its header bar, keeping the right edge (and buttons) in place
 function Toggle()
+	CloseDropdown()
 	UIOpen = not UIOpen
-	ContentShrunken.Visible = not UIOpen
-	OuterFrame.Toggle.Text = UIOpen and "-" or "+"
-	local Transparency = UIOpen and 0 or 1
+	OuterFrame.Toggle.Text = UIOpen and "–" or "+"
 	if ToggleTween then
 		ToggleTween:Cancel()
 	end
+
+	local Header = OuterFrame:FindFirstChild("Header")
+	local Divider = Header and Header:FindFirstChild("Divider")
+	local Grip = OuterFrame:FindFirstChild("ResizeGrip")
+
+	local RightEdge = OuterFrame.Position.X.Offset + OuterFrame.Size.X.Offset
+	local TargetW, TargetH
+	if UIOpen then
+		TargetW, TargetH = WindowSize.X, WindowSize.Y
+	else
+		TargetW, TargetH = math.min(WindowSize.X, UIMetrics.MinimizedW), UIMetrics.Header
+	end
+	local TargetPos = UDim2.new(OuterFrame.Position.X.Scale, RightEdge - TargetW, OuterFrame.Position.Y.Scale, OuterFrame.Position.Y.Offset)
+
+	OuterFrame.ClipsDescendants = true
 	Contents.Visible = UIOpen
-	ToggleTween = TweenService:Create(OuterFrame, FadeTweenInfo, {BackgroundTransparency = Transparency})
+	if Divider then Divider.Visible = UIOpen end
+	if Grip then Grip.Visible = UIOpen end
+
+	ToggleTween = TweenService:Create(OuterFrame, FadeTweenInfo, {
+		Size = UDim2.fromOffset(TargetW, TargetH),
+		Position = TargetPos,
+	})
+	ToggleTween.Completed:Connect(function(State)
+		if State == Enum.PlaybackState.Completed and UIOpen then
+			OuterFrame.ClipsDescendants = false
+		end
+	end)
 	ToggleTween:Play()
 end
 
@@ -7420,6 +7993,7 @@ local function Close()
 end
 
 function MinimizeClose()
+	CloseDropdown()
 	OuterFrame.Visible = false
 	MainUI:SetAttribute("Minimized", true)
 	Toast('Press " ' .. UserInputService:GetStringForKeyCode(userSettings.ToggleKey) .. ' " to re-open Empty Tools', 1.5)
@@ -7442,7 +8016,7 @@ OuterFrame.Close.MouseButton1Click:Connect(function()
 			coroutine.resume(coroutine.create(function()
 				wait(1.5)
 				confirmClose = false
-				OuterFrame.Close.Text = "X"
+				OuterFrame.Close.Text = "×"
 			end))
 		end
 	else
@@ -7454,62 +8028,28 @@ OuterFrame.Close.MouseButton2Click:Connect(function()
 	Close()
 end)
 
-Contents.Category.MouseButton1Click:Connect(function()
-	local Categories = CommandCategories
-	local CategoryIndex = table.find(Categories, CurrentCategory)
-	CategoryIndex = CategoryIndex + 1
-	if CategoryIndex > #Categories then
-		CategoryIndex = 1
-	end
-	CurrentCategory = Categories[CategoryIndex]
-
-	Contents.Category.Text = "Filter: " .. CurrentCategory
-
-	local SearchText = string.lower(Contents.Search.Text)
-	for _, Command in pairs(CommandFrames) do
-		local Category = Command:GetAttribute("Category")
-		local CommandMatchesCategory = (CurrentCategory == "None" or Category == CurrentCategory)
-		local CommandMatchesSearch = (SearchText == "" or #SearchText < 1 or string.find(string.lower(Command.Name), SearchText))
-
-		Command.Visible = CommandMatchesCategory and CommandMatchesSearch
-	end
-	Contents.Commands.CanvasPosition = Vector2.zero
-end)
+function SetSettingsOpen(Open)
+	CloseDropdown()
+	SettingsOpen = Open
+	Contents.Commands.Visible = not Open
+	Contents.SettingsFrame.Visible = Open
+	Contents.Categories.Visible = not Open
+	Contents.Settings.Text = Open and "Done" or "Settings"
+	Contents.Settings.BackgroundColor3 = Open and Theme.Accent or Theme.Field
+	Contents.Search.PlaceholderText = Open and "Search settings..." or "Search commands..."
+	UpdateFooterCount()
+end
 
 Contents.Search:GetPropertyChangedSignal("Text"):Connect(function()
-	local SearchText = string.lower(Contents.Search.Text)
-
-	for _, Command in pairs(CommandFrames) do
-		local Category = Command:GetAttribute("Category")
-		local CommandMatchesCategory = (CurrentCategory == "None" or Category == CurrentCategory)
-		local CommandMatchesSearch = (SearchText == "" or #SearchText < 1 or string.find(string.lower(Command.Name), SearchText))
-
-		Command.Visible = CommandMatchesCategory and CommandMatchesSearch
-	end
-
-	Contents.Commands.CanvasPosition = Vector2.zero
-
-	for _, Option in pairs(SettingsFrames) do
-		local OptionTitleMatchesSearch = (SearchText == "" or #SearchText < 1 or string.find(string.lower(Option.Name), SearchText))
-		local OptionInfoMatchesSearch = (SearchText == "" or #SearchText < 1 or string.find(string.lower(Option.Info.Text), SearchText))
-
-		Option.Visible = OptionTitleMatchesSearch or OptionInfoMatchesSearch
-	end
-
-	Contents.SettingsFrame.CanvasPosition = Vector2.zero
+	ApplyCommandFilter(true)
+	ApplySettingsFilter(true)
 end)
 
 Contents.Settings.MouseButton1Click:Connect(function()
-	if Contents.Commands.Visible then
-		Contents.Settings.BackgroundColor3 = Color3.fromRGB(4, 4, 4)
-		Contents.Commands.Visible = false
-		Contents.SettingsFrame.Visible = true
-	else
-		Contents.Settings.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-		Contents.Commands.Visible = true
-		Contents.SettingsFrame.Visible = false
-	end
+	SetSettingsOpen(not SettingsOpen)
 end)
+
+ApplyCommandFilter(false)
 
 -- Player Specific 
 
