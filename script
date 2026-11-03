@@ -264,6 +264,7 @@ PhaseObjects = {}
 	AnchorCharacterConn = nil
 	AnchorDescendantConn = nil
 	AnchorHeartbeatConn = nil
+	AnchorAntiFlingConn = nil
 	DeflectDisabledForces = {}
 	ReturnOnFall = false
 
@@ -1335,9 +1336,43 @@ local function StartAnchorDeflectForCharacter(Character)
 		end)
 	end
 
+	-- Anti-fling: other players' parts can't collide with or push us
+	AnchorAntiFlingConn = DisconnectConn(AnchorAntiFlingConn)
+	AnchorAntiFlingConn = RunService.Stepped:Connect(function()
+		if not AnchorEnabled or not IsDeflectLikeAnchorMode(AnchorMode) then return end
+		for _, other in ipairs(Players:GetPlayers()) do
+			if other ~= Player and other.Character then
+				for _, part in ipairs(other.Character:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.CanCollide = false
+						part.CanTouch = false
+						if part.AssemblyLinearVelocity.Magnitude > 100 or part.AssemblyAngularVelocity.Magnitude > 50 then
+							part.AssemblyLinearVelocity = Vector3.zero
+							part.AssemblyAngularVelocity = Vector3.zero
+						end
+					end
+				end
+			end
+		end
+	end)
+
+	local lastSafeCFrame = nil
 	AnchorHeartbeatConn = DisconnectConn(AnchorHeartbeatConn)
 	AnchorHeartbeatConn = RunService.Heartbeat:Connect(function()
 		if not AnchorEnabled or not IsDeflectLikeAnchorMode(AnchorMode) then return end
+		local flingRoot = Player and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+		if flingRoot then
+			-- Snap back if a fling still gets through
+			if flingRoot.AssemblyLinearVelocity.Magnitude > 250 or flingRoot.AssemblyAngularVelocity.Magnitude > 80 then
+				flingRoot.AssemblyLinearVelocity = Vector3.zero
+				flingRoot.AssemblyAngularVelocity = Vector3.zero
+				if lastSafeCFrame then
+					flingRoot.CFrame = lastSafeCFrame
+				end
+				return
+			end
+			lastSafeCFrame = flingRoot.CFrame
+		end
 		local character = Player and Player.Character
 		if not character then return end
 
@@ -1451,6 +1486,7 @@ StopAnchor = function()
 	AnchorEnabled = false
 	AnchorDescendantConn = DisconnectConn(AnchorDescendantConn)
 	AnchorHeartbeatConn = DisconnectConn(AnchorHeartbeatConn)
+	AnchorAntiFlingConn = DisconnectConn(AnchorAntiFlingConn)
 	AnchorCharacterConn = DisconnectConn(AnchorCharacterConn)
 end
 
